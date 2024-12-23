@@ -160,7 +160,7 @@ class Instruction {
 
   LD_A_OffsetC() {
     // C register value (offset)
-    const C = this.getRegister("C");
+    const C = this.cpu.getRegister("C");
 
     const value = this.cpu.mem[0xff00 + C];
 
@@ -169,7 +169,7 @@ class Instruction {
 
   LD_OffsetC_A() {
     // C register value (offset)
-    const C = this.getRegister("C");
+    const C = this.cpu.getRegister("C");
 
     const address = 0xff00 + C;
 
@@ -221,7 +221,7 @@ class Instruction {
   LDH_A_n(n) {
     const value = this.cpu.mem[0xff00 + n];
 
-    this.cpu.setRegister("A", n);
+    this.cpu.setRegister("A", value);
   }
 
   // TODO:
@@ -458,4 +458,172 @@ console.log(
 instruction.LD_A_n(d16Value, true);
 console.log("      LD (d16),A: (d16)=0x" + cpu.mem[d16Value].toString(16));
 
+// LD A,(C)
+console.log("\n  LD A,(C)");
+console.log(
+  "      A=0x" +
+    cpu.getRegister("A").toString(16) +
+    " , C=0x" +
+    cpu.getRegister("C").toString(16)
+);
+cpu.mem[cpu.getRegister("C") + 0xff00] = 0xac;
+console.log(
+  "      Value at address (0x" +
+    cpu.getRegister("C").toString(16) +
+    " + " +
+    "0xff00)" +
+    " = 0x" +
+    cpu.mem[cpu.getRegister("C") + 0xff00].toString(16)
+);
+instruction.LD_A_OffsetC();
+console.log("      LD A,(C): A=0x" + cpu.getRegister("A").toString(16));
 
+// LD (C),A
+console.log("\n  LD (C),A");
+cpu.setRegister("A", 0xca);
+console.log(
+  "      A=0x" +
+    cpu.getRegister("A").toString(16) +
+    " , C=0x" +
+    cpu.getRegister("C").toString(16)
+);
+cpu.mem[cpu.getRegister("C") + 0xff00] = 0xac;
+console.log(
+  "      Value at address (0x" +
+    cpu.getRegister("C").toString(16) +
+    " + " +
+    "0xff00)" +
+    " = 0x" +
+    cpu.mem[cpu.getRegister("C") + 0xff00].toString(16)
+);
+instruction.LD_OffsetC_A();
+console.log(
+  "      LD (C),A: (C)=0x" + cpu.mem[cpu.getRegister("C") + 0xff00].toString(16)
+);
+
+// LDD A,(HL)
+console.log("\n  LDD A,(HL)");
+console.log(
+  "      A=0x" +
+    cpu.getRegister("A").toString(16) +
+    " , HL=0x" +
+    cpu.getRegister("HL").toString(16)
+);
+console.log(
+  "      Value at address 0x" +
+    cpu.getRegister("HL").toString(16) +
+    " = 0x" +
+    cpu.mem[cpu.getRegister("HL")].toString(16)
+);
+instruction.LDD_A_HL();
+console.log("      LD A,(HL): A=0x" + cpu.getRegister("A").toString(16));
+console.log(
+  "      HL value after operation: 0x" + cpu.getRegister("HL").toString(16)
+);
+
+// LDD (HL),A
+console.log("\n  LDD (HL),A");
+console.log(
+  "      A=0x" +
+    cpu.getRegister("A").toString(16) +
+    " , HL=0x" +
+    cpu.getRegister("HL").toString(16)
+);
+cpu.mem[cpu.getRegister("HL")] = 0xae;
+console.log(
+  "      Value at address 0x" +
+    cpu.getRegister("HL").toString(16) +
+    " = 0x" +
+    cpu.mem[cpu.getRegister("HL")].toString(16)
+);
+instruction.LDD_HL_A();
+console.log(
+  "      LD (HL),A: (HL)=0x" + cpu.mem[cpu.getRegister("HL") + 1].toString(16)
+);
+console.log(
+  "      HL value after operation: 0x" + cpu.getRegister("HL").toString(16)
+);
+
+cpu.setRegister("HL", 0x1234);
+
+// LDI A,(HL)
+console.log("\n  LDI A,(HL)");
+console.log(
+  "      A=0x" +
+    cpu.getRegister("A").toString(16) +
+    " , HL=0x" +
+    cpu.getRegister("HL").toString(16)
+);
+cpu.mem[cpu.getRegister("HL")] = 0x23;
+console.log(
+  "      Value at address 0x" +
+    cpu.getRegister("HL").toString(16) +
+    " = 0x" +
+    cpu.mem[cpu.getRegister("HL")].toString(16)
+);
+instruction.LDI_A_HL();
+console.log("      LDI A,(HL): A=0x" + cpu.getRegister("A").toString(16));
+console.log(
+  "      HL value after operation: 0x" + cpu.getRegister("HL").toString(16)
+);
+
+// LDI (HL),A
+console.log("\n  LDI (HL),A");
+console.log(
+  "      A=0x" +
+    cpu.getRegister("A").toString(16) +
+    " , HL=0x" +
+    cpu.getRegister("HL").toString(16)
+);
+cpu.mem[cpu.getRegister("HL")] = 0x33;
+console.log(
+  "      Value at address 0x" +
+    cpu.getRegister("HL").toString(16) +
+    " = 0x" +
+    cpu.mem[cpu.getRegister("HL")].toString(16)
+);
+instruction.LDI_HL_A();
+console.log(
+  "      LDI (HL),A: (HL)=0x" + cpu.mem[cpu.getRegister("HL") - 1].toString(16)
+);
+console.log(
+  "      HL value after operation: 0x" + cpu.getRegister("HL").toString(16)
+);
+
+// LDH (n),A
+console.log("\n  LDH (n),A");
+value = 0xab;
+console.log(
+  "      A=0x" +
+    cpu.getRegister("A").toString(16) +
+    " , n=0x" +
+    value.toString(16)
+);
+cpu.mem[value + 0xff00] = 0x33;
+console.log(
+  "      Value at address (0x" +
+    value.toString(16) +
+    " + 0xff00) = 0x" +
+    cpu.mem[value + 0xff00].toString(16)
+);
+instruction.LDH_n_A(value);
+console.log("      LDH (n),A: (n)=0x" + cpu.mem[value + 0xff00].toString(16));
+
+// LDH A,(n)
+console.log("\n  LDH A,(n)");
+value = 0xcd;
+console.log(
+  "      A=0x" +
+    cpu.getRegister("A").toString(16) +
+    " , n=0x" +
+    value.toString(16)
+);
+cpu.mem[value + 0xff00] = 0xdc;
+console.log(
+  "      Value at address (0x" +
+    value.toString(16) +
+    " + 0xff00) = 0x" +
+    cpu.mem[value + 0xff00].toString(16)
+);
+instruction.LDH_A_n(value);
+console.log("      LDH A,(n): A=0x" + cpu.getRegister("A").toString(16));
