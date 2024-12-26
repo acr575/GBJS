@@ -312,7 +312,11 @@ export class Instruction {
   }
 
   LD_nn_SP(address) {
-    this.cpu.mem[address] = this.cpu.sp;
+    const lowByte = this.cpu.sp & 0xff;
+    const highByte = (this.cpu.sp & 0xff00) >> 8;
+
+    this.cpu.mem[address] = lowByte;
+    this.cpu.mem[address + 1] = highByte;
   }
 
   push(register) {
