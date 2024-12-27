@@ -106,6 +106,7 @@ export class CPU {
       return;
     }
 
+    // Get current register F value
     let registerF = this.getRegister("F");
 
     // Iterate through each flag position (Z, N, H, C)
@@ -148,6 +149,7 @@ export class CPU {
       }
     }
 
+    // Update register F
     this.setRegister("F", registerF);
   }
 }
@@ -158,10 +160,22 @@ export class Instruction {
   }
 
   // --------------------- 8-bit LD functions ---------------------
+
+  /**
+   * Loads an 8-bit immediate value into a specified register.
+   * @param {string} dstReg - The destination register.
+   * @param {number} value - The 8-bit immediate value to load.
+   */
   LD_nn_n(dstReg, value) {
     this.cpu.setRegister(dstReg, value);
   }
 
+  /**
+   * Transfers an 8-bit value between two registers, or between a register and memory address stored in register HL.
+   * Also covers the opcode 36 LD (HL), n (Load 8-bit immediate to address stored in HL)
+   * @param {string|number} srcReg - The source register or memory address.
+   * @param {string|number} dstReg - The destination register or memory address.
+   */
   LD_r1_r2(srcReg, dstReg) {
     // Source register is a combined register (pointer). Load value from pointer address
     if (srcReg.length == 2) {
@@ -182,6 +196,11 @@ export class Instruction {
     else this.cpu.setRegister(dstReg, this.cpu.getRegister(srcReg));
   }
 
+  /**
+   * Loads a value into the A register.
+   * @param {string|number} value - The value to load (register name, memory address, or immediate value).
+   * @param {boolean} [isPointer=false] - Whether the value is a memory pointer.
+   */
   LD_A_n(value, isPointer = false) {
     if (isPointer) {
       // Value is a 16-bit immediate pointer to a memory address
@@ -200,6 +219,11 @@ export class Instruction {
     else this.cpu.setRegister("A", this.cpu.getRegister(value));
   }
 
+  /**
+   * Stores the value from the A register into a specified destination.
+   * @param {string|number} value - The destination register or memory address.
+   * @param {boolean} [isPointer=false] - Whether the destination is a memory pointer.
+   */
   LD_n_A(value, isPointer = false) {
     if (isPointer) {
       // Value is a 16-bit immediate pointer to a memory address
@@ -216,6 +240,9 @@ export class Instruction {
     else this.cpu.setRegister(value, this.cpu.getRegister("A"));
   }
 
+  /**
+   * Loads the value at memory address (0xFF00 + C) into the A register.
+   */
   LD_A_OffsetC() {
     // C register value (offset)
     const C = this.cpu.getRegister("C");
@@ -225,6 +252,9 @@ export class Instruction {
     this.cpu.setRegister("A", value);
   }
 
+  /**
+   * Stores the value of the A register into memory address (0xFF00 + C).
+   */
   LD_OffsetC_A() {
     // C register value (offset)
     const C = this.cpu.getRegister("C");
@@ -234,6 +264,9 @@ export class Instruction {
     this.cpu.mem[address] = this.cpu.getRegister("A");
   }
 
+  /**
+   * Loads the value at memory address HL into the A register and decrements HL.
+   */
   LDD_A_HL() {
     const address = this.cpu.getRegister("HL");
 
@@ -244,6 +277,9 @@ export class Instruction {
     this.cpu.setRegister("HL", address - 1);
   }
 
+  /**
+   * Stores the value of the A register into memory address HL and decrements HL.
+   */
   LDD_HL_A() {
     const address = this.cpu.getRegister("HL");
 
@@ -251,6 +287,10 @@ export class Instruction {
 
     this.cpu.setRegister("HL", address - 1);
   }
+
+  /**
+   * Loads the value at memory address HL into the A register and increments HL.
+   */
 
   LDI_A_HL() {
     const address = this.cpu.getRegister("HL");
@@ -262,6 +302,9 @@ export class Instruction {
     this.cpu.setRegister("HL", address + 1);
   }
 
+  /**
+   * Stores the value of the A register into memory address HL and increments HL.
+   */
   LDI_HL_A() {
     const address = this.cpu.getRegister("HL");
 
@@ -270,12 +313,20 @@ export class Instruction {
     this.cpu.setRegister("HL", address + 1);
   }
 
+  /**
+   * Stores the value of the A register into memory address (0xFF00 + n).
+   * @param {number} n - The 8-bit offset.
+   */
   LDH_n_A(n) {
     const address = 0xff00 + n;
 
     this.cpu.mem[address] = this.cpu.getRegister("A");
   }
 
+  /**
+   * Loads the value at memory address (0xFF00 + n) into the A register.
+   * @param {number} n - The 8-bit offset.
+   */
   LDH_A_n(n) {
     const value = this.cpu.mem[0xff00 + n];
 
@@ -283,6 +334,12 @@ export class Instruction {
   }
 
   // --------------------- 16-bit LD functions ---------------------
+
+  /**
+   * Loads a 16-bit immediate value into the specified destination register or stack pointer.
+   * @param {string} dstReg - Destination register (e.g., "SP" or a combined register like "HL").
+   * @param {number} value - 16-bit immediate value to load.
+   */
   LD_n_nn(dstReg, value) {
     // Dest. register is Stack Pointer
     if (dstReg == "SP") this.cpu.sp = value;
@@ -290,11 +347,19 @@ export class Instruction {
     else this.cpu.setRegister(dstReg, value);
   }
 
+  /**
+   * Loads the value from the HL register into the stack pointer (SP).
+   */
   LD_SP_HL() {
     const HL = this.cpu.getRegister("HL");
     this.cpu.sp = HL;
   }
 
+  /**
+   * Adds an 8-bit signed immediate value to the stack pointer and stores the result in HL.
+   * Updates the H and C flags.
+   * @param {number} n - Signed 8-bit immediate value to add to SP.
+   */
   LDHL_SP_n(n) {
     const result = this.cpu.sp + n;
 
@@ -311,6 +376,10 @@ export class Instruction {
     this.cpu.setFlags("00HC", { H: halfCarry, C: carry });
   }
 
+  /**
+   * Stores the stack pointer (SP) value into a memory location specified by a 16-bit address.
+   * @param {number} address - 16-bit memory address to store SP.
+   */
   LD_nn_SP(address) {
     const lowByte = this.cpu.sp & 0xff;
     const highByte = (this.cpu.sp & 0xff00) >> 8;
@@ -319,19 +388,29 @@ export class Instruction {
     this.cpu.mem[address + 1] = highByte;
   }
 
+  /**
+   * Pushes the value of a 16-bit register onto the stack.
+   * Decrements SP twice before storing the values.
+   * @param {string} register - Combined register to push (e.g., "AF", "BC").
+   */
   push(register) {
     // Decrement SP twice
     this.cpu.sp -= 2;
 
-    // Split parameter register into high & low
+    // Split register into high & low
     const highRegister = this.cpu.getRegister(register[0]);
     const lowRegister = this.cpu.getRegister(register[1]);
 
-    // Storage highRegister in address sp & lowRegister in address sp+1
+    // Storage highRegister at address sp & lowRegister at address sp+1
     this.cpu.mem[this.cpu.sp] = highRegister;
     this.cpu.mem[this.cpu.sp + 1] = lowRegister;
   }
 
+  /**
+   * Pops a 16-bit value from the stack into the specified register.
+   * Increments SP twice after retrieving the values.
+   * @param {string} register - Combined register to load the popped value into (e.g., "AF", "BC").
+   */
   pop(register) {
     // Get current sp value (highByte) and next one (lowByte)
     const highByte = this.cpu.mem[this.cpu.sp];
@@ -346,6 +425,9 @@ export class Instruction {
     // Increment SP twice
     this.cpu.sp += 2;
   }
+
+  // TODO: 8-bit ALU functions
+  // --------------------- 8-bit ALU functions ---------------------
 
   isImmediate(value) {
     return typeof value === "number";
