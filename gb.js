@@ -367,10 +367,10 @@ export class Instruction {
     this.cpu.setRegister("HL", result);
 
     // Calculate the Half Carry flag (H): Carry from bit 3 to bit 4
-    const halfCarry = (this.cpu.sp & 0xf) + (n & 0xf) > 0xf;
+    const halfCarry = this.isHalfCarry8bit(this.cpu.sp, n, "add");
 
     // Calculate the Carry flag (C): Carry from bit 7 to bit 8
-    const carry = (this.cpu.sp & 0xff) + (n & 0xff) > 0xff;
+    const carry = this.isCarry8bit(this.cpu.sp, n, "add");
 
     // Update flags
     this.cpu.setFlags("00HC", { H: halfCarry, C: carry });
@@ -426,10 +426,308 @@ export class Instruction {
     this.cpu.sp += 2;
   }
 
-  // TODO: 8-bit ALU functions
   // --------------------- 8-bit ALU functions ---------------------
+
+  ADD_A_n(value) {
+    const registerA = this.cpu.getRegister("A");
+    let adder;
+
+    // Determine the value to add
+    if (value === "HL") {
+      adder = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
+    } else if (this.isImmediate(value)) adder = value; // Immediate 8-bit value
+    else adder = this.cpu.getRegister(value); // Simple register value
+
+    const result = registerA + adder;
+
+    // Calculate flags
+    const flags = {
+      Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
+      H: this.isHalfCarry8bit(registerA, adder, "add"), // Half-carry
+      C: this.isCarry8bit(registerA, adder, "add"), // Carry
+    };
+
+    // Update the A register with the result (truncated to 8 bits)
+    this.cpu.setRegister("A", result & 0xff);
+
+    // Set flags Z0HC
+    this.cpu.setFlags("Z0HC", flags);
+  }
+
+  ADC_A_n(value) {
+    const carryBit = (this.cpu.getRegister("F") & 0b00010000) >> 4; // Extract carry flag
+    const registerA = this.cpu.getRegister("A");
+    let adder;
+
+    // Determine the value to add
+    if (value === "HL") {
+      adder = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
+    } else if (this.isImmediate(value)) adder = value; // Immediate 8-bit value
+    else adder = this.cpu.getRegister(value); // Simple register value
+
+    const result = registerA + adder + carryBit;
+
+    // Calculate flags
+    const flags = {
+      Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
+      H: this.isHalfCarry8bit(registerA, adder + carryBit, "add"), // Half-carry with carry bit included
+      C: this.isCarry8bit(registerA, adder + carryBit, "add"), // Carry with carry bit included
+    };
+
+    // Update the A register with the result (truncated to 8 bits)
+    this.cpu.setRegister("A", result & 0xff);
+
+    // Set flags Z0HC
+    this.cpu.setFlags("Z0HC", flags);
+  }
+
+  SUB_A_n(value) {
+    const registerA = this.cpu.getRegister("A");
+    let sub;
+
+    // Determine the value to sub
+    if (value === "HL") {
+      sub = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
+    } else if (this.isImmediate(value)) sub = value; // Immediate 8-bit value
+    else sub = this.cpu.getRegister(value); // Simple register value
+
+    const result = registerA - sub;
+
+    const flags = {
+      Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
+      H: this.isHalfCarry8bit(registerA, sub, "sub"), // Half-carry with carry bit included
+      C: this.isCarry8bit(registerA, sub, "sub"), // Carry with carry bit included
+    };
+
+    // Update the A register with the result (truncated to 8 bits)
+    this.cpu.setRegister("A", result & 0xff);
+
+    // Set flags Z1HC
+    this.cpu.setFlags("Z1HC", flags);
+  }
+
+  SBC_A_n(value) {
+    const carryBit = (this.cpu.getRegister("F") & 0b00010000) >> 4; // Extract carry flag
+    const registerA = this.cpu.getRegister("A");
+    let sub;
+
+    // Determine the value to sub
+    if (value === "HL") {
+      sub = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
+    } else if (this.isImmediate(value)) sub = value; // Immediate 8-bit value
+    else sub = this.cpu.getRegister(value); // Simple register value
+
+    const result = registerA - (sub + carryBit);
+
+    const flags = {
+      Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
+      H: this.isHalfCarry8bit(registerA, sub + carryBit, "sub"), // Half-carry with carry bit included
+      C: this.isCarry8bit(registerA, sub + carryBit, "sub"), // Carry with carry bit included
+    };
+
+    // Update the A register with the result (truncated to 8 bits)
+    this.cpu.setRegister("A", result & 0xff);
+
+    // Set flags Z1HC
+    this.cpu.setFlags("Z1HC", flags);
+  }
+
+  AND_n(value) {
+    const registerA = this.cpu.getRegister("A");
+    let and;
+
+    // Determine the value to and
+    if (value === "HL") {
+      and = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
+    } else if (this.isImmediate(value)) and = value; // Immediate 8-bit value
+    else and = this.cpu.getRegister(value); // Simple register value
+
+    const result = registerA & and;
+
+    const flags = {
+      Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
+    };
+
+    // Update the A register with the result (truncated to 8 bits)
+    this.cpu.setRegister("A", result & 0xff);
+
+    // Set flags Z1HC
+    this.cpu.setFlags("Z010", flags);
+  }
+
+  OR_n(value) {
+    const registerA = this.cpu.getRegister("A");
+    let or;
+
+    // Determine the value to or
+    if (value === "HL") {
+      or = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
+    } else if (this.isImmediate(value)) or = value; // Immediate 8-bit value
+    else or = this.cpu.getRegister(value); // Simple register value
+
+    const result = registerA | or;
+
+    const flags = {
+      Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
+    };
+
+    // Update the A register with the result (truncated to 8 bits)
+    this.cpu.setRegister("A", result & 0xff);
+
+    // Set flags Z1HC
+    this.cpu.setFlags("Z000", flags);
+  }
+
+  XOR_n(value) {
+    const registerA = this.cpu.getRegister("A");
+    let xor;
+
+    // Determine the value to xor
+    if (value === "HL") {
+      xor = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
+    } else if (this.isImmediate(value)) xor = value; // Immediate 8-bit value
+    else xor = this.cpu.getRegister(value); // Simple register value
+
+    const result = registerA ^ xor;
+
+    const flags = {
+      Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
+    };
+
+    // Update the A register with the result (truncated to 8 bits)
+    this.cpu.setRegister("A", result & 0xff);
+
+    // Set flags Z1HC
+    this.cpu.setFlags("Z000", flags);
+  }
+
+  CP_n(value) {
+    const registerA = this.cpu.getRegister("A");
+    let cp;
+
+    // Determine the value to compare
+    if (value === "HL") {
+      cp = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
+    } else if (this.isImmediate(value)) cp = value; // Immediate 8-bit value
+    else cp = this.cpu.getRegister(value); // Simple register value
+
+    const result = registerA - cp;
+
+    const flags = {
+      Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
+      H: this.isHalfCarry8bit(registerA, sub, "sub"), // Half-carry
+      C: this.isCarry8bit(registerA, sub, "sub"), // Carry
+    };
+
+    // Set flags Z1HC
+    this.cpu.setFlags("Z1HC", flags);
+  }
+
+  INC_n(register) {
+    const registerValue = this.cpu.getRegister(register);
+    let result;
+
+    if (register === "HL") {
+      // Increment value at memory address HL
+      result = ++this.cpu.mem[registerValue];
+    } else {
+      // Increment register value
+      result = ++registerValue;
+      this.cpu.setRegister(register, result);
+    }
+
+    const flags = {
+      Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
+      H: this.isHalfCarry8bit(result - 1, 1, "add"), // Half-carry
+    };
+
+    // Set flags Z0H-
+    this.cpu.setFlags("Z0H-", flags);
+  }
+
+  DEC_n(register) {
+    const registerValue = this.cpu.getRegister(register);
+    let result;
+
+    if (register === "HL") {
+      // Decrement value at memory address HL
+      result = --this.cpu.mem[registerValue];
+    } else {
+      // Decrement register value
+      result = --registerValue;
+      this.cpu.setRegister(register, result);
+    }
+
+    const flags = {
+      Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
+      H: this.isHalfCarry8bit(result + 1, 1, "sub"), // Half-carry
+    };
+
+    // Set flags Z1H-
+    this.cpu.setFlags("Z1H-", flags);
+  }
 
   isImmediate(value) {
     return typeof value === "number";
+  }
+
+  /**
+   * Determines if there is a half-carry (carry from bit 3 to bit 4) in an 8-bit addition.
+   *
+   * @param {number} a - The first operand (8-bit value).
+   * @param {number} b - The second operand (8-bit value).
+   * @param {string} operation - The operation type ("add" in this case).
+   * @returns {boolean} - True if there is a half-carry, false otherwise.
+   */
+  isHalfCarry8bit(a, b, operation) {
+    operation = operation.toLowerCase();
+    let result;
+
+    switch (operation) {
+      case "add":
+        // Perform the addition, checking for a carry from bit 3 to bit 4
+        result = (a & 0xf) + (b & 0xf) > 0xf;
+        break;
+
+      case "sub":
+        // Check for a borrow from bit 4
+        result = (a & 0xf) < (b & 0xf);
+        break;
+
+      default:
+        throw new Error("Unknown operation: " + operation);
+    }
+
+    return result;
+  }
+
+  /**
+   * Determines if there is a carry (carry from bit 7 to bit 8) in an 8-bit addition.
+   *
+   * @param {number} a - The first operand (8-bit value).
+   * @param {number} b - The second operand (8-bit value).
+   * @param {string} operation - The operation type ("add" in this case).
+   * @returns {boolean} - True if there is a carry, false otherwise.
+   */
+  isCarry8bit(a, b, operation) {
+    operation = operation.toLowerCase();
+    let result;
+
+    switch (operation) {
+      case "add":
+        // Perform the addition, checking for a carry from bit 7 to bit 8
+        result = (a & 0xff) + (b & 0xff) > 0xff;
+        break;
+
+      case "sub":
+        // Check for borrow
+        result = (a & 0xff) < (b & 0xff);
+        break;
+
+      default:
+        throw new Error("Unknown operation: " + operation);
+    }
+
+    return result;
   }
 }
