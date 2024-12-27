@@ -430,21 +430,21 @@ export class Instruction {
 
   ADD_A_n(value) {
     const registerA = this.cpu.getRegister("A");
-    let adder;
+    let add;
 
     // Determine the value to add
     if (value === "HL") {
-      adder = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
-    } else if (this.isImmediate(value)) adder = value; // Immediate 8-bit value
-    else adder = this.cpu.getRegister(value); // Simple register value
+      add = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
+    } else if (this.isImmediate(value)) add = value; // Immediate 8-bit value
+    else add = this.cpu.getRegister(value); // Simple register value
 
-    const result = registerA + adder;
+    const result = registerA + add;
 
     // Calculate flags
     const flags = {
       Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
-      H: this.isHalfCarry8bit(registerA, adder, "add"), // Half-carry
-      C: this.isCarry8bit(registerA, adder, "add"), // Carry
+      H: this.isHalfCarry8bit(registerA, add, "add"), // Half-carry
+      C: this.isCarry8bit(registerA, add, "add"), // Carry
     };
 
     // Update the A register with the result (truncated to 8 bits)
@@ -457,21 +457,21 @@ export class Instruction {
   ADC_A_n(value) {
     const carryBit = (this.cpu.getRegister("F") & 0b00010000) >> 4; // Extract carry flag
     const registerA = this.cpu.getRegister("A");
-    let adder;
+    let add;
 
     // Determine the value to add
     if (value === "HL") {
-      adder = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
-    } else if (this.isImmediate(value)) adder = value; // Immediate 8-bit value
-    else adder = this.cpu.getRegister(value); // Simple register value
+      add = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
+    } else if (this.isImmediate(value)) add = value; // Immediate 8-bit value
+    else add = this.cpu.getRegister(value); // Simple register value
 
-    const result = registerA + adder + carryBit;
+    const result = registerA + add + carryBit;
 
     // Calculate flags
     const flags = {
       Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
-      H: this.isHalfCarry8bit(registerA, adder + carryBit, "add"), // Half-carry with carry bit included
-      C: this.isCarry8bit(registerA, adder + carryBit, "add"), // Carry with carry bit included
+      H: this.isHalfCarry8bit(registerA, add + carryBit, "add"), // Half-carry with carry bit included
+      C: this.isCarry8bit(registerA, add + carryBit, "add"), // Carry with carry bit included
     };
 
     // Update the A register with the result (truncated to 8 bits)
@@ -667,6 +667,56 @@ export class Instruction {
     this.cpu.setFlags("Z1H-", flags);
   }
 
+  // --------------------- 16-bit Arithmetic functions ---------------------
+  ADD_HL_n(register) {
+    const registerHL = this.cpu.getRegister("HL");
+    let add;
+
+    if (register === "SP") add = this.cpu.sp; // Src. reg. is Stack Pointer
+    else add = this.cpu.getRegister(register); // Src. reg. is a combined reg.
+
+    const result = registerHL + add;
+
+    // Calculate flags
+    const flags = {
+      H: this.isHalfCarry16bit(registerHL, add, "add"), // Half-carry
+      C: this.isCarry16bit(registerHL, add, "add"), // Carry
+    };
+
+    // Update the A register with the result (truncated to 16 bits)
+    this.cpu.setRegister("HL", result & 0xffff);
+
+    // Set flags -0HC
+    this.cpu.setFlags("-0HC", flags);
+  }
+
+  ADD_SP_n(value) {
+    const sp = this.cpu.sp;
+    const result = sp + value;
+
+    // Calculate flags
+    const flags = {
+      H: this.isHalfCarry16bit(sp, value, "add"), // Half-carry
+      C: this.isCarry16bit(sp, value, "add"), // Carry
+    };
+
+    // Update the SP with the result (truncated to 16 bits)
+    this.cpu.sp = result & 0xffff;
+
+    // Set flags 00HC
+    this.cpu.setFlags("00HC", flags);
+  }
+
+  INC_nn(register) {
+    if (register === "SP") this.cpu.sp++; // Dst. reg. is Stack Pointer
+    else this.cpu.setRegister(this.cpu.getRegister(register) + 1); // Dst. reg. is combined reg.
+  }
+
+  DEC_nn(register) {
+    if (register === "SP") this.cpu.sp--; // Dst. reg. is Stack Pointer
+    else this.cpu.setRegister(this.cpu.getRegister(register) - 1); // Dst. reg. is combined reg.
+  }
+
   isImmediate(value) {
     return typeof value === "number";
   }
@@ -676,7 +726,7 @@ export class Instruction {
    *
    * @param {number} a - The first operand (8-bit value).
    * @param {number} b - The second operand (8-bit value).
-   * @param {string} operation - The operation type ("add" in this case).
+   * @param {string} operation - The operation type
    * @returns {boolean} - True if there is a half-carry, false otherwise.
    */
   isHalfCarry8bit(a, b, operation) {
@@ -702,11 +752,41 @@ export class Instruction {
   }
 
   /**
+   * Determines if there is a half-carry (carry from bit 11) in an 16-bit operation.
+   *
+   * @param {number} a - The first operand (16-bit value).
+   * @param {number} b - The second operand (16-bit value).
+   * @param {string} operation - The operation type.
+   * @returns {boolean} - True if there is a half-carry, false otherwise.
+   */
+  isHalfCarry16bit(a, b, operation) {
+    operation = operation.toLowerCase();
+    let result;
+
+    switch (operation) {
+      case "add":
+        // Perform the addition, checking for a carry from bit 11
+        result = (a & 0xfff) + (b & 0xfff) > 0xfff;
+        break;
+
+      case "sub":
+        // Check for a borrow from bit 11
+        result = (a & 0xfff) < (b & 0xfff);
+        break;
+
+      default:
+        throw new Error("Unknown operation: " + operation);
+    }
+
+    return result;
+  }
+
+  /**
    * Determines if there is a carry (carry from bit 7 to bit 8) in an 8-bit addition.
    *
    * @param {number} a - The first operand (8-bit value).
    * @param {number} b - The second operand (8-bit value).
-   * @param {string} operation - The operation type ("add" in this case).
+   * @param {string} operation - The operation type.
    * @returns {boolean} - True if there is a carry, false otherwise.
    */
   isCarry8bit(a, b, operation) {
@@ -722,6 +802,36 @@ export class Instruction {
       case "sub":
         // Check for borrow
         result = (a & 0xff) < (b & 0xff);
+        break;
+
+      default:
+        throw new Error("Unknown operation: " + operation);
+    }
+
+    return result;
+  }
+
+  /**
+   * Determines if there is a carry (carry from bit 15) in an 16-bit operation.
+   *
+   * @param {number} a - The first operand (16-bit value).
+   * @param {number} b - The second operand (16-bit value).
+   * @param {string} operation - The operation type.
+   * @returns {boolean} - True if there is a carry, false otherwise.
+   */
+  isCarry16bit(a, b, operation) {
+    operation = operation.toLowerCase();
+    let result;
+
+    switch (operation) {
+      case "add":
+        // Perform the addition, checking for a carry from bit 15
+        result = (a & 0xffff) + (b & 0xffff) > 0xffff;
+        break;
+
+      case "sub":
+        // Check for borrow
+        result = (a & 0xffff) < (b & 0xffff);
         break;
 
       default:
