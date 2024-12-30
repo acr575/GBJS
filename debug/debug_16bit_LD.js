@@ -41,7 +41,7 @@ console.log("    LD SP,HL : SP=0x" + cpu.sp.toString(16));
 
 // LDHL SP,n
 cpu.setRegister("HL", 0xabcd);
-cpu.setRegister("F", 0b1100);
+cpu.setRegister("F", 0b11000000);
 cpu.sp = 0x1122;
 value = 0x25;
 console.log("LDHL SP,n");

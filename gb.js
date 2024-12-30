@@ -138,7 +138,7 @@ export class CPU {
       }
 
       // Masks for the flags: Z -> bit 7, N -> bit 6, H -> bit 5, C -> bit 4
-      const flagMask = 1 << (3 - i);
+      const flagMask = 1 << (7 - i);
 
       if (flagValue) {
         // Set flag if it's true
@@ -615,8 +615,8 @@ export class Instruction {
 
     const flags = {
       Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
-      H: this.isHalfCarry8bit(registerA, sub, "sub"), // Half-carry
-      C: this.isCarry8bit(registerA, sub, "sub"), // Carry
+      H: this.isHalfCarry8bit(registerA, cp, "sub"), // Half-carry
+      C: this.isCarry8bit(registerA, cp, "sub"), // Carry
     };
 
     // Set flags Z1HC
@@ -624,7 +624,7 @@ export class Instruction {
   }
 
   INC_n(register) {
-    const registerValue = this.cpu.getRegister(register);
+    let registerValue = this.cpu.getRegister(register);
     let result;
 
     if (register === "HL") {
@@ -646,7 +646,7 @@ export class Instruction {
   }
 
   DEC_n(register) {
-    const registerValue = this.cpu.getRegister(register);
+    let registerValue = this.cpu.getRegister(register);
     let result;
 
     if (register === "HL") {
