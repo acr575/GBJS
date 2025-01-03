@@ -428,7 +428,10 @@ export class Instruction {
   }
 
   // --------------------- 8-bit ALU functions ---------------------
-
+  /**
+   * Adds a value to the A register and updates flags.
+   * @param {string|number} value - The value to add. Can be a register name, "HL" for memory address, or an immediate value.
+   */
   ADD_A_n(value) {
     const registerA = this.cpu.getRegister("A");
     let add;
@@ -455,6 +458,10 @@ export class Instruction {
     this.cpu.setFlags("Z0HC", flags);
   }
 
+  /**
+   * Adds a value and the carry flag to the A register and updates flags.
+   * @param {string|number} value - The value to add. Can be a register name, "HL" for memory address, or an immediate value.
+   */
   ADC_A_n(value) {
     const carryBit = (this.cpu.getRegister("F") & 0b00010000) >> 4; // Extract carry flag
     const registerA = this.cpu.getRegister("A");
@@ -482,6 +489,10 @@ export class Instruction {
     this.cpu.setFlags("Z0HC", flags);
   }
 
+  /**
+   * Subtracts a value from the A register and updates flags.
+   * @param {string|number} value - The value to subtract. Can be a register name, "HL" for memory address, or an immediate value.
+   */
   SUB_A_n(value) {
     const registerA = this.cpu.getRegister("A");
     let sub;
@@ -507,6 +518,10 @@ export class Instruction {
     this.cpu.setFlags("Z1HC", flags);
   }
 
+  /**
+   * Subtracts a value and the carry flag from the A register and updates flags.
+   * @param {string|number} value - The value to subtract. Can be a register name, "HL" for memory address, or an immediate value.
+   */
   SBC_A_n(value) {
     const carryBit = (this.cpu.getRegister("F") & 0b00010000) >> 4; // Extract carry flag
     const registerA = this.cpu.getRegister("A");
@@ -533,6 +548,10 @@ export class Instruction {
     this.cpu.setFlags("Z1HC", flags);
   }
 
+  /**
+   * Performs a bitwise AND operation between the A register and a value, updating flags.
+   * @param {string|number} value - The value to AND. Can be a register name, "HL" for memory address, or an immediate value.
+   */
   AND_n(value) {
     const registerA = this.cpu.getRegister("A");
     let and;
@@ -556,6 +575,10 @@ export class Instruction {
     this.cpu.setFlags("Z010", flags);
   }
 
+  /**
+   * Performs a bitwise OR operation between the A register and a value, updating flags.
+   * @param {string|number} value - The value to OR. Can be a register name, "HL" for memory address, or an immediate value.
+   */
   OR_n(value) {
     const registerA = this.cpu.getRegister("A");
     let or;
@@ -579,6 +602,10 @@ export class Instruction {
     this.cpu.setFlags("Z000", flags);
   }
 
+  /**
+   * Performs a bitwise XOR operation between the A register and a value, updating flags.
+   * @param {string|number} value - The value to XOR. Can be a register name, "HL" for memory address, or an immediate value.
+   */
   XOR_n(value) {
     const registerA = this.cpu.getRegister("A");
     let xor;
@@ -602,6 +629,10 @@ export class Instruction {
     this.cpu.setFlags("Z000", flags);
   }
 
+  /**
+   * Compares the A register with a value by performing subtraction without storing the result. Flags are updated.
+   * @param {string|number} value - The value to compare. Can be a register name, "HL" for memory address, or an immediate value.
+   */
   CP_n(value) {
     const registerA = this.cpu.getRegister("A");
     let cp;
@@ -624,6 +655,10 @@ export class Instruction {
     this.cpu.setFlags("Z1HC", flags);
   }
 
+  /**
+   * Increments the value of a register or the memory at the HL address, updating flags.
+   * @param {string} register - The name of the register or "HL" for memory address to increment.
+   */
   INC_n(register) {
     let registerValue = this.cpu.getRegister(register);
     let result;
@@ -646,6 +681,10 @@ export class Instruction {
     this.cpu.setFlags("Z0H-", flags);
   }
 
+  /**
+   * Decrements the value of a register or the memory at the HL address, updating flags.
+   * @param {string} register - The name of the register or "HL" for memory address to decrement.
+   */
   DEC_n(register) {
     let registerValue = this.cpu.getRegister(register);
     let result;
@@ -669,6 +708,10 @@ export class Instruction {
   }
 
   // --------------------- 16-bit Arithmetic functions ---------------------
+  /**
+   * Adds a 16-bit register value to the HL register pair and updates flags.
+   * @param {string} register - The name of the 16-bit register to add (e.g., "SP" or another combined register).
+   */
   ADD_HL_n(register) {
     const registerHL = this.cpu.getRegister("HL");
     let add;
@@ -691,6 +734,10 @@ export class Instruction {
     this.cpu.setFlags("-0HC", flags);
   }
 
+  /**
+   * Adds an immediate 16-bit signed value to the Stack Pointer (SP) and updates flags.
+   * @param {number} value - The signed 16-bit value to add to the Stack Pointer.
+   */
   ADD_SP_n(value) {
     const sp = this.cpu.sp;
     const result = sp + value;
@@ -708,11 +755,19 @@ export class Instruction {
     this.cpu.setFlags("00HC", flags);
   }
 
+  /**
+   * Increments the value of a 16-bit register or the Stack Pointer (SP).
+   * @param {string} register - The name of the 16-bit register to increment, or "SP" for the Stack Pointer.
+   */
   INC_nn(register) {
     if (register === "SP") this.cpu.sp++; // Dst. reg. is Stack Pointer
     else this.cpu.setRegister(this.cpu.getRegister(register) + 1); // Dst. reg. is combined reg.
   }
 
+  /**
+   * Decrements the value of a 16-bit register or the Stack Pointer (SP).
+   * @param {string} register - The name of the 16-bit register to decrement, or "SP" for the Stack Pointer.
+   */
   DEC_nn(register) {
     if (register === "SP") this.cpu.sp--; // Dst. reg. is Stack Pointer
     else this.cpu.setRegister(this.cpu.getRegister(register) - 1); // Dst. reg. is combined reg.
