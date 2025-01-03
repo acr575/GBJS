@@ -4,6 +4,7 @@ export class CPU {
     this.mem = new Uint8Array(0x10000);
     this.pc = 0x100; // Program Counter. Initialized at 0x100
     this.sp = 0xfffe; // Stack Pointer.  Initialized at 0xfffe
+    this.ime = 0; // Interrup master enable flag. Starts at 0
   }
 
   static Registers = Object.freeze({
@@ -717,8 +718,307 @@ export class Instruction {
     else this.cpu.setRegister(this.cpu.getRegister(register) - 1); // Dst. reg. is combined reg.
   }
 
-  isImmediate(value) {
-    return typeof value === "number";
+  // --------------------- Miscellaneous functions ---------------------
+  SWAP_n(register) {
+    function swapNibbles(value) {
+      return ((value & 0x0f) << 4) | ((value & 0xf0) >> 4);
+    }
+
+    let result; // Value swapped
+
+    // Target is value stored in address HL
+    if (register == "HL") {
+      let address = this.cpu.mem[this.cpu.getRegister("HL")];
+      result = swapNibbles(this.cpu.mem[address]);
+      this.cpu.mem[address] = result;
+    }
+    // Target is a simple register
+    else {
+      let value = this.cpu.getRegister(register);
+      result = swapNibbles(value);
+      this.cpu.setRegister(register, result);
+    }
+
+    // Set Z000 flags
+    this.cpu.setFlags("Z000", { Z: result == 0 });
+  }
+
+  // TODO: DAA instruction
+  DAA() {}
+
+  CPL() {
+    let registerA = this.cpu.getRegister("A");
+
+    registerA = ~registerA & 0xff;
+
+    this.cpu.setRegister("A", registerA);
+
+    this.cpu.setFlags("-11-");
+  }
+
+  CCF() {
+    const carry = (this.cpu.getRegister("F") & (0b00010000 >> 4)) == 1;
+
+    this.cpu.setFlags("-00C", { C: !carry });
+  }
+
+  SCF() {
+    this.cpu.setFlags("-001");
+  }
+
+  // TODO: HALT instrruction
+  HALT() {}
+
+  // TODO: STOP instrruction
+  STOP() {}
+
+  DI() {
+    this.cpu.ime = 0;
+  }
+
+  // TODO: EI must enable interruptions after next machine cycle
+  EI() {
+    this.cpu.ime = 1;
+  }
+
+  // --------------------- Rotates & Shifts functions ---------------------
+  leftRotate(value) {
+    const msb = value >> 7; // Most significant bit (bit 7)
+    const result = ((value << 1) | msb) & 0xff; // Left rotate
+
+    // Set Z & C flags. Old msb bit is stored in C flag
+    this.setRotationFlags(result, msb);
+
+    return result;
+  }
+
+  leftRotateCarry(value) {
+    const msb = value >> 7; // Most significant bit (bit 7)
+    const flagC = (this.cpu.getRegister("F") & 0b00010000) >> 4;
+    const result = ((value << 1) | flagC) & 0xff; // Left rotate
+
+    // Set Z & C flags. Old msb bit is stored in C flag
+    this.setRotationFlags(result, msb);
+
+    return result;
+  }
+
+  rightRotate(value) {
+    const lsb = value & 0x01; // Least significant bit (bit 0)
+    const result = ((value >> 1) | (lsb << 7)) & 0xff; // Right rotate
+
+    // Set Z & C flags. Old lsb bit is stored in C flag
+    this.setRotationFlags(result, lsb);
+
+    return result;
+  }
+
+  rightRotateCarry(value) {
+    const lsb = value & 0x01; // Least significant bit (bit 0)
+    const flagC = (this.cpu.getRegister("F") & 0b00010000) >> 4;
+    const result = ((value >> 1) | (flagC << 7)) & 0xff; // Right rotate
+
+    // Set Z & C flags. Old lsb bit is stored in C flag
+    this.setRotationFlags(result, lsb);
+
+    return result;
+  }
+
+  setRotationFlags(result, carryBit) {
+    // Set Z & C flags. Old lsb bit is stored in C flag
+    const flags = {
+      Z: result === 0,
+      C: carryBit === 1,
+    };
+
+    this.cpu.setFlags("Z00C", flags);
+  }
+
+  RLCA() {
+    let A = cpu.getRegister("A");
+    const leftRotation = this.leftRotate(A);
+
+    this.cpu.setRegister("A", leftRotation);
+  }
+
+  RLA() {
+    let A = cpu.getRegister("A");
+    const leftRotation = this.leftRotateCarry(A);
+
+    this.cpu.setRegister("A", leftRotation);
+  }
+
+  RRCA() {
+    let A = cpu.getRegister("A");
+    const rightRotation = this.rightRotate(A);
+
+    this.cpu.setRegister("A", rightRotation);
+  }
+
+  RRA() {
+    let A = cpu.getRegister("A");
+    const rightRotation = this.rightRotateCarry(A);
+
+    this.cpu.setRegister("A", rightRotation);
+  }
+
+  RLC_n(register) {
+    let value;
+    let leftRotation;
+
+    // Target is mem address stored in HL
+    if (register === "HL") {
+      const HL = this.cpu.getRegister("HL");
+      value = this.cpu.mem[HL];
+      leftRotation = this.leftRotate(value);
+      this.cpu.mem[HL] = leftRotation;
+    }
+
+    // Target is a simple register
+    else {
+      value = this.cpu.getRegister(register);
+      leftRotation = this.leftRotate(value);
+      this.cpu.setRegister(register, leftRotation);
+    }
+  }
+
+  RL_n(register) {
+    let value;
+    let leftRotation;
+
+    // Target is mem address stored in HL
+    if (register === "HL") {
+      const HL = this.cpu.getRegister("HL");
+      value = this.cpu.mem[HL];
+      leftRotation = this.leftRotateCarry(value);
+      this.cpu.mem[HL] = leftRotation;
+    }
+
+    // Target is a simple register
+    else {
+      value = this.cpu.getRegister(register);
+      leftRotation = this.leftRotateCarry(value);
+      this.cpu.setRegister(register, leftRotation);
+    }
+  }
+
+  RRC_n(register) {
+    let value;
+    let leftRotation;
+
+    // Target is mem address stored in HL
+    if (register === "HL") {
+      const HL = this.cpu.getRegister("HL");
+      value = this.cpu.mem[HL];
+      leftRotation = this.rightRotate(value);
+      this.cpu.mem[HL] = leftRotation;
+    }
+
+    // Target is a simple register
+    else {
+      value = this.cpu.getRegister(register);
+      leftRotation = this.rightRotate(value);
+      this.cpu.setRegister(register, leftRotation);
+    }
+  }
+
+  RR_n(register) {
+    let value;
+    let leftRotation;
+
+    // Target is mem address stored in HL
+    if (register === "HL") {
+      const HL = this.cpu.getRegister("HL");
+      value = this.cpu.mem[HL];
+      leftRotation = this.rightRotateCarry(value);
+      this.cpu.mem[HL] = leftRotation;
+    }
+
+    // Target is a simple register
+    else {
+      value = this.cpu.getRegister(register);
+      leftRotation = this.rightRotateCarry(value);
+      this.cpu.setRegister(register, leftRotation);
+    }
+  }
+
+  SLA_n(register) {
+    let value;
+    let leftShift;
+    let msb; // Most significant bit (bit 7)
+
+    // Target is mem address stored in HL
+    if (register === "HL") {
+      const HL = this.cpu.getRegister("HL");
+      value = this.cpu.mem[HL];
+      leftShift = (value << 1) & 0xff; // Left shift
+      this.cpu.mem[HL] = leftShift;
+    }
+
+    // Target is a simple register
+    else {
+      value = this.cpu.getRegister(register);
+      leftShift = (value << 1) & 0xff; // Left shift
+      this.cpu.setRegister(register, leftShift);
+    }
+
+    // Set Z & C flags (same as rotation instructions)
+    msb = value >> 7;
+    this.setRotationFlags(leftShift, msb);
+  }
+
+  SRA_n(register) {
+    let value;
+    let rightShift;
+    let lsb; // Least significant bit (bit 0)
+    let msb; // Most significant bit (bit 7)
+
+    // Target is mem address stored in HL
+    if (register === "HL") {
+      const HL = this.cpu.getRegister("HL");
+      value = this.cpu.mem[HL];
+      msb = value >> 7;
+      rightShift = ((value >> 1) | (msb << 7)) & 0xff; // Right shift not changing msb
+      this.cpu.mem[HL] = rightShift;
+    }
+
+    // Target is a simple register
+    else {
+      value = this.cpu.getRegister(register);
+      msb = value >> 7;
+      rightShift = ((value >> 1) | (msb << 7)) & 0xff; // Right shift not changing msb
+      this.cpu.setRegister(register, rightShift);
+    }
+
+    // Set Z & C flags (same as rotation instructions)
+    lsb = value & 0x01;
+    this.setRotationFlags(rightShift, lsb);
+  }
+
+  SRL_n(register) {
+    let value;
+    let rightShift;
+    let lsb; // Least significant bit (bit 0)
+
+    // Target is mem address stored in HL
+    if (register === "HL") {
+      const HL = this.cpu.getRegister("HL");
+      value = this.cpu.mem[HL];
+      rightShift = (value >> 1) & 0xff; // Right shift
+      this.cpu.mem[HL] = rightShift;
+    }
+
+    // Target is a simple register
+    else {
+      value = this.cpu.getRegister(register);
+      msb = value >> 7;
+      rightShift = (value >> 1) & 0xff; // Right shift
+      this.cpu.setRegister(register, rightShift);
+    }
+
+    // Set Z & C flags (same as rotation instructions)
+    lsb = value & 0x01;
+    this.setRotationFlags(rightShift, lsb);
   }
 
   /**
@@ -839,5 +1139,9 @@ export class Instruction {
     }
 
     return result;
+  }
+
+  isImmediate(value) {
+    return typeof value === "number";
   }
 }
