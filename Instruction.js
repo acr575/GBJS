@@ -618,9 +618,9 @@ export class Instruction {
 
   // --------------------- Miscellaneous functions ---------------------
   SWAP_n(register) {
-    function swapNibbles(value) {
+    const swapNibbles = (value) => {
       return ((value & 0x0f) << 4) | ((value & 0xf0) >> 4);
-    }
+    };
 
     let result; // Value swapped
 
@@ -917,6 +917,68 @@ export class Instruction {
     // Set Z & C flags (same as rotation instructions)
     lsb = value & 0x01;
     this.setRotationFlags(rightShift, lsb);
+  }
+
+  // --------------------- BIT functions ---------------------
+  BIT_b_r(bit, register) {
+    let value;
+    let result;
+
+    // Target is mem address stored in HL
+    if (register === "HL") value = this.cpu.mem[this.cpu.getRegister("HL")];
+    // Target is a simple register
+    else value = this.cpu.getRegister(register);
+
+    result = ((value >> bit) & 1) === 1;
+
+    // Set Z10- flags
+    this.cpu.setFlags("Z01-", { Z: result });
+  }
+
+  SET_b_r(bit, register) {
+    let value;
+    let result;
+
+    // Function that sets bit n
+    const setBit = (num, n) => num | (1 << n);
+
+    // Target is mem address stored in HL
+    if (register === "HL") {
+      const HL = this.cpu.getRegister("HL");
+      value = this.cpu.mem[HL];
+      result = setBit(value, bit);
+      this.cpu.mem[HL] = result;
+    }
+
+    // Target is a simple register
+    else {
+      value = this.cpu.getRegister(register);
+      result = setBit(value, bit);
+      this.cpu.setRegister(register, result);
+    }
+  }
+
+  RES_b_r(bit, register) {
+    let value;
+    let result;
+
+    // Function that resets bit n
+    const resetBit = (num, n) => num & ~(1 << n);
+
+    // Target is mem address stored in HL
+    if (register === "HL") {
+      const HL = this.cpu.getRegister("HL");
+      value = this.cpu.mem[HL];
+      result = resetBit(value, bit);
+      this.cpu.mem[HL] = result;
+    }
+
+    // Target is a simple register
+    else {
+      value = this.cpu.getRegister(register);
+      result = resetBit(value, bit);
+      this.cpu.setRegister(register, result);
+    }
   }
 
   /**
