@@ -981,6 +981,88 @@ export class Instruction {
     }
   }
 
+  // --------------------- Jumps functions ---------------------
+  JP_nn(address) {
+    if (!this.isImmediate(address))
+      throw new Error(address + " is not an valid address");
+
+    this.cpu.pc = address;
+  }
+
+  JP_cc_nn(condition, address) {
+    if (!this.isImmediate(address))
+      throw new Error(address + " is not an valid address");
+
+    condition = condition.toUpperCase();
+    const flags = this.cpu.getRegister("F"); // ZNHC 0000
+    const Z = flags >> 7;
+    const C = (flags >> 4) & 1;
+
+    switch (condition) {
+      case "NZ":
+        if (Z === 0) this.cpu.pc = address;
+        break;
+
+      case "Z":
+        if (Z === 1) this.cpu.pc = address;
+        break;
+
+      case "NC":
+        if (C === 0) this.cpu.pc = address;
+        break;
+
+      case "C":
+        if (C === 1) this.cpu.pc = address;
+        break;
+
+      default:
+        throw new Error("Unknown condition: " + condition);
+    }
+  }
+
+  JP_HL() {
+    const address = this.cpu.mem[this.cpu.getRegister("HL")];
+    this.cpu.pc = address;
+  }
+
+  JR_n(value) {
+    if (!this.isImmediate(value))
+      throw new Error(value + " is not an valid value");
+
+    this.cpu.pc += value;
+  }
+
+  JR_cc_nn(condition, value) {
+    if (!this.isImmediate(value))
+      throw new Error(value + " is not an valid value");
+
+    condition = condition.toUpperCase();
+    const flags = this.cpu.getRegister("F"); // ZNHC 0000
+    const Z = flags >> 7;
+    const C = (flags >> 4) & 1;
+
+    switch (condition) {
+      case "NZ":
+        if (Z === 0) this.cpu.pc += value;
+        break;
+
+      case "Z":
+        if (Z === 1) this.cpu.pc += value;
+        break;
+
+      case "NC":
+        if (C === 0) this.cpu.pc += value;
+        break;
+
+      case "C":
+        if (C === 1) this.cpu.pc += value;
+        break;
+
+      default:
+        throw new Error("Unknown condition: " + condition);
+    }
+  }
+
   /**
    * Determines if there is a half-carry (carry from bit 3 to bit 4) in an 8-bit addition.
    *
