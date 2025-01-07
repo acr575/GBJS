@@ -680,6 +680,14 @@ export class Instruction {
   }
 
   // --------------------- Rotates & Shifts functions ---------------------
+  /**
+   * Performs a left rotation on the given 8-bit value.
+   * The most significant bit (MSB) is shifted to the least significant bit (LSB).
+   * Updates the Z and C flags based on the result and the old MSB.
+   *
+   * @param {number} value - The 8-bit value to rotate.
+   * @returns {number} - The result of the left rotation.
+   */
   leftRotate(value) {
     const msb = value >> 7; // Most significant bit (bit 7)
     const result = ((value << 1) | msb) & 0xff; // Left rotate
@@ -690,6 +698,14 @@ export class Instruction {
     return result;
   }
 
+  /**
+   * Performs a left rotation on the given 8-bit value, incorporating the carry flag.
+   * The carry flag is shifted into the least significant bit (LSB), and the MSB is used to update the carry flag.
+   * Updates the Z and C flags based on the result and the old MSB.
+   *
+   * @param {number} value - The 8-bit value to rotate.
+   * @returns {number} - The result of the left rotation with carry.
+   */
   leftRotateCarry(value) {
     const msb = value >> 7; // Most significant bit (bit 7)
     const flagC = (this.cpu.getRegister("F") & 0b00010000) >> 4;
@@ -701,6 +717,14 @@ export class Instruction {
     return result;
   }
 
+  /**
+   * Performs a right rotation on the given 8-bit value.
+   * The least significant bit (LSB) is shifted to the most significant bit (MSB).
+   * Updates the Z and C flags based on the result and the old LSB.
+   *
+   * @param {number} value - The 8-bit value to rotate.
+   * @returns {number} - The result of the right rotation.
+   */
   rightRotate(value) {
     const lsb = value & 0x01; // Least significant bit (bit 0)
     const result = ((value >> 1) | (lsb << 7)) & 0xff; // Right rotate
@@ -711,6 +735,14 @@ export class Instruction {
     return result;
   }
 
+  /**
+   * Performs a right rotation on the given 8-bit value, incorporating the carry flag.
+   * The carry flag is shifted into the most significant bit (MSB), and the LSB is used to update the carry flag.
+   * Updates the Z and C flags based on the result and the old LSB.
+   *
+   * @param {number} value - The 8-bit value to rotate.
+   * @returns {number} - The result of the right rotation with carry.
+   */
   rightRotateCarry(value) {
     const lsb = value & 0x01; // Least significant bit (bit 0)
     const flagC = (this.cpu.getRegister("F") & 0b00010000) >> 4;
@@ -722,6 +754,12 @@ export class Instruction {
     return result;
   }
 
+  /**
+   * Sets the zero (Z) and carry (C) flags based on the rotation result and carry bit.
+   *
+   * @param {number} result - The result of the rotation or shift.
+   * @param {number} carryBit - The bit shifted out during the operation.
+   */
   setRotationFlags(result, carryBit) {
     // Set Z & C flags. Old lsb bit is stored in C flag
     const flags = {
@@ -732,34 +770,55 @@ export class Instruction {
     this.cpu.setFlags("Z00C", flags);
   }
 
+  /**
+   * Performs a left rotation on the accumulator register (A).
+   * Updates the A register with the result.
+   */
   RLCA() {
-    let A = cpu.getRegister("A");
+    let A = this.cpu.getRegister("A");
     const leftRotation = this.leftRotate(A);
 
     this.cpu.setRegister("A", leftRotation);
   }
 
+  /**
+   * Performs a left rotation with carry on the accumulator register (A).
+   * Updates the A register with the result.
+   */
   RLA() {
-    let A = cpu.getRegister("A");
+    let A = this.cpu.getRegister("A");
     const leftRotation = this.leftRotateCarry(A);
 
     this.cpu.setRegister("A", leftRotation);
   }
 
+  /**
+   * Performs a right rotation on the accumulator register (A).
+   * Updates the A register with the result.
+   */
   RRCA() {
-    let A = cpu.getRegister("A");
+    let A = this.cpu.getRegister("A");
     const rightRotation = this.rightRotate(A);
 
     this.cpu.setRegister("A", rightRotation);
   }
 
+  /**
+   * Performs a right rotation with carry on the accumulator register (A).
+   * Updates the A register with the result.
+   */
   RRA() {
-    let A = cpu.getRegister("A");
+    let A = this.cpu.getRegister("A");
     const rightRotation = this.rightRotateCarry(A);
 
     this.cpu.setRegister("A", rightRotation);
   }
 
+  /**
+   * Performs a left rotation on a specified register or the memory location stored in HL.
+   *
+   * @param {string} register - The register name or "HL" for memory access.
+   */
   RLC_n(register) {
     let value;
     let leftRotation;
@@ -780,6 +839,11 @@ export class Instruction {
     }
   }
 
+  /**
+   * Performs a left rotation with carry on a specified register or the memory location stored in HL.
+   *
+   * @param {string} register - The register name or "HL" for memory access.
+   */
   RL_n(register) {
     let value;
     let leftRotation;
@@ -800,6 +864,11 @@ export class Instruction {
     }
   }
 
+  /**
+   * Performs a right rotation on a specified register or the memory location stored in HL.
+   *
+   * @param {string} register - The register name or "HL" for memory access.
+   */
   RRC_n(register) {
     let value;
     let leftRotation;
@@ -820,6 +889,11 @@ export class Instruction {
     }
   }
 
+  /**
+   * Performs a right rotation with carry on a specified register or the memory location stored in HL.
+   *
+   * @param {string} register - The register name or "HL" for memory access.
+   */
   RR_n(register) {
     let value;
     let leftRotation;
@@ -840,6 +914,11 @@ export class Instruction {
     }
   }
 
+  /**
+   * Performs an arithmetic left shift on a specified register or the memory location stored in HL.
+   *
+   * @param {string} register - The register name or "HL" for memory access.
+   */
   SLA_n(register) {
     let value;
     let leftShift;
@@ -865,6 +944,11 @@ export class Instruction {
     this.setRotationFlags(leftShift, msb);
   }
 
+  /**
+   * Performs an arithmetic right shift on a specified register or the memory location stored in HL.
+   *
+   * @param {string} register - The register name or "HL" for memory access.
+   */
   SRA_n(register) {
     let value;
     let rightShift;
@@ -893,6 +977,11 @@ export class Instruction {
     this.setRotationFlags(rightShift, lsb);
   }
 
+  /**
+   * Performs a logical right shift on a specified register or the memory location stored in HL.
+   *
+   * @param {string} register - The register name or "HL" for memory access.
+   */
   SRL_n(register) {
     let value;
     let rightShift;
@@ -909,7 +998,6 @@ export class Instruction {
     // Target is a simple register
     else {
       value = this.cpu.getRegister(register);
-      msb = value >> 7;
       rightShift = (value >> 1) & 0xff; // Right shift
       this.cpu.setRegister(register, rightShift);
     }
@@ -1062,6 +1150,15 @@ export class Instruction {
         throw new Error("Unknown condition: " + condition);
     }
   }
+
+  // TODO: --------------------- Calls functions ---------------------
+  CALL_nn(value) {}
+
+  CALL_cc_nn(condition, value) {}
+
+  // TODO: --------------------- Restarts functions ---------------------
+
+  // TDOO: --------------------- Return functions ---------------------
 
   /**
    * Determines if there is a half-carry (carry from bit 3 to bit 4) in an 8-bit addition.
