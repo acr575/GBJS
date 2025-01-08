@@ -65,7 +65,7 @@ for (let i = 0; i < 8; i++) {
   console.log("    SET " + i + ", (HL): (HL)=0b" + cpu.mem[0x1234].toString(2));
 }
 
-// RESET b,r
+// RES b,r
 console.log("\nRES b,r");
 
 cpu.setRegister("D", value);

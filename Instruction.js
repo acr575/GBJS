@@ -1008,6 +1008,13 @@ export class Instruction {
   }
 
   // --------------------- BIT functions ---------------------
+  /**
+   * Tests a specific bit in a register or memory location.
+   * Updates the zero (Z) flag based on the result, and sets fixed values for other flags.
+   *
+   * @param {number} bit - The bit position to test (0-7).
+   * @param {string} register - The register name or "HL" for memory access.
+   */
   BIT_b_r(bit, register) {
     let value;
     let result;
@@ -1023,6 +1030,12 @@ export class Instruction {
     this.cpu.setFlags("Z01-", { Z: result });
   }
 
+  /**
+   * Sets a specific bit in a register or memory location.
+   *
+   * @param {number} bit - The bit position to set (0-7).
+   * @param {string} register - The register name or "HL" for memory access.
+   */
   SET_b_r(bit, register) {
     let value;
     let result;
@@ -1046,6 +1059,12 @@ export class Instruction {
     }
   }
 
+  /**
+   * Resets a specific bit in a register or memory location.
+   *
+   * @param {number} bit - The bit position to reset (0-7).
+   * @param {string} register - The register name or "HL" for memory access.
+   */
   RES_b_r(bit, register) {
     let value;
     let result;
@@ -1070,13 +1089,26 @@ export class Instruction {
   }
 
   // --------------------- Jumps functions ---------------------
+  /**
+   * Performs an unconditional jump to the specified 16-bit address.
+   *
+   * @param {number} address - The 16-bit address to jump to.
+   * @throws {Error} If the provided address is not valid or not immediate.
+   */
   JP_nn(address) {
     if (!this.isImmediate(address))
       throw new Error(address + " is not an valid address");
 
-    this.cpu.pc = address;
+    this.cpu.pc = address & 0xffff;
   }
 
+  /**
+   * Performs a conditional jump to the specified 16-bit address based on a condition.
+   *
+   * @param {string} condition - The condition to evaluate ("NZ", "Z", "NC", "C").
+   * @param {number} address - The 16-bit address to jump to if the condition is met.
+   * @throws {Error} If the condition is unknown or the address is not valid.
+   */
   JP_cc_nn(condition, address) {
     if (!this.isImmediate(address))
       throw new Error(address + " is not an valid address");
@@ -1088,19 +1120,19 @@ export class Instruction {
 
     switch (condition) {
       case "NZ":
-        if (Z === 0) this.cpu.pc = address;
+        if (Z === 0) this.cpu.pc = address & 0xffff;
         break;
 
       case "Z":
-        if (Z === 1) this.cpu.pc = address;
+        if (Z === 1) this.cpu.pc = address & 0xffff;
         break;
 
       case "NC":
-        if (C === 0) this.cpu.pc = address;
+        if (C === 0) this.cpu.pc = address & 0xffff;
         break;
 
       case "C":
-        if (C === 1) this.cpu.pc = address;
+        if (C === 1) this.cpu.pc = address & 0xffff;
         break;
 
       default:
@@ -1108,18 +1140,34 @@ export class Instruction {
     }
   }
 
+  /**
+   * Performs an unconditional jump to the address stored in the HL register.
+   */
   JP_HL() {
-    const address = this.cpu.mem[this.cpu.getRegister("HL")];
-    this.cpu.pc = address;
+    const address = this.cpu.getRegister("HL");
+    this.cpu.pc = address & 0xffff;
   }
 
+  /**
+   * Performs a relative jump to the current program counter, offset by the given signed value.
+   *
+   * @param {number} value - The signed 8-bit offset for the relative jump.
+   * @throws {Error} If the value is not valid or not immediate.
+   */
   JR_n(value) {
     if (!this.isImmediate(value))
       throw new Error(value + " is not an valid value");
 
-    this.cpu.pc += value;
+    this.cpu.pc += value & 0xffff;
   }
 
+  /**
+   * Performs a conditional relative jump based on a condition and a signed offset value.
+   *
+   * @param {string} condition - The condition to evaluate ("NZ", "Z", "NC", "C").
+   * @param {number} value - The signed 8-bit offset for the relative jump.
+   * @throws {Error} If the condition is unknown or the value is not valid.
+   */
   JR_cc_nn(condition, value) {
     if (!this.isImmediate(value))
       throw new Error(value + " is not an valid value");
@@ -1131,19 +1179,19 @@ export class Instruction {
 
     switch (condition) {
       case "NZ":
-        if (Z === 0) this.cpu.pc += value;
+        if (Z === 0) this.cpu.pc += value & 0xffff;
         break;
 
       case "Z":
-        if (Z === 1) this.cpu.pc += value;
+        if (Z === 1) this.cpu.pc += value & 0xffff;
         break;
 
       case "NC":
-        if (C === 0) this.cpu.pc += value;
+        if (C === 0) this.cpu.pc += value & 0xffff;
         break;
 
       case "C":
-        if (C === 1) this.cpu.pc += value;
+        if (C === 1) this.cpu.pc += value & 0xffff;
         break;
 
       default:
@@ -1157,8 +1205,14 @@ export class Instruction {
   CALL_cc_nn(condition, value) {}
 
   // TODO: --------------------- Restarts functions ---------------------
+  RST_n(value) {}
 
   // TDOO: --------------------- Return functions ---------------------
+  RET() {}
+
+  RET_cc(condition) {}
+
+  RETI() {}
 
   /**
    * Determines if there is a half-carry (carry from bit 3 to bit 4) in an 8-bit addition.
