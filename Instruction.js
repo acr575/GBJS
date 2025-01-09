@@ -233,27 +233,38 @@ export class Instruction {
   }
 
   /**
-   * Pushes the value of a 16-bit register onto the stack.
+   * Pushes a 16-bit immediate or combined register onto the stack.
    * Decrements SP twice before storing the values.
-   * @param {string} register - Combined register to push (e.g., "AF", "BC").
+   * @param {string} value - 16-bit immediate or combined register to push (e.g., "AF", "BC").
    */
-  push(register) {
+  push(value) {
+    let highByte;
+    let lowByte;
+
+    // Target is a 16-bit immediate
+    if (this.isImmediate(value)) {
+      highByte = value >> 8;
+      lowByte = value & 0x00ff;
+    }
+    // Target is a combined register
+    else {
+      highByte = this.cpu.getRegister(value[0]);
+      lowByte = this.cpu.getRegister(value[1]);
+    }
+
     // Decrement SP twice
     this.cpu.sp -= 2;
 
-    // Split register into high & low
-    const highRegister = this.cpu.getRegister(register[0]);
-    const lowRegister = this.cpu.getRegister(register[1]);
-
-    // Storage highRegister at address sp & lowRegister at address sp+1
-    this.cpu.mem[this.cpu.sp] = highRegister;
-    this.cpu.mem[this.cpu.sp + 1] = lowRegister;
+    // Storage highByte at address sp & lowByte at address sp+1
+    this.cpu.mem[this.cpu.sp] = highByte;
+    this.cpu.mem[this.cpu.sp + 1] = lowByte;
   }
 
   /**
    * Pops a 16-bit value from the stack into the specified register.
    * Increments SP twice after retrieving the values.
    * @param {string} register - Combined register to load the popped value into (e.g., "AF", "BC").
+   * @returns {number} - The 16-bit value popped.
    */
   pop(register) {
     // Get current sp value (highByte) and next one (lowByte)
@@ -264,10 +275,12 @@ export class Instruction {
     const value = (highByte << 8) | lowByte;
 
     // Storage popped value into register
-    this.cpu.setRegister(register, value);
+    if (register !== undefined) this.cpu.setRegister(register, value);
 
     // Increment SP twice
     this.cpu.sp += 2;
+
+    return value;
   }
 
   // --------------------- 8-bit ALU functions ---------------------
@@ -1199,20 +1212,100 @@ export class Instruction {
     }
   }
 
-  // TODO: --------------------- Calls functions ---------------------
-  CALL_nn(value) {}
+  // --------------------- Calls functions ---------------------
+  CALL_nn(address) {
+    if (!this.isImmediate(address))
+      throw new Error(address + " is not an valid address");
 
-  CALL_cc_nn(condition, value) {}
+    // Push address of next instruction onto stack
+    this.push(this.cpu.pc + 1);
 
-  // TODO: --------------------- Restarts functions ---------------------
-  RST_n(value) {}
+    // Jump to address nn
+    this.cpu.pc = address & 0xffff;
+  }
 
-  // TDOO: --------------------- Return functions ---------------------
-  RET() {}
+  CALL_cc_nn(condition, address) {
+    condition = condition.toUpperCase();
+    const flags = this.cpu.getRegister("F"); // ZNHC 0000
+    const Z = flags >> 7;
+    const C = (flags >> 4) & 1;
 
-  RET_cc(condition) {}
+    switch (condition) {
+      case "NZ":
+        if (Z === 0) this.CALL_nn(address);
+        break;
 
-  RETI() {}
+      case "Z":
+        if (Z === 1) this.CALL_nn(address);
+        break;
+
+      case "NC":
+        if (C === 0) this.CALL_nn(address);
+        break;
+
+      case "C":
+        if (C === 1) this.CALL_nn(address);
+        break;
+
+      default:
+        throw new Error("Unknown condition: " + condition);
+    }
+  }
+
+  // --------------------- Restarts functions ---------------------
+  RST_n(address) {
+    // Valid RST addresses (hexadecimal values)
+    const validAddresses = [0x00, 0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38];
+
+    if (!this.isImmediate(address) || !validAddresses.includes(address))
+      throw new Error(address + " is not an valid address");
+
+    // Push present address onto stack
+    this.push(this.cpu.pc);
+
+    // Jump to address n
+    this.cpu.pc = address;
+  }
+
+  // --------------------- Returns functions ---------------------
+  RET() {
+    const address = this.pop(); // Pop 2 bytes from stack
+    this.cpu.pc = address; // Jump to popped address
+  }
+
+  RET_cc(condition) {
+    condition = condition.toUpperCase();
+    const flags = this.cpu.getRegister("F"); // ZNHC 0000
+    const Z = flags >> 7;
+    const C = (flags >> 4) & 1;
+
+    switch (condition) {
+      case "NZ":
+        if (Z === 0) this.RET();
+        break;
+
+      case "Z":
+        if (Z === 1) this.RET();
+        break;
+
+      case "NC":
+        if (C === 0) this.RET();
+        break;
+
+      case "C":
+        if (C === 1) this.RET();
+        break;
+
+      default:
+        throw new Error("Unknown condition: " + condition);
+    }
+  }
+
+  // TODO: Check if enable interrupts just sets ime flag
+  RETI() {
+    this.RET();
+    this.cpu.ime = 1;
+  }
 
   /**
    * Determines if there is a half-carry (carry from bit 3 to bit 4) in an 8-bit addition.
