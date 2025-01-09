@@ -1213,6 +1213,13 @@ export class Instruction {
   }
 
   // --------------------- Calls functions ---------------------
+  /**
+   * Calls a subroutine located at the specified address.
+   * Pushes the current program counter (PC) onto the stack and jumps to the address.
+   *
+   * @param {number} address - The target address of the subroutine.
+   * @throws {Error} If the provided address is not valid.
+   */
   CALL_nn(address) {
     if (!this.isImmediate(address))
       throw new Error(address + " is not an valid address");
@@ -1224,27 +1231,35 @@ export class Instruction {
     this.cpu.pc = address & 0xffff;
   }
 
+  /**
+   * Conditionally calls a subroutine located at the specified address.
+   * The call is executed if the provided condition is met.
+   *
+   * @param {string} condition - The condition to evaluate ("NZ", "Z", "NC", "C").
+   * @param {number} address - The target address of the subroutine.
+   * @throws {Error} If the provided condition is unknown.
+   */
   CALL_cc_nn(condition, address) {
     condition = condition.toUpperCase();
     const flags = this.cpu.getRegister("F"); // ZNHC 0000
-    const Z = flags >> 7;
-    const C = (flags >> 4) & 1;
+    const Z = flags >> 7; // Zero flag
+    const C = (flags >> 4) & 1; // Carry flag
 
     switch (condition) {
       case "NZ":
-        if (Z === 0) this.CALL_nn(address);
+        if (Z === 0) this.CALL_nn(address); // Call if Zero flag is reset
         break;
 
       case "Z":
-        if (Z === 1) this.CALL_nn(address);
+        if (Z === 1) this.CALL_nn(address); // Call if Zero flag is set
         break;
 
       case "NC":
-        if (C === 0) this.CALL_nn(address);
+        if (C === 0) this.CALL_nn(address); // Call if Carry flag is reset
         break;
 
       case "C":
-        if (C === 1) this.CALL_nn(address);
+        if (C === 1) this.CALL_nn(address); // Call if Carry flag is set
         break;
 
       default:
@@ -1253,6 +1268,14 @@ export class Instruction {
   }
 
   // --------------------- Restarts functions ---------------------
+  /**
+   * Pushes the current program counter (PC) onto the stack
+   * and jumps to the specified address.
+   *
+   * @param {number} address - The target address to jump to. Must be one of the valid RST addresses:
+   * 0x00, 0x08, 0x10, 0x18, 0x20, 0x28, 0x30, or 0x38.
+   * @throws {Error} Throws an error if the provided address is not immediate or not a valid RST address.
+   */
   RST_n(address) {
     // Valid RST addresses (hexadecimal values)
     const validAddresses = [0x00, 0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38];
@@ -1268,11 +1291,23 @@ export class Instruction {
   }
 
   // --------------------- Returns functions ---------------------
+  /**
+   * Pops the top two bytes from the stack and sets the program counter (PC)
+   * to the popped address, effectively returning to the calling function or address.
+   */
   RET() {
     const address = this.pop(); // Pop 2 bytes from stack
     this.cpu.pc = address; // Jump to popped address
   }
 
+  /**
+   * Evaluates a condition based on CPU flags, and if the condition is met,
+   * it pops the top two bytes from the stack and sets the program counter (PC) to the popped address.
+   *
+   * @param {string} condition - The condition to evaluate before returning. Must be one of the following:
+   * "NZ" (Non-Zero), "Z" (Zero), "NC" (No Carry), "C" (Carry).
+   * @throws {Error} Throws an error if an unknown condition is provided.
+   */
   RET_cc(condition) {
     condition = condition.toUpperCase();
     const flags = this.cpu.getRegister("F"); // ZNHC 0000
@@ -1301,7 +1336,7 @@ export class Instruction {
     }
   }
 
-  // TODO: Check if enable interrupts just sets ime flag
+  // TODO: Check if enable interrupts just sets ime flag & debug
   RETI() {
     this.RET();
     this.cpu.ime = 1;
