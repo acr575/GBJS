@@ -7,29 +7,30 @@ export class Instruction {
 
   /**
    * Loads an 8-bit immediate value into a specified register.
+   * Immediate is stored in the next PC address.
    * @param {string} dstReg - The destination register.
-   * @param {number} value - The 8-bit immediate value to load.
    */
-  LD_nn_n(dstReg, value) {
-    this.cpu.setRegister(dstReg, value);
+  LD_nn_n(dstReg) {
+    this.cpu.setRegister(dstReg, this.cpu.mem[this.cpu.pc + 1]);
   }
 
   /**
    * Transfers an 8-bit value between two registers, or between a register and memory address stored in register HL.
    * Also covers the opcode 36 LD (HL), n (Load 8-bit immediate to address stored in HL)
-   * @param {string|number} srcReg - The source register or memory address.
    * @param {string|number} dstReg - The destination register or memory address.
+   * @param {string|number} srcReg - The source register or memory address.
    */
-  LD_r1_r2(srcReg, dstReg) {
+  LD_r1_r2(dstReg, srcReg) {
     // Source register is a combined register (pointer). Load value from pointer address
-    if (srcReg.length == 2) {
+    if (srcReg.length === 2) {
       const address = this.cpu.getRegister(srcReg);
       this.cpu.setRegister(dstReg, this.cpu.mem[address]);
     }
 
     // Dest. register is a combined register (pointer). Load value into pointer address
-    else if (dstReg.length == 2) {
+    else if (dstReg.length === 2) {
       const address = this.cpu.getRegister(dstReg);
+
       // If source is an immediate, then load 8-bit value directly.
       this.cpu.mem[address] = this.isImmediate(srcReg)
         ? srcReg

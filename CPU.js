@@ -1,3 +1,5 @@
+import { Instruction } from "./Instruction.js";
+
 export class CPU {
   constructor() {
     this.registersValues = new Uint8Array(8); // a-l 8 bit registers
@@ -5,6 +7,452 @@ export class CPU {
     this.pc = 0x100; // Program Counter. Initialized at 0x100
     this.sp = 0xfffe; // Stack Pointer.  Initialized at 0xfffe
     this.ime = 0; // Interrup master enable flag. Starts at 0
+    this.instruction = new Instruction(this);
+
+    // Instruction set. Links each opcode with it instruction, length and cycles
+    this.instructionTable = {
+      // LD B, d8
+      0x06: {
+        instruction: () => this.instruction.LD_nn_n("B"),
+        length: 2,
+        cycles: 8,
+      },
+
+      // LD C, d8
+      0x0e: {
+        instruction: () => this.instruction.LD_nn_n("C"),
+        length: 2,
+        cycles: 8,
+      },
+
+      // LD D, d8
+      0x16: {
+        instruction: () => this.instruction.LD_nn_n("D"),
+        length: 2,
+        cycles: 8,
+      },
+
+      // LD E, d8
+      0x1e: {
+        instruction: () => this.instruction.LD_nn_n("E"),
+        length: 2,
+        cycles: 8,
+      },
+
+      // LD H, d8
+      0x26: {
+        instruction: () => this.instruction.LD_nn_n("H"),
+        length: 2,
+        cycles: 8,
+      },
+
+      // LD L, d8
+      0x2e: {
+        instruction: () => this.instruction.LD_nn_n("L"),
+        length: 2,
+        cycles: 8,
+      },
+
+      // LD (HL), d8
+      0x36: {
+        instruction: () =>
+          this.instruction.LD_r1_r2("HL", this.mem[this.pc + 1]), // d8 is next PC address
+        length: 2,
+        cycles: 12,
+      },
+
+      // LD B, B
+      0x40: {
+        instruction: () => this.instruction.LD_r1_r2("B", "B"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD B, C
+      0x41: {
+        instruction: () => this.instruction.LD_r1_r2("B", "C"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD B, D
+      0x42: {
+        instruction: () => this.instruction.LD_r1_r2("B", "D"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD B, E
+      0x43: {
+        instruction: () => this.instruction.LD_r1_r2("B", "E"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD B, H
+      0x44: {
+        instruction: () => this.instruction.LD_r1_r2("B", "H"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD B, L
+      0x45: {
+        instruction: () => this.instruction.LD_r1_r2("B", "L"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD B, (HL)
+      0x46: {
+        instruction: () => this.instruction.LD_r1_r2("B", "HL"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // LD C, B
+      0x48: {
+        instruction: () => this.instruction.LD_r1_r2("C", "B"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD C, C
+      0x49: {
+        instruction: () => this.instruction.LD_r1_r2("C", "C"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD C, D
+      0x4a: {
+        instruction: () => this.instruction.LD_r1_r2("C", "D"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD C, E
+      0x4b: {
+        instruction: () => this.instruction.LD_r1_r2("C", "E"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD C, H
+      0x4c: {
+        instruction: () => this.instruction.LD_r1_r2("C", "H"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD C, L
+      0x4d: {
+        instruction: () => this.instruction.LD_r1_r2("C", "L"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD C, (HL)
+      0x4e: {
+        instruction: () => this.instruction.LD_r1_r2("C", "HL"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // LD D, B
+      0x50: {
+        instruction: () => this.instruction.LD_r1_r2("D", "B"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD D, C
+      0x51: {
+        instruction: () => this.instruction.LD_r1_r2("D", "C"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD D, D
+      0x52: {
+        instruction: () => this.instruction.LD_r1_r2("D", "D"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD D, E
+      0x53: {
+        instruction: () => this.instruction.LD_r1_r2("D", "E"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD D, H
+      0x54: {
+        instruction: () => this.instruction.LD_r1_r2("D", "H"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD D, L
+      0x55: {
+        instruction: () => this.instruction.LD_r1_r2("D", "L"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD D, (HL)
+      0x56: {
+        instruction: () => this.instruction.LD_r1_r2("D", "HL"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // LD E, B
+      0x58: {
+        instruction: () => this.instruction.LD_r1_r2("E", "B"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD E, C
+      0x59: {
+        instruction: () => this.instruction.LD_r1_r2("E", "C"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD E, D
+      0x5a: {
+        instruction: () => this.instruction.LD_r1_r2("E", "D"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD E, E
+      0x5b: {
+        instruction: () => this.instruction.LD_r1_r2("E", "E"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD E, H
+      0x5c: {
+        instruction: () => this.instruction.LD_r1_r2("E", "H"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD E, L
+      0x5d: {
+        instruction: () => this.instruction.LD_r1_r2("E", "L"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD E, (HL)
+      0x5e: {
+        instruction: () => this.instruction.LD_r1_r2("E", "HL"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // LD H, B
+      0x60: {
+        instruction: () => this.instruction.LD_r1_r2("H", "B"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD H, C
+      0x61: {
+        instruction: () => this.instruction.LD_r1_r2("H", "C"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD H, D
+      0x62: {
+        instruction: () => this.instruction.LD_r1_r2("H", "D"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD H, E
+      0x63: {
+        instruction: () => this.instruction.LD_r1_r2("H", "E"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD H, H
+      0x64: {
+        instruction: () => this.instruction.LD_r1_r2("H", "H"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD H, L
+      0x65: {
+        instruction: () => this.instruction.LD_r1_r2("H", "L"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD H, (HL)
+      0x66: {
+        instruction: () => this.instruction.LD_r1_r2("H", "HL"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // LD L, B
+      0x68: {
+        instruction: () => this.instruction.LD_r1_r2("L", "B"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD L, C
+      0x69: {
+        instruction: () => this.instruction.LD_r1_r2("L", "C"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD L, D
+      0x6a: {
+        instruction: () => this.instruction.LD_r1_r2("L", "D"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD L, E
+      0x6b: {
+        instruction: () => this.instruction.LD_r1_r2("L", "E"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD L, H
+      0x6c: {
+        instruction: () => this.instruction.LD_r1_r2("L", "H"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD L, L
+      0x6d: {
+        instruction: () => this.instruction.LD_r1_r2("L", "L"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD L, (HL)
+      0x6e: {
+        instruction: () => this.instruction.LD_r1_r2("L", "HL"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // LD (HL), B
+      0x70: {
+        instruction: () => this.instruction.LD_r1_r2("HL", "B"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // LD (HL), C
+      0x71: {
+        instruction: () => this.instruction.LD_r1_r2("HL", "C"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // LD (HL), D
+      0x72: {
+        instruction: () => this.instruction.LD_r1_r2("HL", "D"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // LD (HL), E
+      0x73: {
+        instruction: () => this.instruction.LD_r1_r2("HL", "E"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // LD (HL), H
+      0x74: {
+        instruction: () => this.instruction.LD_r1_r2("HL", "H"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // LD (HL), L
+      0x75: {
+        instruction: () => this.instruction.LD_r1_r2("HL", "L"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // LD A, B
+      0x78: {
+        instruction: () => this.instruction.LD_r1_r2("A", "B"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD A, C
+      0x79: {
+        instruction: () => this.instruction.LD_r1_r2("A", "C"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD A, D
+      0x7a: {
+        instruction: () => this.instruction.LD_r1_r2("A", "D"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD A, E
+      0x7b: {
+        instruction: () => this.instruction.LD_r1_r2("A", "E"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD A, H
+      0x7c: {
+        instruction: () => this.instruction.LD_r1_r2("A", "H"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD A, L
+      0x7d: {
+        instruction: () => this.instruction.LD_r1_r2("A", "L"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // LD A, (HL)
+      0x7e: {
+        instruction: () => this.instruction.LD_r1_r2("A", "HL"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // LD A, A
+      0x7f: {
+        instruction: () => this.instruction.LD_r1_r2("A", "A"),
+        length: 1,
+        cycles: 4,
+      },
+    };
   }
 
   static Registers = Object.freeze({
@@ -152,5 +600,11 @@ export class CPU {
 
     // Update register F
     this.setRegister("F", registerF);
+  }
+
+  executeInstruction(opcode) {
+    const fetch = this.instructionTable[opcode];
+    if (!fetch) throw new Error(`Unknown opcode: ${opcode}`);
+    fetch.instruction();
   }
 }
