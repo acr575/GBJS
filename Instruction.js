@@ -43,14 +43,20 @@ export class Instruction {
 
   /**
    * Loads a value into the A register.
-   * @param {string|number} value - The value to load (register name, memory address, or immediate value).
+   * @param {string} value - The value to load. This can be:
+   * - A register name (e.g., "B", "C").
+   * - A memory address, indicated by:
+   *   - A combined register name (e.g., "HL", when the value comes from the address pointed to by that register).
+   *   - "a16" (when the value comes from an immediate 16-bit address. It's take from the next 2 bytes pointed by pc).
+   * - An 8-bit immediate value (indicated by "d8". It's take from next byte pointed by pc).
    * @param {boolean} [isPointer=false] - Whether the value is a memory pointer.
    */
   LD_A_n(value, isPointer = false) {
     if (isPointer) {
       // Value is a 16-bit immediate pointer to a memory address
-      if (this.isImmediate(value))
-        this.cpu.setRegister("A", this.cpu.mem[value]);
+      if (value === "a16") {
+        this.cpu.setRegister("A", this.cpu.mem[this.cpu.getImmediate16Bit()]);
+      }
       // Value is a combined register that points to a memory address
       else {
         const address = this.cpu.getRegister(value);
@@ -59,21 +65,26 @@ export class Instruction {
     }
 
     // Value is a 8-bit immediate
-    else if (this.isImmediate(value)) this.cpu.setRegister("A", value);
+    else if (value === "d8")
+      this.cpu.setRegister("A", this.cpu.mem[this.cpu.pc + 1]);
     // Value is a simple register
     else this.cpu.setRegister("A", this.cpu.getRegister(value));
   }
 
   /**
    * Stores the value from the A register into a specified destination.
-   * @param {string|number} value - The destination register or memory address.
+   * @param {string} value - The destination register or memory address.
+   * - A register name (e.g., "B", "C").
+   * - A memory address, indicated by:
+   *   - A combined register name (e.g., "HL", when the value comes from the address pointed to by that register).
+   *   - "a16" (when the value comes from an immediate 16-bit address. It's take from the next 2 bytes pointed by pc).
    * @param {boolean} [isPointer=false] - Whether the destination is a memory pointer.
    */
   LD_n_A(value, isPointer = false) {
     if (isPointer) {
-      // Value is a 16-bit immediate pointer to a memory address
-      if (this.isImmediate(value))
-        this.cpu.mem[value] = this.cpu.getRegister("A");
+      // Value is a 16-bit immediate pointer to a memory address.
+      if (value === "a16")
+        this.cpu.mem[this.cpu.getImmediate16Bit()] = this.cpu.getRegister("A");
       // Value is a combined register that points to a memory address
       else {
         const address = this.cpu.getRegister(value);

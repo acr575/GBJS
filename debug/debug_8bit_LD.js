@@ -41,9 +41,15 @@ console.log("\n\nTEST 8-BIT LOADS");
 // LD nn,n
 console.log("  LD nn,n");
 for (const register of Object.values(CPU.Registers)) {
-  instruction.LD_nn_n(register, value);
+  cpu.mem[cpu.pc + 1] = value;
+  instruction.LD_nn_n(register);
   console.log(
-    "    REGISTER " + register + " :0x" + cpu.getRegister(register).toString(16)
+    "    Mem[pc+1]: 0x" +
+      cpu.mem[cpu.pc + 1].toString(16) +
+      "; REGISTER " +
+      register +
+      " :0x" +
+      cpu.getRegister(register).toString(16)
   );
   value += 0x11;
 }
@@ -57,7 +63,7 @@ console.log(
     " -> B=0x" +
     cpu.getRegister("B").toString(16)
 );
-instruction.LD_r1_r2("A", "B");
+instruction.LD_r1_r2("B", "A");
 console.log("      LD B,A: B=0x" + cpu.getRegister("B").toString(16));
 
 console.log("    (HL) to simple register");
@@ -74,7 +80,7 @@ console.log(
     " = 0x" +
     cpu.mem[cpu.getRegister("HL")].toString(16)
 );
-instruction.LD_r1_r2("HL", "C");
+instruction.LD_r1_r2("C", "HL");
 console.log("      LD C,(HL): C=0x" + cpu.getRegister("C").toString(16));
 
 console.log("    Simple to (HL)");
@@ -91,7 +97,7 @@ console.log(
     " = 0x" +
     cpu.mem[cpu.getRegister("HL")].toString(16)
 );
-instruction.LD_r1_r2("D", "HL");
+instruction.LD_r1_r2("HL", "D");
 console.log(
   "      LD (HL),D: Value at address 0x" +
     cpu.getRegister("HL").toString(16) +
@@ -113,7 +119,7 @@ console.log(
     " = 0x" +
     cpu.mem[cpu.getRegister("HL")].toString(16)
 );
-instruction.LD_r1_r2(value, "HL");
+instruction.LD_r1_r2("HL", value);
 console.log(
   "      LD (HL),d8: Value at address 0x" +
     cpu.getRegister("HL").toString(16) +
@@ -135,13 +141,14 @@ instruction.LD_A_n("B");
 console.log("      LD A,B: A=0x" + cpu.getRegister("A").toString(16));
 
 console.log("    8-bit immediate to A");
+cpu.mem[cpu.pc + 1] = value;
 console.log(
-  "      A=0x" +
-    cpu.getRegister("A").toString(16) +
-    " <- d8=0x" +
-    value.toString(16)
+  "      Mem[pc+1]: 0x" +
+    cpu.mem[cpu.pc + 1].toString(16) +
+    "; A=0x" +
+    cpu.getRegister("A").toString(16)
 );
-instruction.LD_A_n(value);
+instruction.LD_A_n("d8");
 console.log("      LD A,d8: A=0x" + cpu.getRegister("A").toString(16));
 
 console.log("    (Combined register) to A");
@@ -162,21 +169,26 @@ instruction.LD_A_n("BC", true);
 console.log("      LD A,d8: A=0x" + cpu.getRegister("A").toString(16));
 
 let d16Value = 0xcafe;
+
 console.log("    (16-bit immediate) to A");
+cpu.mem[d16Value] = 0xce;
+cpu.mem[cpu.pc + 1] = 0xfe;
+cpu.mem[cpu.pc + 2] = 0xca;
 console.log(
-  "      A=0x" +
-    cpu.getRegister("A").toString(16) +
-    " <- d16=0x" +
-    d16Value.toString(16)
+  "      Mem[pc+1]: 0x" +
+    cpu.mem[cpu.pc + 1].toString(16) +
+    "; Mem[pc+2]: 0x" +
+    cpu.mem[cpu.pc + 2].toString(16) +
+    "; A=0x" +
+    cpu.getRegister("A").toString(16)
 );
-cpu.mem[d16Value] = 0xaf;
 console.log(
   "      Value at address 0x" +
     d16Value.toString(16) +
     " = 0x" +
     cpu.mem[d16Value].toString(16)
 );
-instruction.LD_A_n(d16Value, true);
+instruction.LD_A_n("a16", true);
 console.log("      LD A,d16: A=0x" + cpu.getRegister("A").toString(16));
 
 // LD n,A
@@ -211,20 +223,22 @@ console.log(
 );
 
 console.log("    A to (16-bit immediate)");
-console.log(
-  "      A=0x" +
-    cpu.getRegister("A").toString(16) +
-    " -> d16=0x" +
-    d16Value.toString(16)
-);
 cpu.mem[d16Value] = 0xef;
+console.log(
+  "      Mem[pc+1]: 0x" +
+    cpu.mem[cpu.pc + 1].toString(16) +
+    "; Mem[pc+2]: 0x" +
+    cpu.mem[cpu.pc + 2].toString(16) +
+    "; A=0x" +
+    cpu.getRegister("A").toString(16)
+);
 console.log(
   "      Value at address 0x" +
     d16Value.toString(16) +
     " = 0x" +
     cpu.mem[d16Value].toString(16)
 );
-instruction.LD_A_n(d16Value, true);
+instruction.LD_n_A("a16", true);
 console.log("      LD (d16),A: (d16)=0x" + cpu.mem[d16Value].toString(16));
 
 // LD A,(C)

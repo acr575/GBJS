@@ -11,10 +11,24 @@ export class CPU {
 
     // Instruction set. Links each opcode with it instruction, length and cycles
     this.instructionTable = {
+      // LD (BC), A
+      0x02: {
+        instruction: () => this.instruction.LD_n_A("BC", true),
+        length: 1,
+        cycles: 8,
+      },
+
       // LD B, d8
       0x06: {
         instruction: () => this.instruction.LD_nn_n("B"),
         length: 2,
+        cycles: 8,
+      },
+
+      // LD A, (BC)
+      0x0a: {
+        instruction: () => this.instruction.LD_A_n("BC", true),
+        length: 1,
         cycles: 8,
       },
 
@@ -25,10 +39,24 @@ export class CPU {
         cycles: 8,
       },
 
+      // LD (DE), A
+      0x12: {
+        instruction: () => this.instruction.LD_n_A("DE", true),
+        length: 1,
+        cycles: 8,
+      },
+
       // LD D, d8
       0x16: {
         instruction: () => this.instruction.LD_nn_n("D"),
         length: 2,
+        cycles: 8,
+      },
+
+      // LD A, (DE)
+      0x1a: {
+        instruction: () => this.instruction.LD_A_n("DE", true),
+        length: 1,
         cycles: 8,
       },
 
@@ -39,10 +67,24 @@ export class CPU {
         cycles: 8,
       },
 
+      // LDI (HL), A
+      0x22: {
+        instruction: () => this.instruction.LDI_HL_A(),
+        length: 1,
+        cycles: 8,
+      },
+
       // LD H, d8
       0x26: {
         instruction: () => this.instruction.LD_nn_n("H"),
         length: 2,
+        cycles: 8,
+      },
+
+      // LDI A, (HL)
+      0x2a: {
+        instruction: () => this.instruction.LDI_A_HL(),
+        length: 1,
         cycles: 8,
       },
 
@@ -53,12 +95,33 @@ export class CPU {
         cycles: 8,
       },
 
+      // LDD (HL), A
+      0x32: {
+        instruction: () => this.instruction.LDD_HL_A(),
+        length: 1,
+        cycles: 8,
+      },
+
       // LD (HL), d8
       0x36: {
         instruction: () =>
           this.instruction.LD_r1_r2("HL", this.mem[this.pc + 1]), // d8 is next PC address
         length: 2,
         cycles: 12,
+      },
+
+      // LDD A, (HL)
+      0x3a: {
+        instruction: () => this.instruction.LDD_A_HL(),
+        length: 1,
+        cycles: 8,
+      },
+
+      // LD A, d8
+      0x3e: {
+        instruction: () => this.instruction.LD_A_n("d8"),
+        length: 2,
+        cycles: 8,
       },
 
       // LD B, B
@@ -110,6 +173,13 @@ export class CPU {
         cycles: 8,
       },
 
+      // LD B, A
+      0x47: {
+        instruction: () => this.instruction.LD_n_A("B"),
+        length: 1,
+        cycles: 4,
+      },
+
       // LD C, B
       0x48: {
         instruction: () => this.instruction.LD_r1_r2("C", "B"),
@@ -157,6 +227,13 @@ export class CPU {
         instruction: () => this.instruction.LD_r1_r2("C", "HL"),
         length: 1,
         cycles: 8,
+      },
+
+      // LD C, A
+      0x4f: {
+        instruction: () => this.instruction.LD_n_A("C"),
+        length: 1,
+        cycles: 4,
       },
 
       // LD D, B
@@ -208,6 +285,13 @@ export class CPU {
         cycles: 8,
       },
 
+      // LD D, A
+      0x57: {
+        instruction: () => this.instruction.LD_n_A("D"),
+        length: 1,
+        cycles: 4,
+      },
+
       // LD E, B
       0x58: {
         instruction: () => this.instruction.LD_r1_r2("E", "B"),
@@ -255,6 +339,13 @@ export class CPU {
         instruction: () => this.instruction.LD_r1_r2("E", "HL"),
         length: 1,
         cycles: 8,
+      },
+
+      // LD E, A
+      0x5f: {
+        instruction: () => this.instruction.LD_n_A("E"),
+        length: 1,
+        cycles: 4,
       },
 
       // LD H, B
@@ -306,6 +397,13 @@ export class CPU {
         cycles: 8,
       },
 
+      // LD H, A
+      0x67: {
+        instruction: () => this.instruction.LD_n_A("H"),
+        length: 1,
+        cycles: 4,
+      },
+
       // LD L, B
       0x68: {
         instruction: () => this.instruction.LD_r1_r2("L", "B"),
@@ -355,6 +453,13 @@ export class CPU {
         cycles: 8,
       },
 
+      // LD L, A
+      0x6f: {
+        instruction: () => this.instruction.LD_n_A("L"),
+        length: 1,
+        cycles: 4,
+      },
+
       // LD (HL), B
       0x70: {
         instruction: () => this.instruction.LD_r1_r2("HL", "B"),
@@ -393,6 +498,13 @@ export class CPU {
       // LD (HL), L
       0x75: {
         instruction: () => this.instruction.LD_r1_r2("HL", "L"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // LD (HL), A
+      0x77: {
+        instruction: () => this.instruction.LD_n_A("HL", true),
         length: 1,
         cycles: 8,
       },
@@ -451,6 +563,48 @@ export class CPU {
         instruction: () => this.instruction.LD_r1_r2("A", "A"),
         length: 1,
         cycles: 4,
+      },
+
+      // LDH (a8), A
+      0xe0: {
+        instruction: () => this.instruction.LDH_n_A(this.mem[this.pc + 1]), // a8 is next pc address
+        length: 2,
+        cycles: 12,
+      },
+
+      // LD (C), A
+      0xe2: {
+        instruction: () => this.instruction.LD_OffsetC_A(),
+        length: 1,
+        cycles: 8,
+      },
+
+      // LD (a16), A
+      0xea: {
+        instruction: () => this.instruction.LD_n_A("a16", true),
+        length: 3,
+        cycles: 16,
+      },
+
+      // LDH A, (a8)
+      0xf0: {
+        instruction: () => this.instruction.LDH_A_n(this.mem[this.pc + 1]), // a8 is next pc address
+        length: 2,
+        cycles: 12,
+      },
+
+      // LD A, (C)
+      0xf2: {
+        instruction: () => this.instruction.LD_A_OffsetC(),
+        length: 1,
+        cycles: 8,
+      },
+
+      // LD A, (a16)
+      0xfa: {
+        instruction: () => this.instruction.LD_A_n("a16", true),
+        length: 3,
+        cycles: 16,
       },
     };
   }
@@ -600,6 +754,13 @@ export class CPU {
 
     // Update register F
     this.setRegister("F", registerF);
+  }
+
+  getImmediate16Bit() {
+    const lowByte = this.mem[this.pc + 1];
+    const highByte = this.mem[this.pc + 2];
+
+    return (highByte << 8) | lowByte;
   }
 
   executeInstruction(opcode) {
