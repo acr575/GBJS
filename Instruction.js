@@ -47,7 +47,7 @@ export class Instruction {
    * - A register name (e.g., "B", "C").
    * - A memory address, indicated by:
    *   - A combined register name (e.g., "HL", when the value comes from the address pointed to by that register).
-   *   - "a16" (when the value comes from an immediate 16-bit address. It's take from the next 2 bytes pointed by pc).
+   *   - "a16" (when the value comes from an immediate 16-bit address. It's taken from the next 2 bytes pointed by pc).
    * - An 8-bit immediate value (indicated by "d8". It's take from next byte pointed by pc).
    * @param {boolean} [isPointer=false] - Whether the value is a memory pointer.
    */
@@ -194,9 +194,10 @@ export class Instruction {
   /**
    * Loads a 16-bit immediate value into the specified destination register or stack pointer.
    * @param {string} dstReg - Destination register (e.g., "SP" or a combined register like "HL").
-   * @param {number} value - 16-bit immediate value to load.
    */
-  LD_n_nn(dstReg, value) {
+  LD_n_nn(dstReg) {
+    // Get the 16-Bit immediate
+    const value = this.cpu.getImmediate16Bit();
     // Dest. register is Stack Pointer
     if (dstReg == "SP") this.cpu.sp = value;
     // Dest. register is a combined register
@@ -214,29 +215,36 @@ export class Instruction {
   /**
    * Adds an 8-bit signed immediate value to the stack pointer and stores the result in HL.
    * Updates the H and C flags.
-   * @param {number} n - Signed 8-bit immediate value to add to SP.
    */
-  LDHL_SP_n(n) {
+  LDHL_SP_n() {
+    const n = this.cpu.getSignedImmediate8Bit();
     const result = this.cpu.sp + n;
-
     // Set sum's result in HL register
     this.cpu.setRegister("HL", result);
 
-    // Calculate the Half Carry flag (H): Carry from bit 3 to bit 4
-    const halfCarry = this.isHalfCarry8bit(this.cpu.sp, n, "add");
+    // Calculate the Half Carry flag (H): Carry from bit 3 to bit 4. If n is negative, check as a sub.
+    const halfCarry = this.isHalfCarry8bit(
+      this.cpu.sp,
+      Math.abs(n),
+      n < 0 ? "sub" : "add"
+    );
 
-    // Calculate the Carry flag (C): Carry from bit 7 to bit 8
-    const carry = this.isCarry8bit(this.cpu.sp, n, "add");
+    // Calculate the Carry flag (C): Carry from bit 7 to bit 8. If n is negative, check as a sub.
+    const carry = this.isCarry8bit(
+      this.cpu.sp,
+      Math.abs(n),
+      n < 0 ? "sub" : "add"
+    );
 
     // Update flags
     this.cpu.setFlags("00HC", { H: halfCarry, C: carry });
   }
 
   /**
-   * Stores the stack pointer (SP) value into a memory location specified by a 16-bit address.
-   * @param {number} address - 16-bit memory address to store SP.
+   * Stores the stack pointer (SP) value into a memory location specified by a 16-bit immediate address.
    */
-  LD_nn_SP(address) {
+  LD_nn_SP() {
+    const address = this.cpu.getImmediate16Bit();
     const lowByte = this.cpu.sp & 0xff;
     const highByte = (this.cpu.sp & 0xff00) >> 8;
 
@@ -267,9 +275,9 @@ export class Instruction {
     // Decrement SP twice
     this.cpu.sp -= 2;
 
-    // Storage highByte at address sp & lowByte at address sp+1
-    this.cpu.mem[this.cpu.sp] = highByte;
-    this.cpu.mem[this.cpu.sp + 1] = lowByte;
+    // Store highByte at address sp+1 & lowByte at address sp once decremented
+    this.cpu.mem[this.cpu.sp + 1] = highByte;
+    this.cpu.mem[this.cpu.sp] = lowByte;
   }
 
   /**
@@ -279,9 +287,9 @@ export class Instruction {
    * @returns {number} - The 16-bit value popped.
    */
   pop(register) {
-    // Get current sp value (highByte) and next one (lowByte)
-    const highByte = this.cpu.mem[this.cpu.sp];
-    const lowByte = this.cpu.mem[this.cpu.sp + 1];
+    // Get current sp value (lowByte) and next one (highByte)
+    const highByte = this.cpu.mem[this.cpu.sp + 1];
+    const lowByte = this.cpu.mem[this.cpu.sp];
 
     // Bitwise OR to make 16-bit value
     const value = (highByte << 8) | lowByte;

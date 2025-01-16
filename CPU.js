@@ -11,6 +11,13 @@ export class CPU {
 
     // Instruction set. Links each opcode with it instruction, length and cycles
     this.instructionTable = {
+      // LD BC, d16
+      0x01: {
+        instruction: () => this.instruction.LD_n_nn("BC"),
+        length: 3,
+        cycles: 12,
+      },
+
       // LD (BC), A
       0x02: {
         instruction: () => this.instruction.LD_n_A("BC", true),
@@ -25,6 +32,13 @@ export class CPU {
         cycles: 8,
       },
 
+      // LD (a16), SP
+      0x08: {
+        instruction: () => this.instruction.LD_nn_SP(),
+        length: 3,
+        cycles: 20,
+      },
+
       // LD A, (BC)
       0x0a: {
         instruction: () => this.instruction.LD_A_n("BC", true),
@@ -37,6 +51,13 @@ export class CPU {
         instruction: () => this.instruction.LD_nn_n("C"),
         length: 2,
         cycles: 8,
+      },
+
+      // LD DE, d16
+      0x11: {
+        instruction: () => this.instruction.LD_n_nn("DE"),
+        length: 3,
+        cycles: 12,
       },
 
       // LD (DE), A
@@ -67,6 +88,13 @@ export class CPU {
         cycles: 8,
       },
 
+      // LD HL, d16
+      0x21: {
+        instruction: () => this.instruction.LD_n_nn("HL"),
+        length: 3,
+        cycles: 12,
+      },
+
       // LDI (HL), A
       0x22: {
         instruction: () => this.instruction.LDI_HL_A(),
@@ -93,6 +121,13 @@ export class CPU {
         instruction: () => this.instruction.LD_nn_n("L"),
         length: 2,
         cycles: 8,
+      },
+
+      // LD SP, d16
+      0x31: {
+        instruction: () => this.instruction.LD_n_nn("SP"),
+        length: 3,
+        cycles: 12,
       },
 
       // LDD (HL), A
@@ -565,10 +600,45 @@ export class CPU {
         cycles: 4,
       },
 
+      // POP BC
+      0xc1: {
+        instruction: () => this.instruction.pop("BC"),
+        length: 1,
+        cycles: 12,
+      },
+
+      // PUSH BC
+      0xc5: {
+        instruction: () => this.instruction.push("BC"),
+        length: 1,
+        cycles: 16,
+      },
+
+      // POP DE
+      0xd1: {
+        instruction: () => this.instruction.pop("DE"),
+        length: 1,
+        cycles: 12,
+      },
+
+      // PUSH DE
+      0xd5: {
+        instruction: () => this.instruction.push("DE"),
+        length: 1,
+        cycles: 16,
+      },
+
       // LDH (a8), A
       0xe0: {
         instruction: () => this.instruction.LDH_n_A(this.mem[this.pc + 1]), // a8 is next pc address
         length: 2,
+        cycles: 12,
+      },
+
+      // POP HL
+      0xe1: {
+        instruction: () => this.instruction.pop("HL"),
+        length: 1,
         cycles: 12,
       },
 
@@ -577,6 +647,13 @@ export class CPU {
         instruction: () => this.instruction.LD_OffsetC_A(),
         length: 1,
         cycles: 8,
+      },
+
+      // PUSH HL
+      0xe5: {
+        instruction: () => this.instruction.push("HL"),
+        length: 1,
+        cycles: 16,
       },
 
       // LD (a16), A
@@ -593,6 +670,13 @@ export class CPU {
         cycles: 12,
       },
 
+      // POP AF
+      0xf1: {
+        instruction: () => this.instruction.pop("AF"),
+        length: 1,
+        cycles: 12,
+      },
+
       // LD A, (C)
       0xf2: {
         instruction: () => this.instruction.LD_A_OffsetC(),
@@ -600,11 +684,32 @@ export class CPU {
         cycles: 8,
       },
 
+      // PUSH AF
+      0xf5: {
+        instruction: () => this.instruction.push("AF"),
+        length: 1,
+        cycles: 16,
+      },
+
       // LD A, (a16)
       0xfa: {
         instruction: () => this.instruction.LD_A_n("a16", true),
         length: 3,
         cycles: 16,
+      },
+
+      // LDHL SP, r8
+      0xf8: {
+        instruction: () => this.instruction.LDHL_SP_n(),
+        length: 2,
+        cycles: 12,
+      },
+
+      // LD SP, HL
+      0xf9: {
+        instruction: () => this.instruction.LD_SP_HL(),
+        length: 1,
+        cycles: 8,
       },
     };
   }
@@ -619,44 +724,6 @@ export class CPU {
     H: "H",
     L: "L",
   });
-
-  /**
-   * Sets the value of a specified CPU register. Supports both simple and combined registers.
-   *
-   * @param {string} register - The name of the register to modify.
-   *                            Can be a single register (e.g., "A", "B")
-   *                            or a combined register (e.g., "AF", "BC").
-   * @param {number} value - The value to set in the register. For combined registers,
-   *                         the higher 8 bits are stored in the first register,
-   *                         and the lower 8 bits in the second.
-   */
-  setRegister(register, value) {
-    if (typeof register !== "string") {
-      console.error("Unknown register: " + register);
-      return;
-    }
-
-    register = register.toUpperCase();
-
-    // Simple register
-    if (register.length == 1 && register in CPU.Registers) {
-      const index = Object.keys(CPU.Registers).indexOf(register);
-      this.registersValues[index] = value;
-    }
-    // Combined register
-    else if (register.length == 2) {
-      const left = register.split("")[0];
-      const right = register.split("")[1];
-
-      if (left in CPU.Registers && right in CPU.Registers) {
-        const leftIndex = Object.keys(CPU.Registers).indexOf(left);
-        const rightIndex = Object.keys(CPU.Registers).indexOf(right);
-
-        this.registersValues[leftIndex] = (value & 0xff00) >> 8;
-        this.registersValues[rightIndex] = value & 0xff;
-      } else console.error("Unknown combined register: " + register);
-    } else console.error("Unknown register: " + register);
-  }
 
   /**
    * Retrieves the value of a specified CPU register. Supports both simple and combined registers.
@@ -692,6 +759,44 @@ export class CPU {
           (this.registersValues[leftIndex] << 8) |
           this.registersValues[rightIndex]
         );
+      } else console.error("Unknown combined register: " + register);
+    } else console.error("Unknown register: " + register);
+  }
+
+  /**
+   * Sets the value of a specified CPU register. Supports both simple and combined registers.
+   *
+   * @param {string} register - The name of the register to modify.
+   *                            Can be a single register (e.g., "A", "B")
+   *                            or a combined register (e.g., "AF", "BC").
+   * @param {number} value - The value to set in the register. For combined registers,
+   *                         the higher 8 bits are stored in the first register,
+   *                         and the lower 8 bits in the second.
+   */
+  setRegister(register, value) {
+    if (typeof register !== "string") {
+      console.error("Unknown register: " + register);
+      return;
+    }
+
+    register = register.toUpperCase();
+
+    // Simple register
+    if (register.length == 1 && register in CPU.Registers) {
+      const index = Object.keys(CPU.Registers).indexOf(register);
+      this.registersValues[index] = value;
+    }
+    // Combined register
+    else if (register.length == 2) {
+      const left = register.split("")[0];
+      const right = register.split("")[1];
+
+      if (left in CPU.Registers && right in CPU.Registers) {
+        const leftIndex = Object.keys(CPU.Registers).indexOf(left);
+        const rightIndex = Object.keys(CPU.Registers).indexOf(right);
+
+        this.registersValues[leftIndex] = (value & 0xff00) >> 8;
+        this.registersValues[rightIndex] = value & 0xff;
       } else console.error("Unknown combined register: " + register);
     } else console.error("Unknown register: " + register);
   }
@@ -754,6 +859,10 @@ export class CPU {
 
     // Update register F
     this.setRegister("F", registerF);
+  }
+
+  getSignedImmediate8Bit() {
+    return (this.mem[this.pc + 1] << 24) >> 24;
   }
 
   getImmediate16Bit() {
