@@ -318,17 +318,18 @@ export class Instruction {
     } else if (this.isImmediate(value)) add = value; // Immediate 8-bit value
     else add = this.cpu.getRegister(value); // Simple register value
 
-    const result = registerA + add;
+    // Compute result & truncate to 8-bit
+    const result = (registerA + add) & 0xff;
 
     // Calculate flags
     const flags = {
-      Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
+      Z: result === 0, // Zero flag: result
       H: this.isHalfCarry8bit(registerA, add, "add"), // Half-carry
       C: this.isCarry8bit(registerA, add, "add"), // Carry
     };
 
-    // Update the A register with the result (truncated to 8 bits)
-    this.cpu.setRegister("A", result & 0xff);
+    // Update the A register with the result
+    this.cpu.setRegister("A", result);
 
     // Set flags Z0HC
     this.cpu.setFlags("Z0HC", flags);

@@ -25,6 +25,20 @@ export class CPU {
         cycles: 8,
       },
 
+      // INC B
+      0x04: {
+        instruction: () => this.instruction.INC_n("B"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // DEC B
+      0x05: {
+        instruction: () => this.instruction.DEC_n("B"),
+        length: 1,
+        cycles: 4,
+      },
+
       // LD B, d8
       0x06: {
         instruction: () => this.instruction.LD_nn_n("B"),
@@ -44,6 +58,20 @@ export class CPU {
         instruction: () => this.instruction.LD_A_n("BC", true),
         length: 1,
         cycles: 8,
+      },
+
+      // INC C
+      0x0c: {
+        instruction: () => this.instruction.INC_n("C"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // DEC C
+      0x0d: {
+        instruction: () => this.instruction.DEC_n("C"),
+        length: 1,
+        cycles: 4,
       },
 
       // LD C, d8
@@ -67,6 +95,20 @@ export class CPU {
         cycles: 8,
       },
 
+      // INC D
+      0x14: {
+        instruction: () => this.instruction.INC_n("D"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // DEC D
+      0x15: {
+        instruction: () => this.instruction.DEC_n("D"),
+        length: 1,
+        cycles: 4,
+      },
+
       // LD D, d8
       0x16: {
         instruction: () => this.instruction.LD_nn_n("D"),
@@ -79,6 +121,20 @@ export class CPU {
         instruction: () => this.instruction.LD_A_n("DE", true),
         length: 1,
         cycles: 8,
+      },
+
+      // INC E
+      0x1c: {
+        instruction: () => this.instruction.INC_n("E"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // DEC E
+      0x1d: {
+        instruction: () => this.instruction.DEC_n("E"),
+        length: 1,
+        cycles: 4,
       },
 
       // LD E, d8
@@ -102,6 +158,20 @@ export class CPU {
         cycles: 8,
       },
 
+      // INC H
+      0x24: {
+        instruction: () => this.instruction.INC_n("H"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // DEC H
+      0x25: {
+        instruction: () => this.instruction.DEC_n("H"),
+        length: 1,
+        cycles: 4,
+      },
+
       // LD H, d8
       0x26: {
         instruction: () => this.instruction.LD_nn_n("H"),
@@ -114,6 +184,20 @@ export class CPU {
         instruction: () => this.instruction.LDI_A_HL(),
         length: 1,
         cycles: 8,
+      },
+
+      // INC L
+      0x2c: {
+        instruction: () => this.instruction.INC_n("L"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // DEC L
+      0x2d: {
+        instruction: () => this.instruction.DEC_n("L"),
+        length: 1,
+        cycles: 4,
       },
 
       // LD L, d8
@@ -137,10 +221,24 @@ export class CPU {
         cycles: 8,
       },
 
+      // INC (HL)
+      0x34: {
+        instruction: () => this.instruction.INC_n("HL"),
+        length: 1,
+        cycles: 12,
+      },
+
+      // DEC (HL)
+      0x35: {
+        instruction: () => this.instruction.DEC_n("HL"),
+        length: 1,
+        cycles: 12,
+      },
+
       // LD (HL), d8
       0x36: {
         instruction: () =>
-          this.instruction.LD_r1_r2("HL", this.mem[this.pc + 1]), // d8 is next PC address
+          this.instruction.LD_r1_r2("HL", this.mem[this.pc + 1]), // d8 is at next PC address
         length: 2,
         cycles: 12,
       },
@@ -150,6 +248,20 @@ export class CPU {
         instruction: () => this.instruction.LDD_A_HL(),
         length: 1,
         cycles: 8,
+      },
+
+      // INC A
+      0x3c: {
+        instruction: () => this.instruction.INC_n("A"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // DEC A
+      0x3d: {
+        instruction: () => this.instruction.DEC_n("A"),
+        length: 1,
+        cycles: 4,
       },
 
       // LD A, d8
@@ -600,6 +712,454 @@ export class CPU {
         cycles: 4,
       },
 
+      // ADD A, B
+      0x80: {
+        instruction: () => this.instruction.ADD_A_n("B"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // ADD A, C
+      0x81: {
+        instruction: () => this.instruction.ADD_A_n("C"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // ADD A, D
+      0x82: {
+        instruction: () => this.instruction.ADD_A_n("D"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // ADD A, E
+      0x83: {
+        instruction: () => this.instruction.ADD_A_n("E"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // ADD A, H
+      0x84: {
+        instruction: () => this.instruction.ADD_A_n("H"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // ADD A, L
+      0x85: {
+        instruction: () => this.instruction.ADD_A_n("L"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // ADD A, (HL)
+      0x86: {
+        instruction: () => this.instruction.ADD_A_n("HL"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // ADD A, A
+      0x87: {
+        instruction: () => this.instruction.ADD_A_n("A"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // ADC A, B
+      0x88: {
+        instruction: () => this.instruction.ADC_A_n("B"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // ADC A, C
+      0x89: {
+        instruction: () => this.instruction.ADC_A_n("C"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // ADC A, D
+      0x8a: {
+        instruction: () => this.instruction.ADC_A_n("D"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // ADC A, E
+      0x8b: {
+        instruction: () => this.instruction.ADC_A_n("E"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // ADC A, H
+      0x8c: {
+        instruction: () => this.instruction.ADC_A_n("H"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // ADC A, L
+      0x8d: {
+        instruction: () => this.instruction.ADC_A_n("L"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // ADC A, (HL)
+      0x8e: {
+        instruction: () => this.instruction.ADC_A_n("HL"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // ADC A, A
+      0x8f: {
+        instruction: () => this.instruction.ADC_A_n("A"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // SUB A, B
+      0x90: {
+        instruction: () => this.instruction.SUB_A_n("B"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // SUB A, C
+      0x91: {
+        instruction: () => this.instruction.SUB_A_n("C"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // SUB A, D
+      0x92: {
+        instruction: () => this.instruction.SUB_A_n("D"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // SUB A, E
+      0x93: {
+        instruction: () => this.instruction.SUB_A_n("E"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // SUB A, H
+      0x94: {
+        instruction: () => this.instruction.SUB_A_n("H"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // SUB A, L
+      0x95: {
+        instruction: () => this.instruction.SUB_A_n("L"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // SUB A, (HL)
+      0x96: {
+        instruction: () => this.instruction.SUB_A_n("HL"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // SUB A, A
+      0x97: {
+        instruction: () => this.instruction.SUB_A_n("A"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // SBC A, B
+      0x98: {
+        instruction: () => this.instruction.SBC_A_n("B"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // SBC A, C
+      0x99: {
+        instruction: () => this.instruction.SBC_A_n("C"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // SBC A, D
+      0x9a: {
+        instruction: () => this.instruction.SBC_A_n("D"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // SBC A, E
+      0x9b: {
+        instruction: () => this.instruction.SBC_A_n("E"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // SBC A, H
+      0x9c: {
+        instruction: () => this.instruction.SBC_A_n("H"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // SBC A, L
+      0x9d: {
+        instruction: () => this.instruction.SBC_A_n("L"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // SBC A, (HL)
+      0x9e: {
+        instruction: () => this.instruction.SBC_A_n("HL"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // SBC A, A
+      0x9f: {
+        instruction: () => this.instruction.SBC_A_n("A"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // AND B
+      0xa0: {
+        instruction: () => this.instruction.AND_n("B"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // AND C
+      0xa1: {
+        instruction: () => this.instruction.AND_n("C"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // AND D
+      0xa2: {
+        instruction: () => this.instruction.AND_n("D"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // AND E
+      0xa3: {
+        instruction: () => this.instruction.AND_n("E"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // AND H
+      0xa4: {
+        instruction: () => this.instruction.AND_n("H"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // AND L
+      0xa5: {
+        instruction: () => this.instruction.AND_n("L"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // AND (HL)
+      0xa6: {
+        instruction: () => this.instruction.AND_n("HL"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // AND A
+      0xa7: {
+        instruction: () => this.instruction.AND_n("A"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // XOR B
+      0xa8: {
+        instruction: () => this.instruction.XOR_n("B"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // XOR C
+      0xa9: {
+        instruction: () => this.instruction.XOR_n("C"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // XOR D
+      0xaa: {
+        instruction: () => this.instruction.XOR_n("D"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // XOR E
+      0xab: {
+        instruction: () => this.instruction.XOR_n("E"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // XOR H
+      0xac: {
+        instruction: () => this.instruction.XOR_n("H"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // XOR L
+      0xad: {
+        instruction: () => this.instruction.XOR_n("L"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // XOR (HL)
+      0xae: {
+        instruction: () => this.instruction.XOR_n("HL"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // XOR A
+      0xaf: {
+        instruction: () => this.instruction.XOR_n("A"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // OR B
+      0xb0: {
+        instruction: () => this.instruction.OR_n("B"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // OR C
+      0xb1: {
+        instruction: () => this.instruction.OR_n("C"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // OR D
+      0xb2: {
+        instruction: () => this.instruction.OR_n("D"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // OR E
+      0xb3: {
+        instruction: () => this.instruction.OR_n("E"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // OR H
+      0xb4: {
+        instruction: () => this.instruction.OR_n("H"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // OR L
+      0xb5: {
+        instruction: () => this.instruction.OR_n("L"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // OR (HL)
+      0xb6: {
+        instruction: () => this.instruction.OR_n("HL"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // OR A
+      0xb7: {
+        instruction: () => this.instruction.OR_n("A"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // CP B
+      0xb8: {
+        instruction: () => this.instruction.CP_n("B"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // CP C
+      0xb9: {
+        instruction: () => this.instruction.CP_n("C"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // CP D
+      0xba: {
+        instruction: () => this.instruction.CP_n("D"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // CP E
+      0xbb: {
+        instruction: () => this.instruction.CP_n("E"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // CP H
+      0xbc: {
+        instruction: () => this.instruction.CP_n("H"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // CP L
+      0xbd: {
+        instruction: () => this.instruction.CP_n("L"),
+        length: 1,
+        cycles: 4,
+      },
+
+      // CP (HL)
+      0xbe: {
+        instruction: () => this.instruction.CP_n("HL"),
+        length: 1,
+        cycles: 8,
+      },
+
+      // CP A
+      0xbf: {
+        instruction: () => this.instruction.CP_n("A"),
+        length: 1,
+        cycles: 4,
+      },
+
       // POP BC
       0xc1: {
         instruction: () => this.instruction.pop("BC"),
@@ -612,6 +1172,20 @@ export class CPU {
         instruction: () => this.instruction.push("BC"),
         length: 1,
         cycles: 16,
+      },
+
+      // ADD A, d8
+      0xc6: {
+        instruction: () => this.instruction.ADD_A_n(this.mem[this.pc + 1]), // d8 is at next pc address
+        length: 2,
+        cycles: 8,
+      },
+
+      // ADC A, d8
+      0xce: {
+        instruction: () => this.instruction.ADC_A_n(this.mem[this.pc + 1]), // d8 is at next pc address
+        length: 2,
+        cycles: 8,
       },
 
       // POP DE
@@ -628,9 +1202,23 @@ export class CPU {
         cycles: 16,
       },
 
+      // SUB A, d8
+      0xd6: {
+        instruction: () => this.instruction.SUB_A_n(this.mem[this.pc + 1]), // d8 is at next pc address
+        length: 2,
+        cycles: 8,
+      },
+
+      // SBC A, d8
+      0xdf: {
+        instruction: () => this.instruction.SBC_A_n(this.mem[this.pc + 1]), // d8 is at next pc address
+        length: 2,
+        cycles: 8,
+      },
+
       // LDH (a8), A
       0xe0: {
-        instruction: () => this.instruction.LDH_n_A(this.mem[this.pc + 1]), // a8 is next pc address
+        instruction: () => this.instruction.LDH_n_A(this.mem[this.pc + 1]), // a8 is at next pc address
         length: 2,
         cycles: 12,
       },
@@ -656,6 +1244,13 @@ export class CPU {
         cycles: 16,
       },
 
+      // AND d8
+      0xe6: {
+        instruction: () => this.instruction.AND_n(this.mem[this.pc + 1]), // d8 is at next pc address
+        length: 2,
+        cycles: 8,
+      },
+
       // LD (a16), A
       0xea: {
         instruction: () => this.instruction.LD_n_A("a16", true),
@@ -663,9 +1258,16 @@ export class CPU {
         cycles: 16,
       },
 
+      // XOR d8
+      0xee: {
+        instruction: () => this.instruction.XOR_n(this.mem[this.pc + 1]), // d8 is at next pc address
+        length: 2,
+        cycles: 8,
+      },
+
       // LDH A, (a8)
       0xf0: {
-        instruction: () => this.instruction.LDH_A_n(this.mem[this.pc + 1]), // a8 is next pc address
+        instruction: () => this.instruction.LDH_A_n(this.mem[this.pc + 1]), // a8 is at next pc address
         length: 2,
         cycles: 12,
       },
@@ -691,11 +1293,25 @@ export class CPU {
         cycles: 16,
       },
 
+      // OR d8
+      0xf6: {
+        instruction: () => this.instruction.OR_n(this.mem[this.pc + 1]), // d8 is at next pc address
+        length: 2,
+        cycles: 8,
+      },
+
       // LD A, (a16)
       0xfa: {
         instruction: () => this.instruction.LD_A_n("a16", true),
         length: 3,
         cycles: 16,
+      },
+
+      // CP d8
+      0xfe: {
+        instruction: () => this.instruction.CP_n(this.mem[this.pc + 1]), // d8 is at next pc address
+        length: 2,
+        cycles: 8,
       },
 
       // LDHL SP, r8
