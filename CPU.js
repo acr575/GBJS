@@ -25,6 +25,13 @@ export class CPU {
         cycles: 8,
       },
 
+      // INC BC
+      0x03: {
+        instruction: () => this.instruction.INC_nn("BC"),
+        length: 1,
+        cycles: 8,
+      },
+
       // INC B
       0x04: {
         instruction: () => this.instruction.INC_n("B"),
@@ -53,9 +60,23 @@ export class CPU {
         cycles: 20,
       },
 
+      // ADD HL, BC
+      0x09: {
+        instruction: () => this.instruction.ADD_HL_n("BC"),
+        length: 1,
+        cycles: 8,
+      },
+
       // LD A, (BC)
       0x0a: {
         instruction: () => this.instruction.LD_A_n("BC", true),
+        length: 1,
+        cycles: 8,
+      },
+
+      // DEC BC
+      0x0b: {
+        instruction: () => this.instruction.DEC_nn("BC"),
         length: 1,
         cycles: 8,
       },
@@ -95,6 +116,13 @@ export class CPU {
         cycles: 8,
       },
 
+      // INC DE
+      0x13: {
+        instruction: () => this.instruction.INC_nn("DE"),
+        length: 1,
+        cycles: 8,
+      },
+
       // INC D
       0x14: {
         instruction: () => this.instruction.INC_n("D"),
@@ -116,9 +144,23 @@ export class CPU {
         cycles: 8,
       },
 
+      // ADD HL, DE
+      0x19: {
+        instruction: () => this.instruction.ADD_HL_n("DE"),
+        length: 1,
+        cycles: 8,
+      },
+
       // LD A, (DE)
       0x1a: {
         instruction: () => this.instruction.LD_A_n("DE", true),
+        length: 1,
+        cycles: 8,
+      },
+
+      // DEC DE
+      0x1b: {
+        instruction: () => this.instruction.DEC_nn("DE"),
         length: 1,
         cycles: 8,
       },
@@ -158,6 +200,13 @@ export class CPU {
         cycles: 8,
       },
 
+      // INC HL
+      0x23: {
+        instruction: () => this.instruction.INC_nn("HL"),
+        length: 1,
+        cycles: 8,
+      },
+
       // INC H
       0x24: {
         instruction: () => this.instruction.INC_n("H"),
@@ -179,9 +228,23 @@ export class CPU {
         cycles: 8,
       },
 
+      // ADD HL, HL
+      0x29: {
+        instruction: () => this.instruction.ADD_HL_n("HL"),
+        length: 1,
+        cycles: 8,
+      },
+
       // LDI A, (HL)
       0x2a: {
         instruction: () => this.instruction.LDI_A_HL(),
+        length: 1,
+        cycles: 8,
+      },
+
+      // DEC HL
+      0x2b: {
+        instruction: () => this.instruction.DEC_nn("HL"),
         length: 1,
         cycles: 8,
       },
@@ -221,6 +284,13 @@ export class CPU {
         cycles: 8,
       },
 
+      // INC SP
+      0x33: {
+        instruction: () => this.instruction.INC_nn("SP"),
+        length: 1,
+        cycles: 8,
+      },
+
       // INC (HL)
       0x34: {
         instruction: () => this.instruction.INC_n("HL"),
@@ -243,9 +313,23 @@ export class CPU {
         cycles: 12,
       },
 
+      // ADD HL, SP
+      0x39: {
+        instruction: () => this.instruction.ADD_HL_n("SP"),
+        length: 1,
+        cycles: 8,
+      },
+
       // LDD A, (HL)
       0x3a: {
         instruction: () => this.instruction.LDD_A_HL(),
+        length: 1,
+        cycles: 8,
+      },
+
+      // DEC SP
+      0x3b: {
+        instruction: () => this.instruction.DEC_nn("SP"),
         length: 1,
         cycles: 8,
       },
@@ -1249,6 +1333,13 @@ export class CPU {
         instruction: () => this.instruction.AND_n(this.mem[this.pc + 1]), // d8 is at next pc address
         length: 2,
         cycles: 8,
+      },
+
+      // ADD SP, r8
+      0xe8: {
+        instruction: () => this.instruction.ADD_SP_n(),
+        length: 2,
+        cycles: 16,
       },
 
       // LD (a16), A

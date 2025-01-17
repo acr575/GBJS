@@ -8,6 +8,10 @@ let instruction = new Instruction(cpu);
 let initValue = 0x1234;
 let addValue = 0xabcd;
 
+function getSignedRepresentation8Bit(number) {
+  return (number << 24) >> 24;
+}
+
 console.log("DEBUG 16-bit ARITHMETIC INSTRUCTIONS");
 
 // ADD HL,n
@@ -66,41 +70,68 @@ console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 // ADD SP,n
 cpu.setFlags("1100");
-addValue = 0x11bf;
-console.log("\nADD SP,n");
+addValue = 0xff;
+cpu.mem[cpu.pc + 1] = addValue;
+console.log("\nADD SP,r8 (signed value)");
 console.log("  Check Z & N reset");
 console.log(
-  "    SP=0x" + cpu.sp.toString(16) + " , d16=0x" + addValue.toString(16)
+  "    Mem[pc+1]=0x" +
+    cpu.mem[cpu.pc + 1].toString(16) +
+    "(" +
+    getSignedRepresentation8Bit(cpu.mem[cpu.pc + 1]).toString(16) +
+    "); SP=0x" +
+    cpu.sp.toString(16)
 );
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.ADD_SP_n(addValue);
 console.log("    ADD SP,n : SP=0x" + cpu.sp.toString(16));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
-addValue = 0x1e23;
+addValue = 0x7f;
+cpu.sp++;
+cpu.mem[cpu.pc + 1] = addValue;
 console.log("  Check half-carry");
 console.log(
-  "    SP=0x" + cpu.sp.toString(16) + " , d16=0x" + addValue.toString(16)
+  "    Mem[pc+1]=0x" +
+    cpu.mem[cpu.pc + 1].toString(16) +
+    "(" +
+    getSignedRepresentation8Bit(cpu.mem[cpu.pc + 1]).toString(16) +
+    "); SP=0x" +
+    cpu.sp.toString(16)
 );
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.ADD_SP_n(addValue);
 console.log("    ADD SP,n : SP=0x" + cpu.sp.toString(16));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
-addValue = 0xe123;
+addValue = 0xbf;
+cpu.sp = 0x1231;
+cpu.mem[cpu.pc + 1] = addValue;
 console.log("  Check carry");
 console.log(
-  "    SP=0x" + cpu.sp.toString(16) + " , d16=0x" + addValue.toString(16)
+  "    Mem[pc+1]=0x" +
+    cpu.mem[cpu.pc + 1].toString(16) +
+    "(" +
+    getSignedRepresentation8Bit(cpu.mem[cpu.pc + 1]).toString(16) +
+    "); SP=0x" +
+    cpu.sp.toString(16)
 );
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.ADD_SP_n(addValue);
 console.log("    ADD SP,n : SP=0x" + cpu.sp.toString(16));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
-addValue = 0xed23;
-console.log("  Check half-carry & carry");
+addValue = 0x6f;
+cpu.sp = 0x12a1;
+cpu.mem[cpu.pc + 1] = addValue;
+console.log("  Check carry");
 console.log(
-  "    SP=0x" + cpu.sp.toString(16) + " , d16=0x" + addValue.toString(16)
+  "    Mem[pc+1]=0x" +
+    cpu.mem[cpu.pc + 1].toString(16) +
+    "(" +
+    getSignedRepresentation8Bit(cpu.mem[cpu.pc + 1]).toString(16) +
+    "); SP=0x" +
+    cpu.sp.toString(16)
 );
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.ADD_SP_n(addValue);

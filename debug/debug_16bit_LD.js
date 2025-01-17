@@ -54,13 +54,13 @@ console.log(
 instruction.LD_SP_HL();
 console.log("    LD SP,HL : SP=0x" + cpu.sp.toString(16));
 
-// LDHL SP,n
+// LDHL SP,r8
 cpu.setRegister("HL", 0xabcd);
 cpu.setRegister("F", 0b11000000);
 cpu.sp = 0x0012;
 value = 0xff;
 cpu.mem[cpu.pc + 1] = value;
-console.log("LDHL SP,n");
+console.log("LDHL SP,r8 (signed value)");
 console.log("  CASE 1: NO CARRY (tests flags ZN reset)");
 console.log(
   "    Mem[pc+1]=0x" +

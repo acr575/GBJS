@@ -612,17 +612,17 @@ export class Instruction {
   }
 
   /**
-   * Adds an immediate 16-bit signed value to the Stack Pointer (SP) and updates flags.
-   * @param {number} value - The signed 16-bit value to add to the Stack Pointer.
+   * Adds an immediate 8-bit signed value to the Stack Pointer (SP) and updates flags.
    */
-  ADD_SP_n(value) {
+  ADD_SP_n() {
     const sp = this.cpu.sp;
+    const value = this.cpu.getSignedImmediate8Bit();
     const result = sp + value;
 
     // Calculate flags
     const flags = {
-      H: this.isHalfCarry16bit(sp, value, "add"), // Half-carry
-      C: this.isCarry16bit(sp, value, "add"), // Carry
+      H: this.isHalfCarry8bit(sp, Math.abs(value), value < 0 ? "sub" : "add"), // Half-carry. If value is negative, checks as a sub
+      C: this.isCarry8bit(sp, Math.abs(value), value < 0 ? "sub" : "add"), // Carry. If value is negative, checks as a sub
     };
 
     // Update the SP with the result (truncated to 16 bits)
