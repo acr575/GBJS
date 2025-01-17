@@ -681,7 +681,7 @@ export class Instruction {
   CPL() {
     let registerA = this.cpu.getRegister("A");
 
-    registerA = ~registerA & 0xff;
+    registerA = ~registerA;
 
     this.cpu.setRegister("A", registerA);
 

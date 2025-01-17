@@ -11,6 +11,13 @@ export class CPU {
 
     // Instruction set. Links each opcode with it instruction, length and cycles
     this.instructionTable = {
+      // NOP
+      0x00: {
+        instruction: () => {},
+        length: 1,
+        cycles: 4,
+      },
+
       // LD BC, d16
       0x01: {
         instruction: () => this.instruction.LD_n_nn("BC"),
@@ -51,6 +58,13 @@ export class CPU {
         instruction: () => this.instruction.LD_nn_n("B"),
         length: 2,
         cycles: 8,
+      },
+
+      // RLCA
+      0x07: {
+        instruction: () => this.instruction.RLCA(),
+        length: 1,
+        cycles: 4,
       },
 
       // LD (a16), SP
@@ -102,6 +116,20 @@ export class CPU {
         cycles: 8,
       },
 
+      // RRCA
+      0x0f: {
+        instruction: () => this.instruction.RRCA(),
+        length: 1,
+        cycles: 4,
+      },
+
+      // STOP
+      0x10: {
+        instruction: () => this.instruction.STOP(),
+        length: 2,
+        cycles: 4,
+      },
+
       // LD DE, d16
       0x11: {
         instruction: () => this.instruction.LD_n_nn("DE"),
@@ -142,6 +170,13 @@ export class CPU {
         instruction: () => this.instruction.LD_nn_n("D"),
         length: 2,
         cycles: 8,
+      },
+
+      // RLA
+      0x17: {
+        instruction: () => this.instruction.RLA(),
+        length: 1,
+        cycles: 4,
       },
 
       // ADD HL, DE
@@ -186,6 +221,13 @@ export class CPU {
         cycles: 8,
       },
 
+      // RRA
+      0x1f: {
+        instruction: () => this.instruction.RRA(),
+        length: 1,
+        cycles: 4,
+      },
+
       // LD HL, d16
       0x21: {
         instruction: () => this.instruction.LD_n_nn("HL"),
@@ -228,6 +270,13 @@ export class CPU {
         cycles: 8,
       },
 
+      // DAA
+      0x27: {
+        instruction: () => this.instruction.DAA(),
+        length: 1,
+        cycles: 4,
+      },
+
       // ADD HL, HL
       0x29: {
         instruction: () => this.instruction.ADD_HL_n("HL"),
@@ -268,6 +317,13 @@ export class CPU {
         instruction: () => this.instruction.LD_nn_n("L"),
         length: 2,
         cycles: 8,
+      },
+
+      // CPL
+      0x2f: {
+        instruction: () => this.instruction.CPL(),
+        length: 1,
+        cycles: 4,
       },
 
       // LD SP, d16
@@ -313,6 +369,13 @@ export class CPU {
         cycles: 12,
       },
 
+      // SCF
+      0x37: {
+        instruction: () => this.instruction.SCF(),
+        length: 1,
+        cycles: 4,
+      },
+
       // ADD HL, SP
       0x39: {
         instruction: () => this.instruction.ADD_HL_n("SP"),
@@ -353,6 +416,13 @@ export class CPU {
         instruction: () => this.instruction.LD_A_n("d8"),
         length: 2,
         cycles: 8,
+      },
+
+      // CCF
+      0x3f: {
+        instruction: () => this.instruction.CCF(),
+        length: 1,
+        cycles: 4,
       },
 
       // LD B, B
@@ -731,6 +801,13 @@ export class CPU {
         instruction: () => this.instruction.LD_r1_r2("HL", "L"),
         length: 1,
         cycles: 8,
+      },
+
+      // HALT
+      0x76: {
+        instruction: () => this.instruction.HALT(),
+        length: 1,
+        cycles: 4,
       },
 
       // LD (HL), A
@@ -1377,6 +1454,13 @@ export class CPU {
         cycles: 8,
       },
 
+      // DI
+      0xf3: {
+        instruction: () => this.instruction.DI(),
+        length: 1,
+        cycles: 4,
+      },
+
       // PUSH AF
       0xf5: {
         instruction: () => this.instruction.push("AF"),
@@ -1417,6 +1501,13 @@ export class CPU {
         instruction: () => this.instruction.LD_SP_HL(),
         length: 1,
         cycles: 8,
+      },
+
+      // EI
+      0xfb: {
+        instruction: () => this.instruction.EI(),
+        length: 1,
+        cycles: 4,
       },
     };
   }
