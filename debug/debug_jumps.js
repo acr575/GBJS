@@ -104,8 +104,8 @@ console.log("\tPC+n=0x" + (cpu.pc + add).toString(16));
 instruction.JR_n(add);
 console.log("\tJR n: PC=0x" + cpu.pc.toString(16));
 
-// JR n
-console.log("\nJR n");
+// JR cc, nn
+console.log("\nJR cc, nn");
 
 // cc = NZ
 address += 1;

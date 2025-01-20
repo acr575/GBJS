@@ -179,6 +179,13 @@ export class CPU {
         cycles: 4,
       },
 
+      // JR r8
+      0x18: {
+        instruction: () => this.instruction.JR_n(this.getSignedImmediate8Bit()), // r8 is at next PC address
+        length: 2,
+        cycles: 12,
+      },
+
       // ADD HL, DE
       0x19: {
         instruction: () => this.instruction.ADD_HL_n("DE"),
@@ -226,6 +233,17 @@ export class CPU {
         instruction: () => this.instruction.RRA(),
         length: 1,
         cycles: 4,
+      },
+
+      // JR NZ r8
+      0x20: {
+        instruction: () =>
+          (this.lastCycles = this.instruction.JR_cc_nn(
+            "NZ",
+            this.getSignedImmediate8Bit()
+          )), // r8 is at next pc address
+        length: 2,
+        cycles: () => this.lastCycles,
       },
 
       // LD HL, d16
@@ -277,6 +295,17 @@ export class CPU {
         cycles: 4,
       },
 
+      // JR Z r8
+      0x28: {
+        instruction: () =>
+          (this.lastCycles = this.instruction.JR_cc_nn(
+            "Z",
+            this.getSignedImmediate8Bit()
+          )), // r8 is at next pc address
+        length: 2,
+        cycles: () => this.lastCycles,
+      },
+
       // ADD HL, HL
       0x29: {
         instruction: () => this.instruction.ADD_HL_n("HL"),
@@ -324,6 +353,17 @@ export class CPU {
         instruction: () => this.instruction.CPL(),
         length: 1,
         cycles: 4,
+      },
+
+      // JR NC r8
+      0x30: {
+        instruction: () =>
+          (this.lastCycles = this.instruction.JR_cc_nn(
+            "NC",
+            this.getSignedImmediate8Bit()
+          )), // r8 is at next pc address
+        length: 2,
+        cycles: () => this.lastCycles,
       },
 
       // LD SP, d16
@@ -374,6 +414,17 @@ export class CPU {
         instruction: () => this.instruction.SCF(),
         length: 1,
         cycles: 4,
+      },
+
+      // JR C r8
+      0x38: {
+        instruction: () =>
+          (this.lastCycles = this.instruction.JR_cc_nn(
+            "C",
+            this.getSignedImmediate8Bit()
+          )), // r8 is at next pc address
+        length: 2,
+        cycles: () => this.lastCycles,
       },
 
       // ADD HL, SP
@@ -1328,6 +1379,24 @@ export class CPU {
         cycles: 12,
       },
 
+      // JP NZ a16
+      0xc2: {
+        instruction: () =>
+          (this.lastCycles = this.instruction.JP_cc_nn(
+            "NZ",
+            this.getImmediate16Bit()
+          )), // a16 is at next 2 bytes from pc address
+        length: 3,
+        cycles: () => this.lastCycles,
+      },
+
+      // JP a16
+      0xc3: {
+        instruction: () => this.instruction.JP_nn(this.getImmediate16Bit()), // a16 is at next 2 bytes from pc address
+        length: 3,
+        cycles: 16,
+      },
+
       // PUSH BC
       0xc5: {
         instruction: () => this.instruction.push("BC"),
@@ -1340,6 +1409,17 @@ export class CPU {
         instruction: () => this.instruction.ADD_A_n(this.mem[this.pc + 1]), // d8 is at next pc address
         length: 2,
         cycles: 8,
+      },
+
+      // JP Z a16
+      0xca: {
+        instruction: () =>
+          (this.lastCycles = this.instruction.JP_cc_nn(
+            "Z",
+            this.getImmediate16Bit()
+          )), // a16 is at next 2 bytes from pc address
+        length: 3,
+        cycles: () => this.lastCycles,
       },
 
       // ADC A, d8
@@ -1356,6 +1436,17 @@ export class CPU {
         cycles: 12,
       },
 
+      // JP NC a16
+      0xd2: {
+        instruction: () =>
+          (this.lastCycles = this.instruction.JP_cc_nn(
+            "NC",
+            this.getImmediate16Bit()
+          )), // a16 is at next 2 bytes from pc address
+        length: 3,
+        cycles: () => this.lastCycles,
+      },
+
       // PUSH DE
       0xd5: {
         instruction: () => this.instruction.push("DE"),
@@ -1368,6 +1459,17 @@ export class CPU {
         instruction: () => this.instruction.SUB_A_n(this.mem[this.pc + 1]), // d8 is at next pc address
         length: 2,
         cycles: 8,
+      },
+
+      // JP C a16
+      0xda: {
+        instruction: () =>
+          (this.lastCycles = this.instruction.JP_cc_nn(
+            "C",
+            this.getImmediate16Bit()
+          )), // a16 is at next 2 bytes from pc address
+        length: 3,
+        cycles: () => this.lastCycles,
       },
 
       // SBC A, d8
@@ -1417,6 +1519,13 @@ export class CPU {
         instruction: () => this.instruction.ADD_SP_n(),
         length: 2,
         cycles: 16,
+      },
+
+      // JP (HL)
+      0xe9: {
+        instruction: () => this.instruction.JP_HL(),
+        length: 1,
+        cycles: 4,
       },
 
       // LD (a16), A

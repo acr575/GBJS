@@ -1142,36 +1142,33 @@ export class Instruction {
    * @param {string} condition - The condition to evaluate ("NZ", "Z", "NC", "C").
    * @param {number} address - The 16-bit address to jump to if the condition is met.
    * @throws {Error} If the condition is unknown or the address is not valid.
+   * @returns {number} The number of clock cycles. 16 if jumped, 12 if not.
    */
   JP_cc_nn(condition, address) {
     if (!this.isImmediate(address))
-      throw new Error(address + " is not an valid address");
+      throw new Error(address + " is not a valid address");
 
-    condition = condition.toUpperCase();
     const flags = this.cpu.getRegister("F"); // ZNHC 0000
     const Z = flags >> 7;
     const C = (flags >> 4) & 1;
 
-    switch (condition) {
-      case "NZ":
-        if (Z === 0) this.cpu.pc = address & 0xffff;
-        break;
+    // Map condition to its result
+    const conditionMap = {
+      NZ: Z === 0,
+      Z: Z === 1,
+      NC: C === 0,
+      C: C === 1,
+    };
 
-      case "Z":
-        if (Z === 1) this.cpu.pc = address & 0xffff;
-        break;
+    if (!(condition in conditionMap))
+      throw new Error("Unknown condition: " + condition);
 
-      case "NC":
-        if (C === 0) this.cpu.pc = address & 0xffff;
-        break;
-
-      case "C":
-        if (C === 1) this.cpu.pc = address & 0xffff;
-        break;
-
-      default:
-        throw new Error("Unknown condition: " + condition);
+    if (conditionMap[condition]) {
+      this.cpu.pc = address & 0xffff; // Jump
+      return 16; // Clock cycles if jumped
     }
+
+    return 12; // Clock cycles if not jumped
   }
 
   /**
@@ -1206,31 +1203,27 @@ export class Instruction {
     if (!this.isImmediate(value))
       throw new Error(value + " is not an valid value");
 
-    condition = condition.toUpperCase();
     const flags = this.cpu.getRegister("F"); // ZNHC 0000
     const Z = flags >> 7;
     const C = (flags >> 4) & 1;
 
-    switch (condition) {
-      case "NZ":
-        if (Z === 0) this.cpu.pc += value & 0xffff;
-        break;
+    // Map condition to its result
+    const conditionMap = {
+      NZ: Z === 0,
+      Z: Z === 1,
+      NC: C === 0,
+      C: C === 1,
+    };
 
-      case "Z":
-        if (Z === 1) this.cpu.pc += value & 0xffff;
-        break;
+    if (!(condition in conditionMap))
+      throw new Error("Unknown condition: " + condition);
 
-      case "NC":
-        if (C === 0) this.cpu.pc += value & 0xffff;
-        break;
-
-      case "C":
-        if (C === 1) this.cpu.pc += value & 0xffff;
-        break;
-
-      default:
-        throw new Error("Unknown condition: " + condition);
+    if (conditionMap[condition]) {
+      this.cpu.pc += value & 0xffff; // Add value to current address and jump
+      return 12; // Clock cycles if jumped
     }
+
+    return 8; // Clock cycles if not jumped
   }
 
   // --------------------- Calls functions ---------------------
