@@ -1372,6 +1372,13 @@ export class CPU {
         cycles: 4,
       },
 
+      // RET NZ
+      0xc0: {
+        instruction: () => (this.lastCycles = this.instruction.RET_cc("NZ")),
+        length: 1,
+        cycles: () => this.lastCycles,
+      },
+
       // POP BC
       0xc1: {
         instruction: () => this.instruction.pop("BC"),
@@ -1397,6 +1404,17 @@ export class CPU {
         cycles: 16,
       },
 
+      // CALL NZ, a16
+      0xc4: {
+        instruction: () =>
+          (this.lastCycles = this.instruction.CALL_cc_nn(
+            "NZ",
+            this.getImmediate16Bit()
+          )), // a16 is at next 2 bytes from pc address
+        length: 3,
+        cycles: () => this.lastCycles,
+      },
+
       // PUSH BC
       0xc5: {
         instruction: () => this.instruction.push("BC"),
@@ -1411,6 +1429,27 @@ export class CPU {
         cycles: 8,
       },
 
+      // RST 00H
+      0xc7: {
+        instruction: () => this.instruction.RST_n(0x00),
+        length: 1,
+        cycles: 16,
+      },
+
+      // RET Z
+      0xc8: {
+        instruction: () => (this.lastCycles = this.instruction.RET_cc("Z")),
+        length: 1,
+        cycles: () => this.lastCycles,
+      },
+
+      // RET
+      0xc9: {
+        instruction: () => this.instruction.RET(),
+        length: 1,
+        cycles: 16,
+      },
+
       // JP Z a16
       0xca: {
         instruction: () =>
@@ -1422,11 +1461,43 @@ export class CPU {
         cycles: () => this.lastCycles,
       },
 
+      // CALL Z, a16
+      0xcc: {
+        instruction: () =>
+          (this.lastCycles = this.instruction.CALL_cc_nn(
+            "Z",
+            this.getImmediate16Bit()
+          )), // a16 is at next 2 bytes from pc address
+        length: 3,
+        cycles: () => this.lastCycles,
+      },
+
+      // CALL a16
+      0xcd: {
+        instruction: () => this.instruction.CALL_nn(this.getImmediate16Bit()), // a16 is at next 2 bytes from pc address
+        length: 3,
+        cycles: 24,
+      },
+
       // ADC A, d8
       0xce: {
         instruction: () => this.instruction.ADC_A_n(this.mem[this.pc + 1]), // d8 is at next pc address
         length: 2,
         cycles: 8,
+      },
+
+      // RST 08H
+      0xcf: {
+        instruction: () => this.instruction.RST_n(0x08),
+        length: 1,
+        cycles: 16,
+      },
+
+      // RET NC
+      0xd0: {
+        instruction: () => (this.lastCycles = this.instruction.RET_cc("NC")),
+        length: 1,
+        cycles: () => this.lastCycles,
       },
 
       // POP DE
@@ -1440,6 +1511,17 @@ export class CPU {
       0xd2: {
         instruction: () =>
           (this.lastCycles = this.instruction.JP_cc_nn(
+            "NC",
+            this.getImmediate16Bit()
+          )), // a16 is at next 2 bytes from pc address
+        length: 3,
+        cycles: () => this.lastCycles,
+      },
+
+      // CALL NC, a16
+      0xd4: {
+        instruction: () =>
+          (this.lastCycles = this.instruction.CALL_cc_nn(
             "NC",
             this.getImmediate16Bit()
           )), // a16 is at next 2 bytes from pc address
@@ -1461,6 +1543,27 @@ export class CPU {
         cycles: 8,
       },
 
+      // RST 10H
+      0xd7: {
+        instruction: () => this.instruction.RST_n(0x10),
+        length: 1,
+        cycles: 16,
+      },
+
+      // RET C
+      0xd8: {
+        instruction: () => (this.lastCycles = this.instruction.RET_cc("C")),
+        length: 1,
+        cycles: () => this.lastCycles,
+      },
+
+      // RETI
+      0xd9: {
+        instruction: () => this.instruction.RETI(),
+        length: 1,
+        cycles: 16,
+      },
+
       // JP C a16
       0xda: {
         instruction: () =>
@@ -1472,11 +1575,29 @@ export class CPU {
         cycles: () => this.lastCycles,
       },
 
+      // CALL C, a16
+      0xdc: {
+        instruction: () =>
+          (this.lastCycles = this.instruction.CALL_cc_nn(
+            "C",
+            this.getImmediate16Bit()
+          )), // a16 is at next 2 bytes from pc address
+        length: 3,
+        cycles: () => this.lastCycles,
+      },
+
       // SBC A, d8
-      0xdf: {
+      0xde: {
         instruction: () => this.instruction.SBC_A_n(this.mem[this.pc + 1]), // d8 is at next pc address
         length: 2,
         cycles: 8,
+      },
+
+      // RST 18H
+      0xdf: {
+        instruction: () => this.instruction.RST_n(0x18),
+        length: 1,
+        cycles: 16,
       },
 
       // LDH (a8), A
@@ -1514,6 +1635,13 @@ export class CPU {
         cycles: 8,
       },
 
+      // RST 20H
+      0xe7: {
+        instruction: () => this.instruction.RST_n(0x20),
+        length: 1,
+        cycles: 16,
+      },
+
       // ADD SP, r8
       0xe8: {
         instruction: () => this.instruction.ADD_SP_n(),
@@ -1540,6 +1668,13 @@ export class CPU {
         instruction: () => this.instruction.XOR_n(this.mem[this.pc + 1]), // d8 is at next pc address
         length: 2,
         cycles: 8,
+      },
+
+      // RST 28H
+      0xef: {
+        instruction: () => this.instruction.RST_n(0x28),
+        length: 1,
+        cycles: 16,
       },
 
       // LDH A, (a8)
@@ -1584,18 +1719,11 @@ export class CPU {
         cycles: 8,
       },
 
-      // LD A, (a16)
-      0xfa: {
-        instruction: () => this.instruction.LD_A_n("a16", true),
-        length: 3,
+      // RST 30H
+      0xf7: {
+        instruction: () => this.instruction.RST_n(0x30),
+        length: 1,
         cycles: 16,
-      },
-
-      // CP d8
-      0xfe: {
-        instruction: () => this.instruction.CP_n(this.mem[this.pc + 1]), // d8 is at next pc address
-        length: 2,
-        cycles: 8,
       },
 
       // LDHL SP, r8
@@ -1612,11 +1740,32 @@ export class CPU {
         cycles: 8,
       },
 
+      // LD A, (a16)
+      0xfa: {
+        instruction: () => this.instruction.LD_A_n("a16", true),
+        length: 3,
+        cycles: 16,
+      },
+
       // EI
       0xfb: {
         instruction: () => this.instruction.EI(),
         length: 1,
         cycles: 4,
+      },
+
+      // CP d8
+      0xfe: {
+        instruction: () => this.instruction.CP_n(this.mem[this.pc + 1]), // d8 is at next pc address
+        length: 2,
+        cycles: 8,
+      },
+
+      // RST 38H
+      0xff: {
+        instruction: () => this.instruction.RST_n(0x38),
+        length: 1,
+        cycles: 16,
       },
     };
   }

@@ -1165,10 +1165,10 @@ export class Instruction {
 
     if (conditionMap[condition]) {
       this.cpu.pc = address & 0xffff; // Jump
-      return 16; // Clock cycles if jumped
+      return 16; // Clock cycles when jumped
     }
 
-    return 12; // Clock cycles if not jumped
+    return 12; // Clock cycles when not jumped
   }
 
   /**
@@ -1198,6 +1198,7 @@ export class Instruction {
    * @param {string} condition - The condition to evaluate ("NZ", "Z", "NC", "C").
    * @param {number} value - The signed 8-bit offset for the relative jump.
    * @throws {Error} If the condition is unknown or the value is not valid.
+   * @returns {number} The number of clock cycles. 12 if jumped, 8 if not.
    */
   JR_cc_nn(condition, value) {
     if (!this.isImmediate(value))
@@ -1220,10 +1221,10 @@ export class Instruction {
 
     if (conditionMap[condition]) {
       this.cpu.pc += value & 0xffff; // Add value to current address and jump
-      return 12; // Clock cycles if jumped
+      return 12; // Clock cycles when jumped
     }
 
-    return 8; // Clock cycles if not jumped
+    return 8; // Clock cycles when not jumped
   }
 
   // --------------------- Calls functions ---------------------
@@ -1252,33 +1253,33 @@ export class Instruction {
    * @param {string} condition - The condition to evaluate ("NZ", "Z", "NC", "C").
    * @param {number} address - The target address of the subroutine.
    * @throws {Error} If the provided condition is unknown.
+   * @returns {number} The number of clock cycles. 24 if called, 12 if not.
    */
   CALL_cc_nn(condition, address) {
-    condition = condition.toUpperCase();
+    if (!this.isImmediate(address))
+      throw new Error(address + " is not an valid address");
+
     const flags = this.cpu.getRegister("F"); // ZNHC 0000
     const Z = flags >> 7; // Zero flag
     const C = (flags >> 4) & 1; // Carry flag
 
-    switch (condition) {
-      case "NZ":
-        if (Z === 0) this.CALL_nn(address); // Call if Zero flag is reset
-        break;
+    // Map condition to its result
+    const conditionMap = {
+      NZ: Z === 0,
+      Z: Z === 1,
+      NC: C === 0,
+      C: C === 1,
+    };
 
-      case "Z":
-        if (Z === 1) this.CALL_nn(address); // Call if Zero flag is set
-        break;
+    if (!(condition in conditionMap))
+      throw new Error("Unknown condition: " + condition);
 
-      case "NC":
-        if (C === 0) this.CALL_nn(address); // Call if Carry flag is reset
-        break;
-
-      case "C":
-        if (C === 1) this.CALL_nn(address); // Call if Carry flag is set
-        break;
-
-      default:
-        throw new Error("Unknown condition: " + condition);
+    if (conditionMap[condition]) {
+      this.CALL_nn(address); // Call address
+      return 24; // Clock cycles when called
     }
+
+    return 12; // Clock cycles when not called
   }
 
   // --------------------- Restarts functions ---------------------
@@ -1318,39 +1319,35 @@ export class Instruction {
    * Evaluates a condition based on CPU flags, and if the condition is met,
    * it pops the top two bytes from the stack and sets the program counter (PC) to the popped address.
    *
-   * @param {string} condition - The condition to evaluate before returning. Must be one of the following:
-   * "NZ" (Non-Zero), "Z" (Zero), "NC" (No Carry), "C" (Carry).
+   * @param {string} condition - The condition to evaluate ("NZ", "Z", "NC", "C").
    * @throws {Error} Throws an error if an unknown condition is provided.
+   * @returns {number} The number of clock cycles. 20 if returned, 8 if not.
    */
   RET_cc(condition) {
-    condition = condition.toUpperCase();
     const flags = this.cpu.getRegister("F"); // ZNHC 0000
     const Z = flags >> 7;
     const C = (flags >> 4) & 1;
 
-    switch (condition) {
-      case "NZ":
-        if (Z === 0) this.RET();
-        break;
+    // Map condition to its result
+    const conditionMap = {
+      NZ: Z === 0,
+      Z: Z === 1,
+      NC: C === 0,
+      C: C === 1,
+    };
 
-      case "Z":
-        if (Z === 1) this.RET();
-        break;
+    if (!(condition in conditionMap))
+      throw new Error("Unknown condition: " + condition);
 
-      case "NC":
-        if (C === 0) this.RET();
-        break;
-
-      case "C":
-        if (C === 1) this.RET();
-        break;
-
-      default:
-        throw new Error("Unknown condition: " + condition);
+    if (conditionMap[condition]) {
+      this.RET(); // Return
+      return 20; // Clock cycles when returned
     }
+
+    return 8; // Clock cycles when not returned
   }
 
-  // TODO: Check if enable interrupts just sets ime flag & debug
+  // TODO: Check if enable interrupts just sets ime flag
   RETI() {
     this.RET();
     this.cpu.ime = 1;
