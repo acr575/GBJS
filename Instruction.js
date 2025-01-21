@@ -713,6 +713,15 @@ export class Instruction {
     this.cpu.ime = 1;
   }
 
+  PREFIX_CB(opcode) {
+    const fetch = this.cpu.prefixInstructionTable[opcode]; // Fetch opcode's instruction
+    if (!fetch) throw new Error("Unknown opcode: " + opcode);
+
+    fetch.instruction(); // Execute instruction
+
+    return fetch.cycles; // Return instruction cycles
+  }
+
   // --------------------- Rotates & Shifts functions ---------------------
   /**
    * Performs a left rotation on the given 8-bit value.
