@@ -172,7 +172,7 @@ export class OpcodeTable {
 
       // JR r8
       0x18: {
-        instruction: () => cpu.instruction.JR_n(this.getSignedImmediate8Bit()), // r8 is at next PC address
+        instruction: () => cpu.instruction.JR_n(cpu.getSignedImmediate8Bit()), // r8 is at next PC address
         length: 2,
         cycles: 12,
       },
@@ -231,7 +231,7 @@ export class OpcodeTable {
         instruction: () =>
           (this.lastCycles = cpu.instruction.JR_cc_nn(
             "NZ",
-            this.getSignedImmediate8Bit()
+            cpu.getSignedImmediate8Bit()
           )), // r8 is at next pc address
         length: 2,
         cycles: () => this.lastCycles,
@@ -291,7 +291,7 @@ export class OpcodeTable {
         instruction: () =>
           (this.lastCycles = cpu.instruction.JR_cc_nn(
             "Z",
-            this.getSignedImmediate8Bit()
+            cpu.getSignedImmediate8Bit()
           )), // r8 is at next pc address
         length: 2,
         cycles: () => this.lastCycles,
@@ -351,7 +351,7 @@ export class OpcodeTable {
         instruction: () =>
           (this.lastCycles = cpu.instruction.JR_cc_nn(
             "NC",
-            this.getSignedImmediate8Bit()
+            cpu.getSignedImmediate8Bit()
           )), // r8 is at next pc address
         length: 2,
         cycles: () => this.lastCycles,
@@ -395,7 +395,7 @@ export class OpcodeTable {
       // LD (HL), d8
       0x36: {
         instruction: () =>
-          cpu.instruction.LD_r1_r2("HL", this.mem[this.pc + 1]), // d8 is at next PC address
+          cpu.instruction.LD_r1_r2("HL", cpu.mem[cpu.pc + 1]), // d8 is at next PC address
         length: 2,
         cycles: 12,
       },
@@ -412,7 +412,7 @@ export class OpcodeTable {
         instruction: () =>
           (this.lastCycles = cpu.instruction.JR_cc_nn(
             "C",
-            this.getSignedImmediate8Bit()
+            cpu.getSignedImmediate8Bit()
           )), // r8 is at next pc address
         length: 2,
         cycles: () => this.lastCycles,
@@ -1382,7 +1382,7 @@ export class OpcodeTable {
         instruction: () =>
           (this.lastCycles = cpu.instruction.JP_cc_nn(
             "NZ",
-            this.getImmediate16Bit()
+            cpu.getImmediate16Bit()
           )), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: () => this.lastCycles,
@@ -1390,7 +1390,7 @@ export class OpcodeTable {
 
       // JP a16
       0xc3: {
-        instruction: () => cpu.instruction.JP_nn(this.getImmediate16Bit()), // a16 is at next 2 bytes from pc address
+        instruction: () => cpu.instruction.JP_nn(cpu.getImmediate16Bit()), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: 16,
       },
@@ -1400,7 +1400,7 @@ export class OpcodeTable {
         instruction: () =>
           (this.lastCycles = cpu.instruction.CALL_cc_nn(
             "NZ",
-            this.getImmediate16Bit()
+            cpu.getImmediate16Bit()
           )), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: () => this.lastCycles,
@@ -1415,7 +1415,7 @@ export class OpcodeTable {
 
       // ADD A, d8
       0xc6: {
-        instruction: () => cpu.instruction.ADD_A_n(this.mem[this.pc + 1]), // d8 is at next pc address
+        instruction: () => cpu.instruction.ADD_A_n(cpu.mem[cpu.pc + 1]), // d8 is at next pc address
         length: 2,
         cycles: 8,
       },
@@ -1446,7 +1446,7 @@ export class OpcodeTable {
         instruction: () =>
           (this.lastCycles = cpu.instruction.JP_cc_nn(
             "Z",
-            this.getImmediate16Bit()
+            cpu.getImmediate16Bit()
           )), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: () => this.lastCycles,
@@ -1465,7 +1465,7 @@ export class OpcodeTable {
         instruction: () =>
           (this.lastCycles = cpu.instruction.CALL_cc_nn(
             "Z",
-            this.getImmediate16Bit()
+            cpu.getImmediate16Bit()
           )), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: () => this.lastCycles,
@@ -1473,14 +1473,14 @@ export class OpcodeTable {
 
       // CALL a16
       0xcd: {
-        instruction: () => cpu.instruction.CALL_nn(this.getImmediate16Bit()), // a16 is at next 2 bytes from pc address
+        instruction: () => cpu.instruction.CALL_nn(cpu.getImmediate16Bit()), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: 24,
       },
 
       // ADC A, d8
       0xce: {
-        instruction: () => cpu.instruction.ADC_A_n(this.mem[this.pc + 1]), // d8 is at next pc address
+        instruction: () => cpu.instruction.ADC_A_n(cpu.mem[cpu.pc + 1]), // d8 is at next pc address
         length: 2,
         cycles: 8,
       },
@@ -1511,7 +1511,7 @@ export class OpcodeTable {
         instruction: () =>
           (this.lastCycles = cpu.instruction.JP_cc_nn(
             "NC",
-            this.getImmediate16Bit()
+            cpu.getImmediate16Bit()
           )), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: () => this.lastCycles,
@@ -1522,7 +1522,7 @@ export class OpcodeTable {
         instruction: () =>
           (this.lastCycles = cpu.instruction.CALL_cc_nn(
             "NC",
-            this.getImmediate16Bit()
+            cpu.getImmediate16Bit()
           )), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: () => this.lastCycles,
@@ -1537,7 +1537,7 @@ export class OpcodeTable {
 
       // SUB A, d8
       0xd6: {
-        instruction: () => cpu.instruction.SUB_A_n(this.mem[this.pc + 1]), // d8 is at next pc address
+        instruction: () => cpu.instruction.SUB_A_n(cpu.mem[cpu.pc + 1]), // d8 is at next pc address
         length: 2,
         cycles: 8,
       },
@@ -1568,7 +1568,7 @@ export class OpcodeTable {
         instruction: () =>
           (this.lastCycles = cpu.instruction.JP_cc_nn(
             "C",
-            this.getImmediate16Bit()
+            cpu.getImmediate16Bit()
           )), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: () => this.lastCycles,
@@ -1579,7 +1579,7 @@ export class OpcodeTable {
         instruction: () =>
           (this.lastCycles = cpu.instruction.CALL_cc_nn(
             "C",
-            this.getImmediate16Bit()
+            cpu.getImmediate16Bit()
           )), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: () => this.lastCycles,
@@ -1587,7 +1587,7 @@ export class OpcodeTable {
 
       // SBC A, d8
       0xde: {
-        instruction: () => cpu.instruction.SBC_A_n(this.mem[this.pc + 1]), // d8 is at next pc address
+        instruction: () => cpu.instruction.SBC_A_n(cpu.mem[cpu.pc + 1]), // d8 is at next pc address
         length: 2,
         cycles: 8,
       },
@@ -1601,7 +1601,7 @@ export class OpcodeTable {
 
       // LDH (a8), A
       0xe0: {
-        instruction: () => cpu.instruction.LDH_n_A(this.mem[this.pc + 1]), // a8 is at next pc address
+        instruction: () => cpu.instruction.LDH_n_A(cpu.mem[cpu.pc + 1]), // a8 is at next pc address
         length: 2,
         cycles: 12,
       },
@@ -1629,7 +1629,7 @@ export class OpcodeTable {
 
       // AND d8
       0xe6: {
-        instruction: () => cpu.instruction.AND_n(this.mem[this.pc + 1]), // d8 is at next pc address
+        instruction: () => cpu.instruction.AND_n(cpu.mem[cpu.pc + 1]), // d8 is at next pc address
         length: 2,
         cycles: 8,
       },
@@ -1664,7 +1664,7 @@ export class OpcodeTable {
 
       // XOR d8
       0xee: {
-        instruction: () => cpu.instruction.XOR_n(this.mem[this.pc + 1]), // d8 is at next pc address
+        instruction: () => cpu.instruction.XOR_n(cpu.mem[cpu.pc + 1]), // d8 is at next pc address
         length: 2,
         cycles: 8,
       },
@@ -1678,7 +1678,7 @@ export class OpcodeTable {
 
       // LDH A, (a8)
       0xf0: {
-        instruction: () => cpu.instruction.LDH_A_n(this.mem[this.pc + 1]), // a8 is at next pc address
+        instruction: () => cpu.instruction.LDH_A_n(cpu.mem[cpu.pc + 1]), // a8 is at next pc address
         length: 2,
         cycles: 12,
       },
@@ -1713,7 +1713,7 @@ export class OpcodeTable {
 
       // OR d8
       0xf6: {
-        instruction: () => cpu.instruction.OR_n(this.mem[this.pc + 1]), // d8 is at next pc address
+        instruction: () => cpu.instruction.OR_n(cpu.mem[cpu.pc + 1]), // d8 is at next pc address
         length: 2,
         cycles: 8,
       },
@@ -1755,7 +1755,7 @@ export class OpcodeTable {
 
       // CP d8
       0xfe: {
-        instruction: () => cpu.instruction.CP_n(this.mem[this.pc + 1]), // d8 is at next pc address
+        instruction: () => cpu.instruction.CP_n(cpu.mem[cpu.pc + 1]), // d8 is at next pc address
         length: 2,
         cycles: 8,
       },
