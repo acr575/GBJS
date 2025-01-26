@@ -1,19 +1,19 @@
 import { Instruction } from "./Instruction.js";
 import { OpcodeTable } from "./OpcodeTable.js";
+import { MMU } from "./MMU.js";
 
 export class CPU {
   constructor() {
     this.registersValues = new Uint8Array(8); // a-l 8 bit registers
-    this.mem = new Uint8Array(0x10000);
     this.pc = 0x100; // Program Counter. Initialized at 0x100
     this.sp = 0xfffe; // Stack Pointer.  Initialized at 0xfffe
     this.ime = 0; // Interrup master enable flag. Starts at 0
+    this.mmu = new MMU(this, null); // Memory Management. TODO: change null to GPU when it exists
     this.instruction = new Instruction(this);
 
     this.opcodeTable = new OpcodeTable(this); // Init opcode table
     this.instructionTable = this.opcodeTable.instructionTable; // Links each opcode with it instruction, length and cycles
     this.prefixInstructionTable = this.opcodeTable.prefixInstructionTable; // Links each CB prefixed opcode with it instruction, length and cycles
-    this.isPrefixed = 0; // CB prefix instruction flag. It is enabled when 0xcb instruction is called.
   }
 
   static Registers = Object.freeze({
@@ -164,14 +164,11 @@ export class CPU {
   }
 
   getSignedImmediate8Bit() {
-    return (this.mem[this.pc + 1] << 24) >> 24;
+    return (this.mmu.readByte(this.pc + 1) << 24) >> 24;
   }
 
   getImmediate16Bit() {
-    const lowByte = this.mem[this.pc + 1];
-    const highByte = this.mem[this.pc + 2];
-
-    return (highByte << 8) | lowByte;
+    return this.mmu.readWord(this.pc + 1);
   }
 
   executeInstruction(opcode) {

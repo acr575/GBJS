@@ -6,6 +6,7 @@ let cpu = new CPU();
 let instruction = new Instruction(cpu);
 
 let value = 0b11000110;
+let addr = 0xc123;
 
 // BIT b,r
 console.log("BIT b,r");
@@ -26,10 +27,12 @@ for (let i = 0; i < 8; i++) {
 }
 
 console.log("  Bit (HL)");
-cpu.setRegister("HL", 0x1234);
-cpu.mem[0x1234] = 0b11000110;
+cpu.setRegister("HL", addr);
+cpu.mmu.writeByte(addr, 0b11000110);
 console.log("    HL=0x" + cpu.getRegister("HL").toString(16));
-console.log("    Value at address 0x1234=0b" + cpu.mem[0x1234].toString(2));
+console.log(
+  "    Value at address addr=0b" + cpu.mmu.readByte(addr).toString(2)
+);
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 for (let i = 0; i < 8; i++) {
   instruction.BIT_b_r(i, "HL");
@@ -55,14 +58,18 @@ for (let i = 0; i < 8; i++) {
 }
 
 console.log("  Set (HL)");
-cpu.setRegister("HL", 0x1234);
-cpu.mem[0x1234] = 0b11000110;
+cpu.setRegister("HL", addr);
+cpu.mmu.writeByte(addr, 0b11000110);
 console.log("    HL=0x" + cpu.getRegister("HL").toString(16));
-console.log("    Value at address 0x1234=0b" + cpu.mem[0x1234].toString(2));
+console.log(
+  "    Value at address addr=0b" + cpu.mmu.readByte(addr).toString(2)
+);
 for (let i = 0; i < 8; i++) {
-  cpu.mem[0x1234] = value;
+  cpu.mmu.writeByte(addr, value);
   instruction.SET_b_r(i, "HL");
-  console.log("    SET " + i + ", (HL): (HL)=0b" + cpu.mem[0x1234].toString(2));
+  console.log(
+    "    SET " + i + ", (HL): (HL)=0b" + cpu.mmu.readByte(addr).toString(2)
+  );
 }
 
 // RES b,r
@@ -79,12 +86,16 @@ for (let i = 0; i < 8; i++) {
 }
 
 console.log("  Reset (HL)");
-cpu.setRegister("HL", 0x1234);
-cpu.mem[0x1234] = 0b11000110;
+cpu.setRegister("HL", addr);
+cpu.mmu.writeByte(addr, 0b11000110);
 console.log("    HL=0x" + cpu.getRegister("HL").toString(16));
-console.log("    Value at address 0x1234=0b" + cpu.mem[0x1234].toString(2));
+console.log(
+  "    Value at address addr=0b" + cpu.mmu.readByte(addr).toString(2)
+);
 for (let i = 0; i < 8; i++) {
-  cpu.mem[0x1234] = value;
+  cpu.mmu.writeByte(addr, value);
   instruction.RES_b_r(i, "HL");
-  console.log("    RES " + i + ", (HL): (HL)=0b" + cpu.mem[0x1234].toString(2));
+  console.log(
+    "    RES " + i + ", (HL): (HL)=0b" + cpu.mmu.readByte(addr).toString(2)
+  );
 }

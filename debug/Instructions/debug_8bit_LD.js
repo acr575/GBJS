@@ -33,6 +33,7 @@ console.log("REGISTER HL: 0x" + cpu.getRegister("HL").toString(16));
 
 cpu = new CPU();
 instruction = new Instruction(cpu);
+cpu.pc = 0xc000; // Set PC to a writable area
 value = 0x11;
 
 // Test 8-Bit LD's
@@ -41,11 +42,11 @@ console.log("\n\nTEST 8-BIT LOADS");
 // LD nn,n
 console.log("  LD nn,n");
 for (const register of Object.values(CPU.Registers)) {
-  cpu.mem[cpu.pc + 1] = value;
+  cpu.mmu.writeByte(cpu.pc + 1, value);
   instruction.LD_nn_n(register);
   console.log(
     "    Mem[pc+1]: 0x" +
-      cpu.mem[cpu.pc + 1].toString(16) +
+      cpu.mmu.readByte(cpu.pc + 1).toString(16) +
       "; REGISTER " +
       register +
       " :0x" +
@@ -67,18 +68,19 @@ instruction.LD_r1_r2("B", "A");
 console.log("      LD B,A: B=0x" + cpu.getRegister("B").toString(16));
 
 console.log("    (HL) to simple register");
+cpu.setRegister("HL", 0xc500);
 console.log(
   "      HL=0x" +
     cpu.getRegister("HL").toString(16) +
     " -> C=0x" +
     cpu.getRegister("C").toString(16)
 );
-cpu.mem[cpu.getRegister("HL")] = 0xcc;
+cpu.mmu.writeByte(cpu.getRegister("HL"), 0xcc);
 console.log(
   "      Value at address 0x" +
     cpu.getRegister("HL").toString(16) +
     " = 0x" +
-    cpu.mem[cpu.getRegister("HL")].toString(16)
+    cpu.mmu.readByte(cpu.getRegister("HL")).toString(16)
 );
 instruction.LD_r1_r2("C", "HL");
 console.log("      LD C,(HL): C=0x" + cpu.getRegister("C").toString(16));
@@ -90,19 +92,18 @@ console.log(
     " -> D=0x" +
     cpu.getRegister("D").toString(16)
 );
-cpu.mem[cpu.getRegister("HL")] = 0xcc;
 console.log(
   "      Value at address 0x" +
     cpu.getRegister("HL").toString(16) +
     " = 0x" +
-    cpu.mem[cpu.getRegister("HL")].toString(16)
+    cpu.mmu.readByte(cpu.getRegister("HL")).toString(16)
 );
 instruction.LD_r1_r2("HL", "D");
 console.log(
   "      LD (HL),D: Value at address 0x" +
     cpu.getRegister("HL").toString(16) +
     " = 0x" +
-    cpu.mem[cpu.getRegister("HL")].toString(16)
+    cpu.mmu.readByte(cpu.getRegister("HL")).toString(16)
 );
 
 value = 0xff;
@@ -117,14 +118,14 @@ console.log(
   "      Value at address 0x" +
     cpu.getRegister("HL").toString(16) +
     " = 0x" +
-    cpu.mem[cpu.getRegister("HL")].toString(16)
+    cpu.mmu.readByte(cpu.getRegister("HL")).toString(16)
 );
 instruction.LD_r1_r2("HL", value);
 console.log(
   "      LD (HL),d8: Value at address 0x" +
     cpu.getRegister("HL").toString(16) +
     " = 0x" +
-    cpu.mem[cpu.getRegister("HL")].toString(16)
+    cpu.mmu.readByte(cpu.getRegister("HL")).toString(16)
 );
 
 // LD A,n
@@ -141,10 +142,10 @@ instruction.LD_A_n("B");
 console.log("      LD A,B: A=0x" + cpu.getRegister("A").toString(16));
 
 console.log("    8-bit immediate to A");
-cpu.mem[cpu.pc + 1] = value;
+cpu.mmu.writeByte(cpu.pc + 1, value);
 console.log(
   "      Mem[pc+1]: 0x" +
-    cpu.mem[cpu.pc + 1].toString(16) +
+    cpu.mmu.readByte(cpu.pc + 1).toString(16) +
     "; A=0x" +
     cpu.getRegister("A").toString(16)
 );
@@ -158,12 +159,12 @@ console.log(
     " <- BC=0x" +
     cpu.getRegister("BC").toString(16)
 );
-cpu.mem[cpu.getRegister("BC")] = 0xfe;
+cpu.mmu.writeByte(cpu.getRegister("BC"), 0xfe);
 console.log(
   "      Value at address 0x" +
     cpu.getRegister("BC").toString(16) +
     " = 0x" +
-    cpu.mem[cpu.getRegister("BC")].toString(16)
+    cpu.mmu.readByte(cpu.getRegister("BC")).toString(16)
 );
 instruction.LD_A_n("BC", true);
 console.log("      LD A,d8: A=0x" + cpu.getRegister("A").toString(16));
@@ -171,14 +172,13 @@ console.log("      LD A,d8: A=0x" + cpu.getRegister("A").toString(16));
 let d16Value = 0xcafe;
 
 console.log("    (16-bit immediate) to A");
-cpu.mem[d16Value] = 0xce;
-cpu.mem[cpu.pc + 1] = 0xfe;
-cpu.mem[cpu.pc + 2] = 0xca;
+cpu.mmu.writeByte(d16Value, 0xce);
+cpu.mmu.writeWord(cpu.pc + 1, 0xcafe);
 console.log(
   "      Mem[pc+1]: 0x" +
-    cpu.mem[cpu.pc + 1].toString(16) +
+    cpu.mmu.readByte(cpu.pc + 1).toString(16) +
     "; Mem[pc+2]: 0x" +
-    cpu.mem[cpu.pc + 2].toString(16) +
+    cpu.mmu.readByte(cpu.pc + 2).toString(16) +
     "; A=0x" +
     cpu.getRegister("A").toString(16)
 );
@@ -186,7 +186,7 @@ console.log(
   "      Value at address 0x" +
     d16Value.toString(16) +
     " = 0x" +
-    cpu.mem[d16Value].toString(16)
+    cpu.mmu.readByte(d16Value).toString(16)
 );
 instruction.LD_A_n("a16", true);
 console.log("      LD A,d16: A=0x" + cpu.getRegister("A").toString(16));
@@ -204,31 +204,33 @@ instruction.LD_n_A("B");
 console.log("      LD B,A: B=0x" + cpu.getRegister("B").toString(16));
 
 console.log("    A to (combined register)");
+cpu.setRegister("DE", 0xd500);
 console.log(
   "      A=0x" +
     cpu.getRegister("A").toString(16) +
     " -> DE=0x" +
     cpu.getRegister("DE").toString(16)
 );
-cpu.mem[cpu.getRegister("DE")] = 0xde;
+cpu.mmu.writeByte(cpu.getRegister("DE"), 0xde);
 console.log(
   "      Value at address 0x" +
     cpu.getRegister("DE").toString(16) +
     " = 0x" +
-    cpu.mem[cpu.getRegister("DE")].toString(16)
+    cpu.mmu.readByte(cpu.getRegister("DE")).toString(16)
 );
 instruction.LD_n_A("DE", true);
 console.log(
-  "      LD (DE),A: (DE)=0x" + cpu.mem[cpu.getRegister("DE")].toString(16)
+  "      LD (DE),A: (DE)=0x" +
+    cpu.mmu.readByte(cpu.getRegister("DE")).toString(16)
 );
 
 console.log("    A to (16-bit immediate)");
-cpu.mem[d16Value] = 0xef;
+cpu.mmu.writeByte(d16Value, 0xef);
 console.log(
   "      Mem[pc+1]: 0x" +
-    cpu.mem[cpu.pc + 1].toString(16) +
+    cpu.mmu.readByte(cpu.pc + 1).toString(16) +
     "; Mem[pc+2]: 0x" +
-    cpu.mem[cpu.pc + 2].toString(16) +
+    cpu.mmu.readByte(cpu.pc + 2).toString(16) +
     "; A=0x" +
     cpu.getRegister("A").toString(16)
 );
@@ -236,10 +238,12 @@ console.log(
   "      Value at address 0x" +
     d16Value.toString(16) +
     " = 0x" +
-    cpu.mem[d16Value].toString(16)
+    cpu.mmu.readByte(d16Value).toString(16)
 );
 instruction.LD_n_A("a16", true);
-console.log("      LD (d16),A: (d16)=0x" + cpu.mem[d16Value].toString(16));
+console.log(
+  "      LD (d16),A: (d16)=0x" + cpu.mmu.readByte(d16Value).toString(16)
+);
 
 // LD A,(C)
 console.log("\n  LD A,(C)");
@@ -249,14 +253,14 @@ console.log(
     " , C=0x" +
     cpu.getRegister("C").toString(16)
 );
-cpu.mem[cpu.getRegister("C") + 0xff00] = 0xac;
+cpu.mmu.writeByte(cpu.getRegister("C") + 0xff00, 0xac);
 console.log(
   "      Value at address (0x" +
     cpu.getRegister("C").toString(16) +
     " + " +
     "0xff00)" +
     " = 0x" +
-    cpu.mem[cpu.getRegister("C") + 0xff00].toString(16)
+    cpu.mmu.readByte(cpu.getRegister("C") + 0xff00).toString(16)
 );
 instruction.LD_A_OffsetC();
 console.log("      LD A,(C): A=0x" + cpu.getRegister("A").toString(16));
@@ -270,18 +274,19 @@ console.log(
     " , C=0x" +
     cpu.getRegister("C").toString(16)
 );
-cpu.mem[cpu.getRegister("C") + 0xff00] = 0xac;
+cpu.mmu.writeByte(cpu.getRegister("C") + 0xff00, 0xac);
 console.log(
   "      Value at address (0x" +
     cpu.getRegister("C").toString(16) +
     " + " +
     "0xff00)" +
     " = 0x" +
-    cpu.mem[cpu.getRegister("C") + 0xff00].toString(16)
+    cpu.mmu.readByte(cpu.getRegister("C") + 0xff00).toString(16)
 );
 instruction.LD_OffsetC_A();
 console.log(
-  "      LD (C),A: (C)=0x" + cpu.mem[cpu.getRegister("C") + 0xff00].toString(16)
+  "      LD (C),A: (C)=0x" +
+    cpu.mmu.readByte(cpu.getRegister("C") + 0xff00).toString(16)
 );
 
 // LDD A,(HL)
@@ -296,7 +301,7 @@ console.log(
   "      Value at address 0x" +
     cpu.getRegister("HL").toString(16) +
     " = 0x" +
-    cpu.mem[cpu.getRegister("HL")].toString(16)
+    cpu.mmu.readByte(cpu.getRegister("HL")).toString(16)
 );
 instruction.LDD_A_HL();
 console.log("      LD A,(HL): A=0x" + cpu.getRegister("A").toString(16));
@@ -312,22 +317,23 @@ console.log(
     " , HL=0x" +
     cpu.getRegister("HL").toString(16)
 );
-cpu.mem[cpu.getRegister("HL")] = 0xae;
+cpu.mmu.writeByte(cpu.getRegister("HL"), 0xae);
 console.log(
   "      Value at address 0x" +
     cpu.getRegister("HL").toString(16) +
     " = 0x" +
-    cpu.mem[cpu.getRegister("HL")].toString(16)
+    cpu.mmu.readByte(cpu.getRegister("HL")).toString(16)
 );
 instruction.LDD_HL_A();
 console.log(
-  "      LD (HL),A: (HL)=0x" + cpu.mem[cpu.getRegister("HL") + 1].toString(16)
+  "      LD (HL),A: (HL)=0x" +
+    cpu.mmu.readByte(cpu.getRegister("HL") + 1).toString(16)
 );
 console.log(
   "      HL value after operation: 0x" + cpu.getRegister("HL").toString(16)
 );
 
-cpu.setRegister("HL", 0x1234);
+cpu.setRegister("HL", 0xc234);
 
 // LDI A,(HL)
 console.log("\n  LDI A,(HL)");
@@ -337,12 +343,12 @@ console.log(
     " , HL=0x" +
     cpu.getRegister("HL").toString(16)
 );
-cpu.mem[cpu.getRegister("HL")] = 0x23;
+cpu.mmu.writeByte(cpu.getRegister("HL"), 0x23);
 console.log(
   "      Value at address 0x" +
     cpu.getRegister("HL").toString(16) +
     " = 0x" +
-    cpu.mem[cpu.getRegister("HL")].toString(16)
+    cpu.mmu.readByte(cpu.getRegister("HL")).toString(16)
 );
 instruction.LDI_A_HL();
 console.log("      LDI A,(HL): A=0x" + cpu.getRegister("A").toString(16));
@@ -358,16 +364,17 @@ console.log(
     " , HL=0x" +
     cpu.getRegister("HL").toString(16)
 );
-cpu.mem[cpu.getRegister("HL")] = 0x33;
+cpu.mmu.writeByte(cpu.getRegister("HL"), 0x33);
 console.log(
   "      Value at address 0x" +
     cpu.getRegister("HL").toString(16) +
     " = 0x" +
-    cpu.mem[cpu.getRegister("HL")].toString(16)
+    cpu.mmu.readByte(cpu.getRegister("HL")).toString(16)
 );
 instruction.LDI_HL_A();
 console.log(
-  "      LDI (HL),A: (HL)=0x" + cpu.mem[cpu.getRegister("HL") - 1].toString(16)
+  "      LDI (HL),A: (HL)=0x" +
+    cpu.mmu.readByte(cpu.getRegister("HL") - 1).toString(16)
 );
 console.log(
   "      HL value after operation: 0x" + cpu.getRegister("HL").toString(16)
@@ -382,15 +389,17 @@ console.log(
     " , n=0x" +
     value.toString(16)
 );
-cpu.mem[value + 0xff00] = 0x33;
+cpu.mmu.writeByte(value + 0xff00, 0x33);
 console.log(
   "      Value at address (0x" +
     value.toString(16) +
     " + 0xff00) = 0x" +
-    cpu.mem[value + 0xff00].toString(16)
+    cpu.mmu.readByte(value + 0xff00).toString(16)
 );
 instruction.LDH_n_A(value);
-console.log("      LDH (n),A: (n)=0x" + cpu.mem[value + 0xff00].toString(16));
+console.log(
+  "      LDH (n),A: (n)=0x" + cpu.mmu.readByte(value + 0xff00).toString(16)
+);
 
 // LDH A,(n)
 console.log("\n  LDH A,(n)");
@@ -401,12 +410,12 @@ console.log(
     " , n=0x" +
     value.toString(16)
 );
-cpu.mem[value + 0xff00] = 0xdc;
+cpu.mmu.writeByte(value + 0xff00, 0xdc);
 console.log(
   "      Value at address (0x" +
     value.toString(16) +
     " + 0xff00) = 0x" +
-    cpu.mem[value + 0xff00].toString(16)
+    cpu.mmu.readByte(value + 0xff00).toString(16)
 );
 instruction.LDH_A_n(value);
 console.log("      LDH A,(n): A=0x" + cpu.getRegister("A").toString(16));

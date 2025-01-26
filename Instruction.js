@@ -11,7 +11,7 @@ export class Instruction {
    * @param {string} dstReg - The destination register.
    */
   LD_nn_n(dstReg) {
-    this.cpu.setRegister(dstReg, this.cpu.mem[this.cpu.pc + 1]);
+    this.cpu.setRegister(dstReg, this.cpu.mmu.readByte(this.cpu.pc + 1));
   }
 
   /**
@@ -24,7 +24,7 @@ export class Instruction {
     // Source register is a combined register (pointer). Load value from pointer address
     if (srcReg.length === 2) {
       const address = this.cpu.getRegister(srcReg);
-      this.cpu.setRegister(dstReg, this.cpu.mem[address]);
+      this.cpu.setRegister(dstReg, this.cpu.mmu.readByte(address));
     }
 
     // Dest. register is a combined register (pointer). Load value into pointer address
@@ -32,9 +32,10 @@ export class Instruction {
       const address = this.cpu.getRegister(dstReg);
 
       // If source is an immediate, then load 8-bit value directly.
-      this.cpu.mem[address] = this.isImmediate(srcReg)
-        ? srcReg
-        : this.cpu.getRegister(srcReg);
+      this.cpu.mmu.writeByte(
+        address,
+        this.isImmediate(srcReg) ? srcReg : this.cpu.getRegister(srcReg)
+      );
     }
 
     // Source and dest are simple registers
@@ -55,18 +56,21 @@ export class Instruction {
     if (isPointer) {
       // Value is a 16-bit immediate pointer to a memory address
       if (value === "a16") {
-        this.cpu.setRegister("A", this.cpu.mem[this.cpu.getImmediate16Bit()]);
+        this.cpu.setRegister(
+          "A",
+          this.cpu.mmu.readByte(this.cpu.getImmediate16Bit())
+        );
       }
       // Value is a combined register that points to a memory address
       else {
         const address = this.cpu.getRegister(value);
-        this.cpu.setRegister("A", this.cpu.mem[address]);
+        this.cpu.setRegister("A", this.cpu.mmu.readByte(address));
       }
     }
 
     // Value is a 8-bit immediate
     else if (value === "d8")
-      this.cpu.setRegister("A", this.cpu.mem[this.cpu.pc + 1]);
+      this.cpu.setRegister("A", this.cpu.mmu.readByte(this.cpu.pc + 1));
     // Value is a simple register
     else this.cpu.setRegister("A", this.cpu.getRegister(value));
   }
@@ -84,11 +88,14 @@ export class Instruction {
     if (isPointer) {
       // Value is a 16-bit immediate pointer to a memory address.
       if (value === "a16")
-        this.cpu.mem[this.cpu.getImmediate16Bit()] = this.cpu.getRegister("A");
+        this.cpu.mmu.writeByte(
+          this.cpu.getImmediate16Bit(),
+          this.cpu.getRegister("A")
+        );
       // Value is a combined register that points to a memory address
       else {
         const address = this.cpu.getRegister(value);
-        this.cpu.mem[address] = this.cpu.getRegister("A");
+        this.cpu.mmu.writeByte(address, this.cpu.getRegister("A"));
       }
     }
 
@@ -103,7 +110,7 @@ export class Instruction {
     // C register value (offset)
     const C = this.cpu.getRegister("C");
 
-    const value = this.cpu.mem[0xff00 + C];
+    const value = this.cpu.mmu.readByte(0xff00 + C);
 
     this.cpu.setRegister("A", value);
   }
@@ -117,7 +124,7 @@ export class Instruction {
 
     const address = 0xff00 + C;
 
-    this.cpu.mem[address] = this.cpu.getRegister("A");
+    this.cpu.mmu.writeByte(address, this.cpu.getRegister("A"));
   }
 
   /**
@@ -126,7 +133,7 @@ export class Instruction {
   LDD_A_HL() {
     const address = this.cpu.getRegister("HL");
 
-    const value = this.cpu.mem[address];
+    const value = this.cpu.mmu.readByte(address);
 
     this.cpu.setRegister("A", value);
 
@@ -139,7 +146,7 @@ export class Instruction {
   LDD_HL_A() {
     const address = this.cpu.getRegister("HL");
 
-    this.cpu.mem[address] = this.cpu.getRegister("A");
+    this.cpu.mmu.writeByte(address, this.cpu.getRegister("A"));
 
     this.cpu.setRegister("HL", address - 1);
   }
@@ -151,7 +158,7 @@ export class Instruction {
   LDI_A_HL() {
     const address = this.cpu.getRegister("HL");
 
-    const value = this.cpu.mem[address];
+    const value = this.cpu.mmu.readByte(address);
 
     this.cpu.setRegister("A", value);
 
@@ -164,7 +171,7 @@ export class Instruction {
   LDI_HL_A() {
     const address = this.cpu.getRegister("HL");
 
-    this.cpu.mem[address] = this.cpu.getRegister("A");
+    this.cpu.mmu.writeByte(address, this.cpu.getRegister("A"));
 
     this.cpu.setRegister("HL", address + 1);
   }
@@ -176,7 +183,7 @@ export class Instruction {
   LDH_n_A(n) {
     const address = 0xff00 + n;
 
-    this.cpu.mem[address] = this.cpu.getRegister("A");
+    this.cpu.mmu.writeByte(address, this.cpu.getRegister("A"));
   }
 
   /**
@@ -184,7 +191,7 @@ export class Instruction {
    * @param {number} n - The 8-bit offset.
    */
   LDH_A_n(n) {
-    const value = this.cpu.mem[0xff00 + n];
+    const value = this.cpu.mmu.readByte(0xff00 + n);
 
     this.cpu.setRegister("A", value);
   }
@@ -248,8 +255,7 @@ export class Instruction {
     const lowByte = this.cpu.sp & 0xff;
     const highByte = (this.cpu.sp & 0xff00) >> 8;
 
-    this.cpu.mem[address] = lowByte;
-    this.cpu.mem[address + 1] = highByte;
+    this.cpu.mmu.writeWord(address, this.cpu.sp);
   }
 
   /**
@@ -258,26 +264,18 @@ export class Instruction {
    * @param {string} value - 16-bit immediate or combined register to push (e.g., "AF", "BC").
    */
   push(value) {
-    let highByte;
-    let lowByte;
+    let word = value;
 
-    // Target is a 16-bit immediate
-    if (this.isImmediate(value)) {
-      highByte = value >> 8;
-      lowByte = value & 0x00ff;
-    }
     // Target is a combined register
-    else {
-      highByte = this.cpu.getRegister(value[0]);
-      lowByte = this.cpu.getRegister(value[1]);
+    if (!this.isImmediate(value)) {
+      word = this.cpu.getRegister(value);
     }
 
     // Decrement SP twice
     this.cpu.sp -= 2;
 
-    // Store highByte at address sp+1 & lowByte at address sp once decremented
-    this.cpu.mem[this.cpu.sp + 1] = highByte;
-    this.cpu.mem[this.cpu.sp] = lowByte;
+    // Store word at SP address
+    this.cpu.mmu.writeWord(this.cpu.sp, word);
   }
 
   /**
@@ -288,8 +286,8 @@ export class Instruction {
    */
   pop(register) {
     // Get current sp value (lowByte) and next one (highByte)
-    const highByte = this.cpu.mem[this.cpu.sp + 1];
-    const lowByte = this.cpu.mem[this.cpu.sp];
+    const highByte = this.cpu.mmu.readByte(this.cpu.sp + 1);
+    const lowByte = this.cpu.mmu.readByte(this.cpu.sp);
 
     // Bitwise OR to make 16-bit value
     const value = (highByte << 8) | lowByte;
@@ -314,7 +312,7 @@ export class Instruction {
 
     // Determine the value to add
     if (value === "HL") {
-      add = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
+      add = this.cpu.mmu.readByte(this.cpu.getRegister("HL")); // Memory address stored in HL
     } else if (this.isImmediate(value)) add = value; // Immediate 8-bit value
     else add = this.cpu.getRegister(value); // Simple register value
 
@@ -346,7 +344,7 @@ export class Instruction {
 
     // Determine the value to add
     if (value === "HL") {
-      add = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
+      add = this.cpu.mmu.readByte(this.cpu.getRegister("HL")); // Memory address stored in HL
     } else if (this.isImmediate(value)) add = value; // Immediate 8-bit value
     else add = this.cpu.getRegister(value); // Simple register value
 
@@ -376,7 +374,7 @@ export class Instruction {
 
     // Determine the value to sub
     if (value === "HL") {
-      sub = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
+      sub = this.cpu.mmu.readByte(this.cpu.getRegister("HL")); // Memory address stored in HL
     } else if (this.isImmediate(value)) sub = value; // Immediate 8-bit value
     else sub = this.cpu.getRegister(value); // Simple register value
 
@@ -406,7 +404,7 @@ export class Instruction {
 
     // Determine the value to sub
     if (value === "HL") {
-      sub = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
+      sub = this.cpu.mmu.readByte(this.cpu.getRegister("HL")); // Memory address stored in HL
     } else if (this.isImmediate(value)) sub = value; // Immediate 8-bit value
     else sub = this.cpu.getRegister(value); // Simple register value
 
@@ -435,7 +433,7 @@ export class Instruction {
 
     // Determine the value to and
     if (value === "HL") {
-      and = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
+      and = this.cpu.mmu.readByte(this.cpu.getRegister("HL")); // Memory address stored in HL
     } else if (this.isImmediate(value)) and = value; // Immediate 8-bit value
     else and = this.cpu.getRegister(value); // Simple register value
 
@@ -448,7 +446,7 @@ export class Instruction {
     // Update the A register with the result (truncated to 8 bits)
     this.cpu.setRegister("A", result & 0xff);
 
-    // Set flags Z1HC
+    // Set flags Z010
     this.cpu.setFlags("Z010", flags);
   }
 
@@ -462,7 +460,7 @@ export class Instruction {
 
     // Determine the value to or
     if (value === "HL") {
-      or = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
+      or = this.cpu.mmu.readByte(this.cpu.getRegister("HL")); // Memory address stored in HL
     } else if (this.isImmediate(value)) or = value; // Immediate 8-bit value
     else or = this.cpu.getRegister(value); // Simple register value
 
@@ -489,7 +487,7 @@ export class Instruction {
 
     // Determine the value to xor
     if (value === "HL") {
-      xor = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
+      xor = this.cpu.mmu.readByte(this.cpu.getRegister("HL")); // Memory address stored in HL
     } else if (this.isImmediate(value)) xor = value; // Immediate 8-bit value
     else xor = this.cpu.getRegister(value); // Simple register value
 
@@ -516,7 +514,7 @@ export class Instruction {
 
     // Determine the value to compare
     if (value === "HL") {
-      cp = this.cpu.mem[this.cpu.getRegister("HL")]; // Memory address stored in HL
+      cp = this.cpu.mmu.readByte(this.cpu.getRegister("HL")); // Memory address stored in HL
     } else if (this.isImmediate(value)) cp = value; // Immediate 8-bit value
     else cp = this.cpu.getRegister(value); // Simple register value
 
@@ -542,7 +540,9 @@ export class Instruction {
 
     if (register === "HL") {
       // Increment value at memory address HL
-      result = ++this.cpu.mem[registerValue];
+      result = this.cpu.mmu.readByte(registerValue);
+      result++;
+      this.cpu.mmu.writeByte(registerValue, result);
     } else {
       // Increment register value
       result = ++registerValue;
@@ -568,7 +568,9 @@ export class Instruction {
 
     if (register === "HL") {
       // Decrement value at memory address HL
-      result = --this.cpu.mem[registerValue];
+      result = this.cpu.mmu.readByte(registerValue);
+      result--;
+      this.cpu.mmu.writeByte(registerValue, result);
     } else {
       // Decrement register value
       result = --registerValue;
@@ -660,9 +662,9 @@ export class Instruction {
 
     // Target is value stored in address HL
     if (register == "HL") {
-      let address = this.cpu.mem[this.cpu.getRegister("HL")];
-      result = swapNibbles(this.cpu.mem[address]);
-      this.cpu.mem[address] = result;
+      let address = this.cpu.mmu.readByte(this.cpu.getRegister("HL"));
+      result = swapNibbles(this.cpu.mmu.readByte(address));
+      this.cpu.mmu.writeByte(address, result);
     }
     // Target is a simple register
     else {
@@ -869,9 +871,9 @@ export class Instruction {
     // Target is mem address stored in HL
     if (register === "HL") {
       const HL = this.cpu.getRegister("HL");
-      value = this.cpu.mem[HL];
+      value = this.cpu.mmu.readByte(HL);
       leftRotation = this.leftRotate(value);
-      this.cpu.mem[HL] = leftRotation;
+      this.cpu.mmu.writeByte(HL, leftRotation);
     }
 
     // Target is a simple register
@@ -894,9 +896,9 @@ export class Instruction {
     // Target is mem address stored in HL
     if (register === "HL") {
       const HL = this.cpu.getRegister("HL");
-      value = this.cpu.mem[HL];
+      value = this.cpu.mmu.readByte(HL);
       leftRotation = this.leftRotateCarry(value);
-      this.cpu.mem[HL] = leftRotation;
+      this.cpu.mmu.writeByte(HL, leftRotation);
     }
 
     // Target is a simple register
@@ -919,9 +921,9 @@ export class Instruction {
     // Target is mem address stored in HL
     if (register === "HL") {
       const HL = this.cpu.getRegister("HL");
-      value = this.cpu.mem[HL];
+      value = this.cpu.mmu.readByte(HL);
       leftRotation = this.rightRotate(value);
-      this.cpu.mem[HL] = leftRotation;
+      this.cpu.mmu.writeByte(HL, leftRotation);
     }
 
     // Target is a simple register
@@ -944,9 +946,9 @@ export class Instruction {
     // Target is mem address stored in HL
     if (register === "HL") {
       const HL = this.cpu.getRegister("HL");
-      value = this.cpu.mem[HL];
+      value = this.cpu.mmu.readByte(HL);
       leftRotation = this.rightRotateCarry(value);
-      this.cpu.mem[HL] = leftRotation;
+      this.cpu.mmu.writeByte(HL, leftRotation);
     }
 
     // Target is a simple register
@@ -970,9 +972,9 @@ export class Instruction {
     // Target is mem address stored in HL
     if (register === "HL") {
       const HL = this.cpu.getRegister("HL");
-      value = this.cpu.mem[HL];
+      value = this.cpu.mmu.readByte(HL);
       leftShift = (value << 1) & 0xff; // Left shift
-      this.cpu.mem[HL] = leftShift;
+      this.cpu.mmu.writeByte(HL, leftShift);
     }
 
     // Target is a simple register
@@ -1001,10 +1003,10 @@ export class Instruction {
     // Target is mem address stored in HL
     if (register === "HL") {
       const HL = this.cpu.getRegister("HL");
-      value = this.cpu.mem[HL];
+      value = this.cpu.mmu.readByte(HL);
       msb = value >> 7;
       rightShift = ((value >> 1) | (msb << 7)) & 0xff; // Right shift not changing msb
-      this.cpu.mem[HL] = rightShift;
+      this.cpu.mmu.writeByte(HL, rightShift);
     }
 
     // Target is a simple register
@@ -1033,9 +1035,9 @@ export class Instruction {
     // Target is mem address stored in HL
     if (register === "HL") {
       const HL = this.cpu.getRegister("HL");
-      value = this.cpu.mem[HL];
+      value = this.cpu.mmu.readByte(HL);
       rightShift = (value >> 1) & 0xff; // Right shift
-      this.cpu.mem[HL] = rightShift;
+      this.cpu.mmu.writeByte(HL, rightShift);
     }
 
     // Target is a simple register
@@ -1063,7 +1065,8 @@ export class Instruction {
     let result;
 
     // Target is mem address stored in HL
-    if (register === "HL") value = this.cpu.mem[this.cpu.getRegister("HL")];
+    if (register === "HL")
+      value = this.cpu.mmu.readByte(this.cpu.getRegister("HL"));
     // Target is a simple register
     else value = this.cpu.getRegister(register);
 
@@ -1089,9 +1092,9 @@ export class Instruction {
     // Target is mem address stored in HL
     if (register === "HL") {
       const HL = this.cpu.getRegister("HL");
-      value = this.cpu.mem[HL];
+      value = this.cpu.mmu.readByte(HL);
       result = setBit(value, bit);
-      this.cpu.mem[HL] = result;
+      this.cpu.mmu.writeByte(HL, result);
     }
 
     // Target is a simple register
@@ -1118,9 +1121,9 @@ export class Instruction {
     // Target is mem address stored in HL
     if (register === "HL") {
       const HL = this.cpu.getRegister("HL");
-      value = this.cpu.mem[HL];
+      value = this.cpu.mmu.readByte(HL);
       result = resetBit(value, bit);
-      this.cpu.mem[HL] = result;
+      this.cpu.mmu.writeByte(HL, result);
     }
 
     // Target is a simple register

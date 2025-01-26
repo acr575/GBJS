@@ -8,7 +8,7 @@ let instruction = new Instruction(cpu);
 let srcValue = 0x02;
 let addValue = 0x05;
 let subValue = 0x05;
-let address = 0x1234;
+let address = 0xc000;
 
 console.log("DEBUG 8-bit ALU INSTRUCTIONS");
 // ADD A,n
@@ -29,7 +29,7 @@ console.log("    ADD A,n : A=0x" + cpu.getRegister("A").toString(16));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 cpu.setRegister("HL", address);
-cpu.mem[address] = 0x3;
+cpu.mmu.writeByte(address, 0x3);
 console.log("  Add from (HL)");
 console.log(
   "    A=0x" +
@@ -41,7 +41,7 @@ console.log(
   "    Value at address 0x" +
     address.toString(16) +
     ": 0x" +
-    cpu.mem[address].toString(16)
+    cpu.mmu.readByte(address).toString(16)
 );
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.ADD_A_n("HL");
@@ -135,7 +135,7 @@ console.log("    ADC A,n : A=0x" + cpu.getRegister("A").toString(16));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 cpu.setRegister("HL", address);
-cpu.mem[address] = 0x3;
+cpu.mmu.writeByte(address, 0x3);
 cpu.setRegister("F", 0); // Reset carry flag
 console.log("  Add from (HL) with no initial carry");
 console.log(
@@ -148,7 +148,7 @@ console.log(
   "    Value at address 0x" +
     address.toString(16) +
     ": 0x" +
-    cpu.mem[address].toString(16)
+    cpu.mmu.readByte(address).toString(16)
 );
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.ADC_A_n("HL");
@@ -233,7 +233,7 @@ console.log("    SUB A,n : A=0x" + cpu.getRegister("A").toString(16));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 cpu.setRegister("HL", address);
-cpu.mem[address] = 0x3;
+cpu.mmu.writeByte(address, 0x3);
 cpu.setRegister("A", 0x9);
 console.log("  Sub from (HL)");
 console.log(
@@ -246,7 +246,7 @@ console.log(
   "    Value at address 0x" +
     address.toString(16) +
     ": 0x" +
-    cpu.mem[address].toString(16)
+    cpu.mmu.readByte(address).toString(16)
 );
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.SUB_A_n("HL");
@@ -331,7 +331,7 @@ console.log("    SBC A,n : A=0x" + cpu.getRegister("A").toString(16));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 cpu.setRegister("HL", address);
-cpu.mem[address] = 0x3;
+cpu.mmu.writeByte(address, 0x3);
 cpu.setRegister("F", 0); // Reset carry flag
 console.log("  Sub from (HL) with no initial carry");
 console.log(
@@ -344,7 +344,7 @@ console.log(
   "    Value at address 0x" +
     address.toString(16) +
     ": 0x" +
-    cpu.mem[address].toString(16)
+    cpu.mmu.readByte(address).toString(16)
 );
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.SBC_A_n("HL");
@@ -430,7 +430,7 @@ console.log("    AND A,n : A=0b" + cpu.getRegister("A").toString(2));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 console.log("  AND from (HL) (Test Zero flag)");
-cpu.mem[address] = 0b0100;
+cpu.mmu.writeByte(address, 0b0100);
 console.log(
   "    A=0b" +
     cpu.getRegister("A").toString(2) +
@@ -441,7 +441,7 @@ console.log(
   "    Value at address 0x" +
     address.toString(16) +
     ": 0b" +
-    cpu.mem[address].toString(2)
+    cpu.mmu.readByte(address).toString(2)
 );
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.AND_n("HL");
@@ -481,7 +481,7 @@ console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 console.log("  OR from (HL) (Test Zero flag)");
 cpu.setRegister("A", 0);
-cpu.mem[address] = 0;
+cpu.mmu.writeByte(address, 0);
 console.log(
   "    A=0b" +
     cpu.getRegister("A").toString(2) +
@@ -492,7 +492,7 @@ console.log(
   "    Value at address 0x" +
     address.toString(16) +
     ": 0b" +
-    cpu.mem[address].toString(2)
+    cpu.mmu.readByte(address).toString(2)
 );
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.OR_n("HL");
@@ -532,7 +532,7 @@ console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 console.log("  XOR from (HL) (Test Zero flag)");
 cpu.setRegister("A", 0b1111);
-cpu.mem[address] = 0b1111;
+cpu.mmu.writeByte(address, 0b1111);
 console.log(
   "    A=0b" +
     cpu.getRegister("A").toString(2) +
@@ -543,7 +543,7 @@ console.log(
   "    Value at address 0x" +
     address.toString(16) +
     ": 0b" +
-    cpu.mem[address].toString(2)
+    cpu.mmu.readByte(address).toString(2)
 );
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.XOR_n("HL");
@@ -581,7 +581,7 @@ console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 cpu.setRegister("F", 0);
 cpu.setRegister("A", 0x11);
-cpu.mem[address] = 0x2;
+cpu.mmu.writeByte(address, 0x2);
 console.log("  Test Half Borrow");
 console.log(
   "    A=0x" +
@@ -593,7 +593,7 @@ console.log(
   "    Value at address 0x" +
     address.toString(16) +
     ": 0x" +
-    cpu.mem[address].toString(16)
+    cpu.mmu.readByte(address).toString(16)
 );
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.CP_n("HL");
@@ -640,18 +640,18 @@ console.log("    INC n : A=0x" + cpu.getRegister("A").toString(16));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 cpu.setRegister("F", 0);
-cpu.mem[address] = 0xf;
+cpu.mmu.writeByte(address, 0xf);
 console.log("  Increment (HL) (test Half Carry)");
 console.log("    HL=0x" + cpu.getRegister("HL").toString(16));
 console.log(
   "    Value at address 0x" +
     address.toString(16) +
     ": 0x" +
-    cpu.mem[address].toString(16)
+    cpu.mmu.readByte(address).toString(16)
 );
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.INC_n("HL");
-console.log("    INC n : A=0x" + cpu.mem[address].toString(16));
+console.log("    INC n : A=0x" + cpu.mmu.readByte(address).toString(16));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 // DEC n
@@ -666,16 +666,16 @@ console.log("    DEC n : A=0x" + cpu.getRegister("A").toString(16));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 cpu.setRegister("F", 0);
-cpu.mem[address] = 0x10;
+cpu.mmu.writeByte(address, 0x10);
 console.log("  Decrement (HL) (test Half Carry)");
 console.log("    HL=0x" + cpu.getRegister("HL").toString(16));
 console.log(
   "    Value at address 0x" +
     address.toString(16) +
     ": 0x" +
-    cpu.mem[address].toString(16)
+    cpu.mmu.readByte(address).toString(16)
 );
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.DEC_n("HL");
-console.log("    INC n : A=0x" + cpu.mem[address].toString(16));
+console.log("    DEC n : (HL)=0x" + cpu.mmu.readByte(address).toString(16));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));

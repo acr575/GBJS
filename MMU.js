@@ -85,13 +85,13 @@ export class MMU {
       // Working RAM
       case 0xc000:
       case 0xd000:
-      case 0xe000:
+      case 0xe000: // Echo RAM
         return this.wram[addr & 0x1fff];
 
-      // OAM, Working RAM shadow, I/O, High RAM
+      // OAM, Echo RAM, I/O, High RAM
       case 0xf000:
         switch (addr & 0x0f00) {
-          // Working RAM shadow
+          // Echo RAM
           case 0x000:
           case 0x100:
           case 0x200:
@@ -123,10 +123,6 @@ export class MMU {
               return 0;
             }
         }
-
-      default:
-        console.error("Unaccesible address: 0x" + addr.toString(16));
-        break;
     }
   }
 
@@ -202,7 +198,7 @@ export class MMU {
           // High RAM, I/O
           case 0xf00:
             if (addr > 0xff7f) {
-              this.zram[addr & 0x7f] = val;
+              this.hram[addr & 0x7f] = val;
             } else
               switch (addr & 0xf0) {
               }
@@ -213,7 +209,7 @@ export class MMU {
   }
 
   writeWord(addr, val) {
-    this.writeByte(addr, val & ff); // Low byte
+    this.writeByte(addr, val & 0xff); // Low byte
     this.writeByte(addr + 1, val >> 8); // High byte
   }
 }

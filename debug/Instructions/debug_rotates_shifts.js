@@ -6,6 +6,7 @@ let cpu = new CPU();
 let instruction = new Instruction(cpu);
 
 let value = 0b11000110;
+let addr = 0xc123;
 
 let result;
 
@@ -139,15 +140,17 @@ instruction.RLC_n("C");
 console.log("    RLC n : C=0b" + cpu.getRegister("C").toString(2));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
-cpu.setRegister("HL", 0x1234);
-cpu.mem[0x1234] = value;
+cpu.setRegister("HL", 0xc123);
+cpu.mmu.writeByte(0xc123, value);
 cpu.setRegister("F", 0);
 console.log("  Rotate (HL)");
 console.log("    HL=0x" + cpu.getRegister("HL").toString(16));
-console.log("    Value at address 0x1234=0b" + cpu.mem[0x1234].toString(2));
+console.log(
+  "    Value at address 0xc123=0b" + cpu.mmu.readByte(0xc123).toString(2)
+);
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.RLC_n("HL");
-console.log("    RLC n : HL=0b" + cpu.mem[0x1234].toString(2));
+console.log("    RLC n : HL=0b" + cpu.mmu.readByte(0xc123).toString(2));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 // RL n
@@ -172,15 +175,17 @@ instruction.RL_n("B");
 console.log("    RL n : B=0b" + cpu.getRegister("B").toString(2));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
-cpu.setRegister("HL", 0x1234);
-cpu.mem[0x1234] = value;
+cpu.setRegister("HL", addr);
+cpu.mmu.writeByte(addr, value);
 cpu.setRegister("F", 0);
 console.log("  Rotate (HL)");
 console.log("    HL=0x" + cpu.getRegister("HL").toString(16));
-console.log("    Value at address 0x1234=0b" + cpu.mem[0x1234].toString(2));
+console.log(
+  "    Value at address addr=0b" + cpu.mmu.readByte(addr).toString(2)
+);
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
-instruction.RLC_n("HL");
-console.log("    RLCA : HL=0b" + cpu.mem[0x1234].toString(2));
+instruction.RL_n("HL");
+console.log("    RLCA : HL=0b" + cpu.mmu.readByte(addr).toString(2));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 // RRC n
@@ -195,15 +200,17 @@ instruction.RRC_n("C");
 console.log("    RRC n : C=0b" + cpu.getRegister("C").toString(2));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
-cpu.setRegister("HL", 0x1234);
-cpu.mem[0x1234] = value;
+cpu.setRegister("HL", addr);
+cpu.mmu.writeByte(addr, value);
 cpu.setRegister("F", 0);
 console.log("  Rotate (HL)");
 console.log("    HL=0x" + cpu.getRegister("HL").toString(16));
-console.log("    Value at address 0x1234=0b" + cpu.mem[0x1234].toString(2));
+console.log(
+  "    Value at address addr=0b" + cpu.mmu.readByte(addr).toString(2)
+);
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.RRC_n("HL");
-console.log("    RLC n : HL=0b" + cpu.mem[0x1234].toString(2));
+console.log("    RLC n : HL=0b" + cpu.mmu.readByte(addr).toString(2));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 // RR n
@@ -228,15 +235,17 @@ instruction.RR_n("B");
 console.log("    RR n : B=0b" + cpu.getRegister("B").toString(2));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
-cpu.setRegister("HL", 0x1234);
-cpu.mem[0x1234] = value;
+cpu.setRegister("HL", addr);
+cpu.mmu.writeByte(addr, value);
 cpu.setRegister("F", 0);
 console.log("  Rotate (HL)");
 console.log("    HL=0x" + cpu.getRegister("HL").toString(16));
-console.log("    Value at address 0x1234=0b" + cpu.mem[0x1234].toString(2));
+console.log(
+  "    Value at address addr=0b" + cpu.mmu.readByte(addr).toString(2)
+);
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.RR_n("HL");
-console.log("    RR n : HL=0b" + cpu.mem[0x1234].toString(2));
+console.log("    RR n : HL=0b" + cpu.mmu.readByte(addr).toString(2));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 // SLA n
@@ -254,10 +263,12 @@ console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 console.log("  Shift (HL)");
 console.log("    HL=0x" + cpu.getRegister("HL").toString(16));
-console.log("    Value at address 0x1234=0b" + cpu.mem[0x1234].toString(2));
+console.log(
+  "    Value at address addr=0b" + cpu.mmu.readByte(addr).toString(2)
+);
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.SLA_n("HL");
-console.log("    SLA n : (HL)=0b" + cpu.mem[0x1234].toString(2));
+console.log("    SLA n : (HL)=0b" + cpu.mmu.readByte(addr).toString(2));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 // SRA n
@@ -275,10 +286,12 @@ console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 console.log("  Shift (HL)");
 console.log("    HL=0x" + cpu.getRegister("HL").toString(16));
-console.log("    Value at address 0x1234=0b" + cpu.mem[0x1234].toString(2));
+console.log(
+  "    Value at address addr=0b" + cpu.mmu.readByte(addr).toString(2)
+);
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.SRA_n("HL");
-console.log("    SRA n : (HL)=0b" + cpu.mem[0x1234].toString(2));
+console.log("    SRA n : (HL)=0b" + cpu.mmu.readByte(addr).toString(2));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 // SRL n
@@ -296,8 +309,10 @@ console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));
 
 console.log("  Shift (HL)");
 console.log("    HL=0x" + cpu.getRegister("HL").toString(16));
-console.log("    Value at address 0x1234=0b" + cpu.mem[0x1234].toString(2));
+console.log(
+  "    Value at address addr=0b" + cpu.mmu.readByte(addr).toString(2)
+);
 console.log("    FLAGS BEFORE: ZNHC=" + cpu.getRegister("F").toString(2));
 instruction.SRL_n("HL");
-console.log("    SRL n : (HL)=0b" + cpu.mem[0x1234].toString(2));
+console.log("    SRL n : (HL)=0b" + cpu.mmu.readByte(addr).toString(2));
 console.log("    FLAGS AFTER: ZNHC=" + cpu.getRegister("F").toString(2));

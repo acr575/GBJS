@@ -33,6 +33,7 @@ common.addEventListener("click", () => {
 prefixed.addEventListener("click", () => {
   console.clear();
   for (let opcode = 0; opcode <= 0xff; opcode++) {
+    cpu.setRegister("HL", 0xc555);
     const fetch = cpu.prefixInstructionTable[opcode];
     if (!fetch) throw new Error("Unknown opcode: 0x" + opcode.toString(16));
     console.log("Opcode: 0x" + opcode.toString(16));

@@ -395,7 +395,7 @@ export class OpcodeTable {
       // LD (HL), d8
       0x36: {
         instruction: () =>
-          cpu.instruction.LD_r1_r2("HL", cpu.mem[cpu.pc + 1]), // d8 is at next PC address
+          cpu.instruction.LD_r1_r2("HL", cpu.mmu.readByte([cpu.pc+1])), // d8 is at next PC address
         length: 2,
         cycles: 12,
       },
@@ -1415,7 +1415,7 @@ export class OpcodeTable {
 
       // ADD A, d8
       0xc6: {
-        instruction: () => cpu.instruction.ADD_A_n(cpu.mem[cpu.pc + 1]), // d8 is at next pc address
+        instruction: () => cpu.instruction.ADD_A_n(cpu.mmu.readByte([cpu.pc+1])), // d8 is at next pc address
         length: 2,
         cycles: 8,
       },
@@ -1455,7 +1455,7 @@ export class OpcodeTable {
       // PREFIX CB
       0xcb: {
         instruction: () =>
-          (this.lastCycles = cpu.instruction.PREFIX_CB(cpu.mem[cpu.pc + 1])), // The prefixed opcode is at next pc address
+          (this.lastCycles = cpu.instruction.PREFIX_CB(cpu.mmu.readByte([cpu.pc+1]))), // The prefixed opcode is at next pc address
         length: 2,
         cycles: () => this.lastCycles ?? 8,
       },
@@ -1480,7 +1480,7 @@ export class OpcodeTable {
 
       // ADC A, d8
       0xce: {
-        instruction: () => cpu.instruction.ADC_A_n(cpu.mem[cpu.pc + 1]), // d8 is at next pc address
+        instruction: () => cpu.instruction.ADC_A_n(cpu.mmu.readByte([cpu.pc+1])), // d8 is at next pc address
         length: 2,
         cycles: 8,
       },
@@ -1537,7 +1537,7 @@ export class OpcodeTable {
 
       // SUB A, d8
       0xd6: {
-        instruction: () => cpu.instruction.SUB_A_n(cpu.mem[cpu.pc + 1]), // d8 is at next pc address
+        instruction: () => cpu.instruction.SUB_A_n(cpu.mmu.readByte([cpu.pc+1])), // d8 is at next pc address
         length: 2,
         cycles: 8,
       },
@@ -1587,7 +1587,7 @@ export class OpcodeTable {
 
       // SBC A, d8
       0xde: {
-        instruction: () => cpu.instruction.SBC_A_n(cpu.mem[cpu.pc + 1]), // d8 is at next pc address
+        instruction: () => cpu.instruction.SBC_A_n(cpu.mmu.readByte([cpu.pc+1])), // d8 is at next pc address
         length: 2,
         cycles: 8,
       },
@@ -1601,7 +1601,7 @@ export class OpcodeTable {
 
       // LDH (a8), A
       0xe0: {
-        instruction: () => cpu.instruction.LDH_n_A(cpu.mem[cpu.pc + 1]), // a8 is at next pc address
+        instruction: () => cpu.instruction.LDH_n_A(cpu.mmu.readByte([cpu.pc+1])), // a8 is at next pc address
         length: 2,
         cycles: 12,
       },
@@ -1629,7 +1629,7 @@ export class OpcodeTable {
 
       // AND d8
       0xe6: {
-        instruction: () => cpu.instruction.AND_n(cpu.mem[cpu.pc + 1]), // d8 is at next pc address
+        instruction: () => cpu.instruction.AND_n(cpu.mmu.readByte([cpu.pc+1])), // d8 is at next pc address
         length: 2,
         cycles: 8,
       },
@@ -1664,7 +1664,7 @@ export class OpcodeTable {
 
       // XOR d8
       0xee: {
-        instruction: () => cpu.instruction.XOR_n(cpu.mem[cpu.pc + 1]), // d8 is at next pc address
+        instruction: () => cpu.instruction.XOR_n(cpu.mmu.readByte([cpu.pc+1])), // d8 is at next pc address
         length: 2,
         cycles: 8,
       },
@@ -1678,7 +1678,7 @@ export class OpcodeTable {
 
       // LDH A, (a8)
       0xf0: {
-        instruction: () => cpu.instruction.LDH_A_n(cpu.mem[cpu.pc + 1]), // a8 is at next pc address
+        instruction: () => cpu.instruction.LDH_A_n(cpu.mmu.readByte([cpu.pc+1])), // a8 is at next pc address
         length: 2,
         cycles: 12,
       },
@@ -1713,7 +1713,7 @@ export class OpcodeTable {
 
       // OR d8
       0xf6: {
-        instruction: () => cpu.instruction.OR_n(cpu.mem[cpu.pc + 1]), // d8 is at next pc address
+        instruction: () => cpu.instruction.OR_n(cpu.mmu.readByte([cpu.pc+1])), // d8 is at next pc address
         length: 2,
         cycles: 8,
       },
@@ -1755,7 +1755,7 @@ export class OpcodeTable {
 
       // CP d8
       0xfe: {
-        instruction: () => cpu.instruction.CP_n(cpu.mem[cpu.pc + 1]), // d8 is at next pc address
+        instruction: () => cpu.instruction.CP_n(cpu.mmu.readByte([cpu.pc+1])), // d8 is at next pc address
         length: 2,
         cycles: 8,
       },
