@@ -27,9 +27,7 @@ validAddresses.forEach((address) => {
     "\tSP=x0" +
       cpu.sp.toString(16) +
       ", mem[SP]=0x" +
-      cpu.mem[cpu.sp].toString(16) +
-      ", mem[SP+1]=0x" +
-      cpu.mem[cpu.sp + 1].toString(16)
+      cpu.mmu.readWord(cpu.sp).toString(16)
   );
   instruction.RST_n(address);
   console.log("\tRST 0x" + address.toString(16));
@@ -38,9 +36,7 @@ validAddresses.forEach((address) => {
     "\tSP=x0" +
       cpu.sp.toString(16) +
       ", mem[SP]=0x" +
-      cpu.mem[cpu.sp].toString(16) +
-      ", mem[SP+1]=0x" +
-      cpu.mem[cpu.sp + 1].toString(16)
+      cpu.mmu.readWord(cpu.sp).toString(16)
   );
   console.log("\n");
 });

@@ -1,15 +1,15 @@
 export class MMU {
-  constructor(cpu, gpu) {
+  constructor(cpu) {
     this.cpu = cpu;
-    this.gpu = gpu;
 
-    this.inbios = 1; // Flag indicating BIOS is mapped
+    // this.inbios = 1; // Flag indicating BIOS is mapped
 
     // Memory regions
-    this.bios = new Uint8Array(256); //  BIOS.            256    B. Area 0000-00FF
-    this.rom = new Uint8Array(32768); // ROM (all banks).  32  KiB. Area 0000-7FFF
-    this.wram = new Uint8Array(8192); // Work RAM.          8  KiB. Area C000-DFFF
+    // this.bios = new Uint8Array(256); //  BIOS.            256    B. Area 0000-00FF
+    this.rom = new Uint8Array(32768); // ROM (Bank 0-1).  32  KiB. Area 0000-7FFF
     this.eram = new Uint8Array(8192); // External RAM.      8  KiB. Area A000-BFFF
+    this.wram = new Uint8Array(8192); // Work RAM.          8  KiB. Area C000-DFFF
+    this.ioRegs = new Uint8Array(128); //I/O Registers.   128    B. Area FF00-FF7F
     this.hram = new Uint8Array(127); //  High RAM.        127    B. Area FF80-FFFE
   }
 
@@ -41,6 +41,10 @@ export class MMU {
 
         const lSize = byteArray.length;
 
+        // Check if cartridge fits rom. Change later when MBC's are implemented
+        if (lSize > this.rom.length)
+          throw new Error("Cartridge too big for memory");
+
         // Load bytes
         for (let i = 0; i < lSize; ++i) {
           this.rom[i] = byteArray[i];
@@ -55,10 +59,11 @@ export class MMU {
     switch (addr & 0xf000) {
       // BIOS or ROM0
       case 0x0000:
-        if (this.inbios) {
-          if (addr < 0x0100) return this.bios[addr];
-          else if (this.cpu.pc == 0x0100) this.inbios = 0;
-        }
+        /* Ignoring BIOS for now */
+        // if (this.inbios) {
+        //   if (addr < 0x0100) return this.bios[addr];
+        //   else if (this.cpu.pc == 0x0100) this.inbios = 0;
+        // }
 
         return this.rom[addr];
 
@@ -120,7 +125,7 @@ export class MMU {
               return this.hram[addr & 0x7f];
             } else {
               // TODO: I/O control handling
-              return 0;
+              return this.ioRegs[addr & 0x7f];
             }
         }
     }
@@ -132,16 +137,11 @@ export class MMU {
 
   writeByte(addr, val) {
     switch (addr & 0xf000) {
-      // ROM bank 0
+      // ROM bank 0-1: Cannot write
       case 0x0000:
-        if (this.inbios && addr < 0x0100) return;
-      // fall through
       case 0x1000:
       case 0x2000:
       case 0x3000:
-        break;
-
-      // ROM bank 1
       case 0x4000:
       case 0x5000:
       case 0x6000:
@@ -152,7 +152,6 @@ export class MMU {
       case 0x8000:
       case 0x9000:
         this.gpu.vram[addr & 0x1fff] = val;
-        this.gpu.updateTile(addr & 0x1fff, val);
         break;
 
       // External RAM
@@ -171,7 +170,7 @@ export class MMU {
       // Everything else
       case 0xf000:
         switch (addr & 0x0f00) {
-          // Echo RAM
+          // Echo RAM (writes at Work RAM)
           case 0x000:
           case 0x100:
           case 0x200:
@@ -191,8 +190,8 @@ export class MMU {
 
           // OAM
           case 0xe00:
+            // FEA0-FEFF: Not usable area
             if ((addr & 0xff) < 0xa0) this.gpu.oam[addr & 0xff] = val;
-            this.gpu.updateOAM(addr, val);
             break;
 
           // High RAM, I/O
@@ -200,8 +199,22 @@ export class MMU {
             if (addr > 0xff7f) {
               this.hram[addr & 0x7f] = val;
             } else
-              switch (addr & 0xf0) {
+              switch (addr & 0x00f0) {
+                case 0x00:
+                  if (addr == 0xff07)
+                    this.cpu.timer.writeTAC(val); // TAC register
+                  else if (addr == 0xff04)
+                    this.ioRegs[addr & 0x7f]; // Reset DIV register
+                  else this.ioRegs[addr & 0x7f] = val;
+
+                // GPU registers
+                case 0x40:
+                case 0x50:
+                case 0x60:
+                case 0x70:
+                  this.ioRegs[addr & 0x7f] = val;
               }
+            break;
         }
 
         break;

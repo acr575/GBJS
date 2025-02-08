@@ -252,8 +252,6 @@ export class Instruction {
    */
   LD_nn_SP() {
     const address = this.cpu.getImmediate16Bit();
-    const lowByte = this.cpu.sp & 0xff;
-    const highByte = (this.cpu.sp & 0xff00) >> 8;
 
     this.cpu.mmu.writeWord(address, this.cpu.sp);
   }
@@ -1201,7 +1199,7 @@ export class Instruction {
     if (!this.isImmediate(value))
       throw new Error(value + " is not an valid value");
 
-    this.cpu.pc += value & 0xffff;
+    this.cpu.pc = (this.cpu.pc + value) & 0xffff;
   }
 
   /**
@@ -1232,7 +1230,7 @@ export class Instruction {
       throw new Error("Unknown condition: " + condition);
 
     if (conditionMap[condition]) {
-      this.cpu.pc += value & 0xffff; // Add value to current address and jump
+      this.cpu.pc = (this.cpu.pc + value) & 0xffff; // Add value to current address and jump
       return 12; // Clock cycles when jumped
     }
 

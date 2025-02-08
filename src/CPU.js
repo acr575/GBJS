@@ -1,6 +1,7 @@
 import { Instruction } from "./Instruction.js";
 import { OpcodeTable } from "./OpcodeTable.js";
 import { MMU } from "./MMU.js";
+import { Timer } from "./Timer.js";
 
 export class CPU {
   constructor() {
@@ -8,13 +9,19 @@ export class CPU {
     this.pc = 0x100; // Program Counter. Initialized at 0x100
     this.sp = 0xfffe; // Stack Pointer.  Initialized at 0xfffe
     this.ime = 0; // Interrup master enable flag. Starts at 0
-    this.mmu = new MMU(this, null); // Memory Management. TODO: change null to GPU when it exists
     this.instruction = new Instruction(this);
+
+    this.mmu = new MMU(this); // Memory Management
+    this.timer = new Timer(this); // System timer
 
     this.opcodeTable = new OpcodeTable(this); // Init opcode table
     this.instructionTable = this.opcodeTable.instructionTable; // Links each opcode with it instruction, length and cycles
     this.prefixInstructionTable = this.opcodeTable.prefixInstructionTable; // Links each CB prefixed opcode with it instruction, length and cycles
   }
+
+  /* TODO: Init function that sets registers, SP, PC & ROM registers to its initial value
+     Ref: http://www.codeslinger.co.uk/pages/projects/gameboy/hardware.html
+  */
 
   static Registers = Object.freeze({
     A: "A",
@@ -163,6 +170,10 @@ export class CPU {
     this.setRegister("F", registerF);
   }
 
+  getSignedValue(value) {
+    return (value << 24) >> 24;
+  }
+
   getSignedImmediate8Bit() {
     return (this.mmu.readByte(this.pc + 1) << 24) >> 24;
   }
@@ -171,10 +182,34 @@ export class CPU {
     return this.mmu.readWord(this.pc + 1);
   }
 
-  executeInstruction(opcode) {
-    const fetch = this.instructionTable[opcode];
-    if (!fetch) throw new Error("Unknown opcode: " + opcode);
-    fetch.instruction();
-    console.log(fetch.cycles());
+  emulateCycle() {
+    const opcode = this.mmu.readByte(this.pc); // Fetch opcode
+    const fetch = this.instructionTable[opcode]; // Decode opcode
+
+    if (!fetch) throw new Error("Unknown opcode: 0x" + opcode.toString(16));
+
+    // console.log(`PC: ${this.pc.toString(16)} Opcode: ${opcode.toString(16)}`);
+
+    fetch.instruction(); // Execute opcode
+    this.pc += fetch.length; // Update PC
+
+    // Return instruction cycles
+    return typeof fetch.cycles === "function" ? fetch.cycles() : fetch.cycles;
+  }
+
+  // 69905 cycles / frame
+  emulateFrame() {
+    const maxCycles = 69905;
+    let cycleCounter = 0;
+
+    while (cycleCounter < maxCycles) {
+      let cycles = this.emulateCycle();
+      cycleCounter += cycles;
+      this.timer.updateTimers(cycles);
+      this.gpu.updateGraphics(cycles);
+      this.doInterrupts();
+    }
+
+    this.gpu.renderScreen();
   }
 }
