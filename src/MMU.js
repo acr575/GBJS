@@ -80,7 +80,7 @@ export class MMU {
       // Graphics: VRAM
       case 0x8000:
       case 0x9000:
-        return this.gpu.vram[addr & 0x1fff];
+        // return this.gpu.vram[addr & 0x1fff];
 
       // External RAM
       case 0xa000:
@@ -116,8 +116,8 @@ export class MMU {
           // OAM
           case 0xe00:
             // FEA0-FEFF: Not usable area
-            if (addr < 0xfea0) return this.gpu.oam[addr & 0xff];
-            else return 0;
+            // if (addr < 0xfea0) return this.gpu.oam[addr & 0xff];
+            // else return 0;
 
           // High RAM or I/O
           case 0xf00:
@@ -151,7 +151,7 @@ export class MMU {
       // VRAM
       case 0x8000:
       case 0x9000:
-        this.gpu.vram[addr & 0x1fff] = val;
+        // this.gpu.vram[addr & 0x1fff] = val;
         break;
 
       // External RAM
@@ -191,7 +191,7 @@ export class MMU {
           // OAM
           case 0xe00:
             // FEA0-FEFF: Not usable area
-            if ((addr & 0xff) < 0xa0) this.gpu.oam[addr & 0xff] = val;
+            // if ((addr & 0xff) < 0xa0) this.gpu.oam[addr & 0xff] = val;
             break;
 
           // High RAM, I/O

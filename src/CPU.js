@@ -9,6 +9,7 @@ export class CPU {
     this.pc = 0x100; // Program Counter. Initialized at 0x100
     this.sp = 0xfffe; // Stack Pointer.  Initialized at 0xfffe
     this.ime = 0; // Interrup master enable flag. Starts at 0
+    this.requestIme = 0; // Flag that sets IME flag after next instruccion. Used by EI instruction
     this.instruction = new Instruction(this);
 
     this.mmu = new MMU(this); // Memory Management
@@ -106,8 +107,8 @@ export class CPU {
 
         this.registersValues[leftIndex] = (value & 0xff00) >> 8;
         this.registersValues[rightIndex] = value & 0xff;
-      } else console.error("Unknown combined register: " + register);
-    } else console.error("Unknown register: " + register);
+      } else throw new Error("Unknown combined register: " + register);
+    } else throw new Error("Unknown register: " + register);
   }
 
   /**
@@ -190,8 +191,9 @@ export class CPU {
 
     // console.log(`PC: ${this.pc.toString(16)} Opcode: ${opcode.toString(16)}`);
 
+    const oldPC = this.pc;
     fetch.instruction(); // Execute opcode
-    this.pc += fetch.length; // Update PC
+    if (oldPC === this.pc) this.pc += fetch.length; // Update PC if wasn't modified by an instruction
 
     // Return instruction cycles
     return typeof fetch.cycles === "function" ? fetch.cycles() : fetch.cycles;
@@ -206,10 +208,19 @@ export class CPU {
       let cycles = this.emulateCycle();
       cycleCounter += cycles;
       this.timer.updateTimers(cycles);
-      this.gpu.updateGraphics(cycles);
-      this.doInterrupts();
-    }
+      //TODO: this.gpu.updateGraphics(cycles);
+      //TODO: this.doInterrupts();
 
-    this.gpu.renderScreen();
+      // Enable IME requested by EI. EI sets requestIme to 2.
+      this.handleRequestIme();
+    }
+    // TODO: this.gpu.renderScreen();
+  }
+
+  handleRequestIme() {
+    if (this.requestIme > 0) {
+      if (this.requestIme == 1) this.ime = 1;
+      this.requestIme--;
+    }
   }
 }

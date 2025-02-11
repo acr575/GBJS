@@ -660,7 +660,7 @@ export class Instruction {
 
     // Target is value stored in address HL
     if (register == "HL") {
-      let address = this.cpu.mmu.readByte(this.cpu.getRegister("HL"));
+      let address = this.cpu.getRegister("HL");
       result = swapNibbles(this.cpu.mmu.readByte(address));
       this.cpu.mmu.writeByte(address, result);
     }
@@ -675,8 +675,32 @@ export class Instruction {
     this.cpu.setFlags("Z000", { Z: result == 0 });
   }
 
-  // TODO: DAA instruction
-  DAA() {}
+  DAA() {
+    const flags = this.cpu.getRegister("F");
+    const flagN = (flags >> 6) & 1;
+    const flagH = (flags >> 5) & 1;
+    const flagC = (flags >> 4) & 1;
+    const registerA = this.cpu.getRegister("A");
+    let adjustment = 0;
+    let result = 0;
+    let carry = false;
+
+    if (flagN) {
+      if (flagH) adjustment -= 0x6;
+      if (flagC) adjustment -= 0x60;
+    } else {
+      if (flagH || (registerA & 0xf) > 0x9) adjustment += 0x6;
+      if (flagC || registerA > 0x99) {
+        adjustment += 0x60;
+        carry = true;
+      }
+    }
+
+    result = registerA + adjustment;
+    this.cpu.setRegister("A", result);
+
+    this.cpu.setFlags("Z-0C", { Z: result == 0, C: carry });
+  }
 
   CPL() {
     let registerA = this.cpu.getRegister("A");
@@ -689,7 +713,7 @@ export class Instruction {
   }
 
   CCF() {
-    const carry = (this.cpu.getRegister("F") & (0b00010000 >> 4)) == 1;
+    const carry = (this.cpu.getRegister("F") & 0b00010000) >> 4 == 1;
 
     this.cpu.setFlags("-00C", { C: !carry });
   }
@@ -708,9 +732,8 @@ export class Instruction {
     this.cpu.ime = 0;
   }
 
-  // TODO: EI must enable interruptions after next machine cycle
   EI() {
-    this.cpu.ime = 1;
+    this.cpu.requestIme = 2;
   }
 
   PREFIX_CB(opcode) {
