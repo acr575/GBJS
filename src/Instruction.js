@@ -1380,10 +1380,9 @@ export class Instruction {
     return 8; // Clock cycles when not returned
   }
 
-  // TODO: Check if enable interrupts just sets ime flag
   RETI() {
     this.RET();
-    this.cpu.ime = 1;
+    this.cpu.ime = 1; // IME is set right after this instruction
   }
 
   /**

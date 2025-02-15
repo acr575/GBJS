@@ -8,10 +8,13 @@ export class CPU {
     this.registersValues = new Uint8Array(8); // a-l 8 bit registers
     this.pc = 0x100; // Program Counter. Initialized at 0x100
     this.sp = 0xfffe; // Stack Pointer.  Initialized at 0xfffe
-    this.ime = 0; // Interrup master enable flag. Starts at 0
-    this.requestIme = 0; // Flag that sets IME flag after next instruccion. Used by EI instruction
-    this.instruction = new Instruction(this);
 
+    this.ie = 0xffff; // Interrupt enable flag
+    this.if = 0xff0f; // Interrupt request flag
+    this.ime = 0; // Interrup master enable flag. Starts unset
+    this.requestIme = 0; // Flag that sets IME flag after next instruccion. Used by EI instruction
+
+    this.instruction = new Instruction(this);
     this.mmu = new MMU(this); // Memory Management
     this.timer = new Timer(this); // System timer
 
@@ -209,12 +212,62 @@ export class CPU {
       cycleCounter += cycles;
       this.timer.updateTimers(cycles);
       //TODO: this.gpu.updateGraphics(cycles);
-      //TODO: this.doInterrupts();
+      this.doInterrupts();
 
       // Enable IME requested by EI. EI sets requestIme to 2.
       this.handleRequestIme();
     }
     // TODO: this.gpu.renderScreen();
+  }
+
+  requestInterrupt(interruptId) {
+    let ifValue = this.mmu.readByte(this.if);
+    ifValue |= 1 << interruptId;
+    this.mmu.writeByte(this.if, ifValue);
+  }
+
+  doInterrupts() {
+    if (this.ime) {
+      let ifValue = this.mmu.readByte(this.if);
+      let ieValue = this.mmu.readByte(this.ie);
+
+      if (ifValue > 0) {
+        for (let i = 4; i >= 0; i--) {
+          let currentBitIf = (ifValue >> i) & 1;
+          let currentBitIe = (ieValue >> i) & 1;
+
+          // Unsupported id 3 interrupt (Serial Interrupt)
+          if (currentBitIf && currentBitIe && i != 3) this.serviceInterrupt(i);
+        }
+      }
+    }
+  }
+
+  serviceInterrupt(interruptId) {
+    this.ime = 0;
+    let ifValue = this.mmu.readByte(this.if);
+    ifValue = ifValue & ~(1 << interruptId); // Reset serviced interrupt bit
+    this.mmu.writeByte(this.if, ifValue);
+
+    this.instruction.push(this.pc);
+
+    switch (interruptId) {
+      case 0:
+        this.pc = 0x40;
+        break;
+
+      case 1:
+        this.pc = 0x48;
+        break;
+
+      case 2:
+        this.pc = 0x50;
+        break;
+
+      case 4:
+        this.pc = 0x60;
+        break;
+    }
   }
 
   handleRequestIme() {

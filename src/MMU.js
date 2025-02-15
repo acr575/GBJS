@@ -5,12 +5,13 @@ export class MMU {
     // this.inbios = 1; // Flag indicating BIOS is mapped
 
     // Memory regions
-    // this.bios = new Uint8Array(256); //  BIOS.            256    B. Area 0000-00FF
-    this.rom = new Uint8Array(32768); // ROM (Bank 0-1).  32  KiB. Area 0000-7FFF
+    // this.bios = new Uint8Array(256); //  BIOS.         256    B. Area 0000-00FF
+    this.rom = new Uint8Array(32768); // ROM (Bank 0-1).   32  KiB. Area 0000-7FFF
     this.eram = new Uint8Array(8192); // External RAM.      8  KiB. Area A000-BFFF
     this.wram = new Uint8Array(8192); // Work RAM.          8  KiB. Area C000-DFFF
     this.ioRegs = new Uint8Array(128); //I/O Registers.   128    B. Area FF00-FF7F
     this.hram = new Uint8Array(127); //  High RAM.        127    B. Area FF80-FFFE
+    this.ie = 0; //                      IE Flag            1    B. Addr FFFF
   }
 
   // Function to load a program into the memory
@@ -122,7 +123,7 @@ export class MMU {
           // High RAM or I/O
           case 0xf00:
             if (addr >= 0xff80) {
-              return this.hram[addr & 0x7f];
+              return addr == 0xffff ? this.ie : this.hram[addr & 0x7f];
             } else {
               // TODO: I/O control handling
               return this.ioRegs[addr & 0x7f];
@@ -197,7 +198,8 @@ export class MMU {
           // High RAM, I/O
           case 0xf00:
             if (addr > 0xff7f) {
-              this.hram[addr & 0x7f] = val;
+              if (addr == 0xffff) this.ie = val & 0xff;
+              else this.hram[addr & 0x7f] = val;
             } else
               switch (addr & 0x00f0) {
                 case 0x00:

@@ -30,7 +30,7 @@ export class Timer {
         // Timer about to overflow
         if (this.mmu.readByte(this.tima) >= 0xff) {
           this.mmu.writeByte(this.tima, this.mmu.readByte(this.tma)); // Set TIMA to TMA
-          //this.cpu.requestInterrupt(2);
+          this.cpu.requestInterrupt(2);
         } else {
           this.mmu.writeByte(this.tima, this.mmu.readByte(this.tima) + 1); // Increment TIMA
         }

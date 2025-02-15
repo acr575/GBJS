@@ -1,5 +1,5 @@
-import { CPU } from "../../CPU.js";
-import { Instruction } from "../../Instruction.js";
+import { CPU } from "../../src/CPU.js";
+import { Instruction } from "../../src/Instruction.js";
 
 /* ######### DEBUG ######### */
 let cpu = new CPU();
