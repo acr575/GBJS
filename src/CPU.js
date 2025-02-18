@@ -2,6 +2,7 @@ import { Instruction } from "./Instruction.js";
 import { OpcodeTable } from "./OpcodeTable.js";
 import { MMU } from "./MMU.js";
 import { Timer } from "./Timer.js";
+import { GPU } from "./GPU.js";
 
 export class CPU {
   constructor() {
@@ -17,6 +18,7 @@ export class CPU {
     this.instruction = new Instruction(this);
     this.mmu = new MMU(this); // Memory Management
     this.timer = new Timer(this); // System timer
+    this.gpu = new GPU(this); // Graphics Processing Unit
 
     this.opcodeTable = new OpcodeTable(this); // Init opcode table
     this.instructionTable = this.opcodeTable.instructionTable; // Links each opcode with it instruction, length and cycles
@@ -211,7 +213,7 @@ export class CPU {
       let cycles = this.emulateCycle();
       cycleCounter += cycles;
       this.timer.updateTimers(cycles);
-      //TODO: this.gpu.updateGraphics(cycles);
+      this.gpu.updateGraphics(cycles);
       this.doInterrupts();
 
       // Enable IME requested by EI. EI sets requestIme to 2.

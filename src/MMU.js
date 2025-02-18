@@ -81,7 +81,7 @@ export class MMU {
       // Graphics: VRAM
       case 0x8000:
       case 0x9000:
-        // return this.gpu.vram[addr & 0x1fff];
+      // return this.gpu.vram[addr & 0x1fff];
 
       // External RAM
       case 0xa000:
@@ -116,9 +116,9 @@ export class MMU {
 
           // OAM
           case 0xe00:
-            // FEA0-FEFF: Not usable area
-            // if (addr < 0xfea0) return this.gpu.oam[addr & 0xff];
-            // else return 0;
+          // FEA0-FEFF: Not usable area
+          // if (addr < 0xfea0) return this.gpu.oam[addr & 0xff];
+          // else return 0;
 
           // High RAM or I/O
           case 0xf00:
@@ -206,7 +206,7 @@ export class MMU {
                   if (addr == 0xff07)
                     this.cpu.timer.writeTAC(val); // TAC register
                   else if (addr == 0xff04)
-                    this.ioRegs[addr & 0x7f]; // Reset DIV register
+                    this.ioRegs[addr & 0x7f] = 0; // Reset DIV register
                   else this.ioRegs[addr & 0x7f] = val;
 
                 // GPU registers
@@ -214,11 +214,10 @@ export class MMU {
                 case 0x50:
                 case 0x60:
                 case 0x70:
-                  this.ioRegs[addr & 0x7f] = val;
+                  this.cpu.gpu.writeByte(addr & 0x7f, val);
               }
             break;
         }
-
         break;
     }
   }
