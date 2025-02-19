@@ -50,14 +50,14 @@ export class GPU {
     let currentmode = status & 0b11;
 
     let mode = 0;
-    let reqInt = 0;
+    let requestInterrupt = false;
 
-    // In V-Blank so set mode to 1
+    // In V-Blank: set mode to 1
     if (currentline >= 144) {
       mode = 1;
-      status &= 0b11111110; // Reset STAT bit 1
+      status &= 0b11111101; // Reset STAT bit 1
       status |= 1; // Set STAT bit 0 (mode 1)
-      reqInt = (status >> 4) & 1;
+      requestInterrupt = ((status >> 4) & 1) == 1;
     } else {
       const isMode2 = this.scanlineCounter >= 456 - 80;
       const isMode3 = this.scanlineCounter >= 456 - 80 - 172;
@@ -67,7 +67,7 @@ export class GPU {
         mode = 2;
         status &= 0b11111110; // Reset STAT bits 0
         status |= 0b10; // Set STAT bit 1 (mode 2)
-        reqInt = (status >> 5) & 1;
+        requestInterrupt = ((status >> 5) & 1) == 1;
       }
       // Mode 3
       else if (isMode3) {
@@ -78,17 +78,17 @@ export class GPU {
       else {
         mode = 0;
         status &= 0b11111100; // Reset STAT bits 0 & 1 (mode 0)
-        reqInt = (status >> 3) & 1;
+        requestInterrupt = ((status >> 3) & 1) == 1;
       }
     }
 
     // Just entered a new mode so request interrupt
-    if (reqInt && mode != currentmode) this.cpu.requestInterrupt(1);
+    if (requestInterrupt && mode != currentmode) this.cpu.requestInterrupt(1);
 
     // Check the conincidence flag
     if (this.mmu.readByte(this.ly) == this.mmu.readByte(this.lyc)) {
       status |= 0b100; // Set STAT bit 2
-      if ((status << 6) & 1) this.cpu.requestInterrupt(1);
+      if ((status >> 6) & 1) this.cpu.requestInterrupt(1);
     } else {
       status &= 0b11111011; // Reset STAT bit 2
     }
@@ -113,6 +113,6 @@ export class GPU {
   }
 
   setLY(val) {
-    this.mmu.ioRegs[this.ly] = val;
+    this.mmu.ioRegs[this.ly & 0x7f] = val;
   }
 }
