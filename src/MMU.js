@@ -117,7 +117,7 @@ export class MMU {
           // OAM
           case 0xe00:
           // FEA0-FEFF: Not usable area
-          // if (addr < 0xfea0) return this.gpu.oam[addr & 0xff];
+          if (addr < 0xfea0) return this.cpu.gpu.oam[addr & 0xff];
           // else return 0;
 
           // High RAM or I/O
@@ -192,7 +192,7 @@ export class MMU {
           // OAM
           case 0xe00:
             // FEA0-FEFF: Not usable area
-            // if ((addr & 0xff) < 0xa0) this.gpu.oam[addr & 0xff] = val;
+            if ((addr & 0xff) < 0xa0) this.cpu.gpu.oam[addr & 0xff] = val;
             break;
 
           // High RAM, I/O

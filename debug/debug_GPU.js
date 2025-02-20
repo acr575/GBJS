@@ -131,28 +131,67 @@ console.log("\n");
 // LY increments & LY == 144: Request interrupt
 gpu.setLY(143);
 console.log("  LY increments & LY == 144: Request interrupt");
-console.log(`\tscanLineCounter: ${gpu.scanlineCounter}; LY: ${cpu.mmu.readByte(gpu.ly)}; IF: 0b${cpu.mmu.readByte(cpu.if).toString(2)}`);
+console.log(
+  `\tscanLineCounter: ${gpu.scanlineCounter}; LY: ${cpu.mmu.readByte(
+    gpu.ly
+  )}; IF: 0b${cpu.mmu.readByte(cpu.if).toString(2)}`
+);
 console.log("\tupdateGraphics(445)");
 gpu.updateGraphics(445);
-console.log(`\tscanLineCounter: ${gpu.scanlineCounter}; LY: ${cpu.mmu.readByte(gpu.ly)}; IF: 0b${cpu.mmu.readByte(cpu.if).toString(2)}`);
+console.log(
+  `\tscanLineCounter: ${gpu.scanlineCounter}; LY: ${cpu.mmu.readByte(
+    gpu.ly
+  )}; IF: 0b${cpu.mmu.readByte(cpu.if).toString(2)}`
+);
 
 console.log("\n");
 
 // LY increments & LY > 153: Reset LY
 gpu.setLY(153);
 console.log("  LY increments & LY > 153: Draw scanline");
-console.log(`\tscanLineCounter: ${gpu.scanlineCounter}; LY: ${cpu.mmu.readByte(gpu.ly)}`);
+console.log(
+  `\tscanLineCounter: ${gpu.scanlineCounter}; LY: ${cpu.mmu.readByte(gpu.ly)}`
+);
 console.log("\tupdateGraphics(460)");
 gpu.updateGraphics(460);
-console.log(`\tscanLineCounter: ${gpu.scanlineCounter}; LY: ${cpu.mmu.readByte(gpu.ly)}`);
+console.log(
+  `\tscanLineCounter: ${gpu.scanlineCounter}; LY: ${cpu.mmu.readByte(gpu.ly)}`
+);
 
 console.log("\n");
 
 // LY increments & LY < 144: Draw scanline
 console.log("  LY increments & LY < 144: Draw scanline");
-console.log(`\tscanLineCounter: ${gpu.scanlineCounter}; LY: ${cpu.mmu.readByte(gpu.ly)}`);
+console.log(
+  `\tscanLineCounter: ${gpu.scanlineCounter}; LY: ${cpu.mmu.readByte(gpu.ly)}`
+);
 console.log("\tupdateGraphics(460)");
 gpu.updateGraphics(460);
-console.log(`\tscanLineCounter: ${gpu.scanlineCounter}; LY: ${cpu.mmu.readByte(gpu.ly)}`);
+console.log(
+  `\tscanLineCounter: ${gpu.scanlineCounter}; LY: ${cpu.mmu.readByte(gpu.ly)}`
+);
 
+console.log("\n\n");
 
+// Test DMA Transfer
+console.log("Test DMA Transfer");
+let addr = 0xf8 << 8;
+const arr = new Uint8Array(160);
+
+for (let i = 0; i < 160; i++) {
+  const randNumber = Math.floor(Math.random() * 256);
+  cpu.mmu.writeByte(addr + i, randNumber);
+  arr[i] = randNumber;
+}
+
+console.log(`Source address: 0x${addr.toString(16)} - 0x${(addr + 159).toString(16)}`);
+console.log("Memory at source area: ");
+console.log([...arr]);
+
+console.log("OAM before transfer: ");
+console.log([...gpu.oam]);
+gpu.doDMATransfer(0xf8);
+console.log("OAM after transfer: ");
+console.log([...gpu.oam]);
+
+console.log(`Source memory area == OAM? ${arr.every((val, i) => val === gpu.oam[i])}`);

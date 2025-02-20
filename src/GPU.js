@@ -3,12 +3,15 @@ export class GPU {
     this.cpu = cpu;
     this.mmu = cpu.mmu;
 
+    this.oam = new Uint8Array(160); // OAM   160 B.   Area FE00 - FE9F
+
     this.scanlineCounter = 456; // Clock cycles to draw a scanline
 
     this.lcdc = 0xff40; // LCD Control
     this.stat = 0xff41; // LCD status
     this.ly = 0xff44; // LCD Y coordinate [Read-only]
     this.lyc = 0xff45; // LY compare
+    this.dma = 0xff46; // OAM DMA source address & start
   }
 
   updateGraphics(cycles) {
@@ -29,7 +32,7 @@ export class GPU {
       // If gone past scanline 153 reset to 0
       else if (currentLine > 153) this.setLY(0);
       // Draw current scanline
-      else if (currentLine < 144) this.drawScanLine();
+      // else if (currentLine < 144) this.drawScanLine();
     }
   }
 
@@ -107,6 +110,11 @@ export class GPU {
         this.setLY(0);
         break;
 
+      // Writing to DMA register executes DMA transfer
+      case 0x6:
+        this.doDMATransfer(val);
+        break;
+
       default:
         this.mmu.ioRegs[addr] = val;
     }
@@ -114,5 +122,17 @@ export class GPU {
 
   setLY(val) {
     this.mmu.ioRegs[this.ly & 0x7f] = val;
+  }
+
+  doDMATransfer(data) {
+    const address = data << 8; // source address is data * 100
+    for (let i = 0; i < 160; i++) {
+      let attempted = this.mmu.readByte(address + i);
+      this.mmu.writeByte(0xfe00 + i, this.mmu.readByte(address + i));
+      if (attempted != this.mmu.readByte(0xfe00 + i))
+        console.log(
+          `Attempted: ${attempted}; Writed: ${this.mmu.readByte(0xfe00 + i)}`
+        );
+    }
   }
 }
