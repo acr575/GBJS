@@ -81,7 +81,7 @@ export class MMU {
       // Graphics: VRAM
       case 0x8000:
       case 0x9000:
-      // return this.gpu.vram[addr & 0x1fff];
+      return this.cpu.gpu.vram[addr & 0x1fff];
 
       // External RAM
       case 0xa000:
@@ -152,7 +152,7 @@ export class MMU {
       // VRAM
       case 0x8000:
       case 0x9000:
-        // this.gpu.vram[addr & 0x1fff] = val;
+        this.cpu.gpu.vram[addr & 0x1fff] = val;
         break;
 
       // External RAM

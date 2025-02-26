@@ -1,4 +1,4 @@
-import { CPU } from "../src/CPU.js";
+import { CPU } from "../../src/CPU.js";
 
 const cpu = new CPU();
 const gpu = cpu.gpu;
@@ -116,6 +116,35 @@ console.log(
 
 console.log("\n\n");
 
+// Test DMA Transfer
+console.log("Test DMA Transfer");
+let addr = 0xf8 << 8;
+const arr = new Uint8Array(160);
+
+for (let i = 0; i < 160; i++) {
+  const randNumber = Math.floor(Math.random() * 256);
+  cpu.mmu.writeByte(addr + i, randNumber);
+  arr[i] = randNumber;
+}
+
+console.log(
+  `Source address: 0x${addr.toString(16)} - 0x${(addr + 159).toString(16)}`
+);
+console.log("Memory at source area: ");
+console.log([...arr]);
+
+console.log("OAM before transfer: ");
+console.log([...gpu.oam]);
+gpu.doDMATransfer(0xf8);
+console.log("OAM after transfer: ");
+console.log([...gpu.oam]);
+
+console.log(
+  `Source memory area == OAM? ${arr.every((val, i) => val === gpu.oam[i])}`
+);
+
+console.log("\n\n");
+
 /* TEST updateGraphics */
 console.log("TEST updateGraphics()");
 
@@ -170,28 +199,3 @@ gpu.updateGraphics(460);
 console.log(
   `\tscanLineCounter: ${gpu.scanlineCounter}; LY: ${cpu.mmu.readByte(gpu.ly)}`
 );
-
-console.log("\n\n");
-
-// Test DMA Transfer
-console.log("Test DMA Transfer");
-let addr = 0xf8 << 8;
-const arr = new Uint8Array(160);
-
-for (let i = 0; i < 160; i++) {
-  const randNumber = Math.floor(Math.random() * 256);
-  cpu.mmu.writeByte(addr + i, randNumber);
-  arr[i] = randNumber;
-}
-
-console.log(`Source address: 0x${addr.toString(16)} - 0x${(addr + 159).toString(16)}`);
-console.log("Memory at source area: ");
-console.log([...arr]);
-
-console.log("OAM before transfer: ");
-console.log([...gpu.oam]);
-gpu.doDMATransfer(0xf8);
-console.log("OAM after transfer: ");
-console.log([...gpu.oam]);
-
-console.log(`Source memory area == OAM? ${arr.every((val, i) => val === gpu.oam[i])}`);
