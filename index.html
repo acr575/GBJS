@@ -5,8 +5,90 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GameBoy JS</title>
   </head>
+  <style>
+    body {
+      background-color: gray;
+    }
+
+    #screen {
+      /* image-rendering: pixelated; Mantener el estilo pixelado */
+      border: 5px solid #000;
+      width: 160px;
+    }
+
+    .debug {
+      width: 70%;
+      height: 300px;
+      border: solid 2px black;
+      overflow-y: auto;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    th,
+    td {
+      border: 1px solid black;
+      padding: 8px;
+    }
+  </style>
   <body>
-    <input type="file" id="fileInput"></input>
-    <script src="./debug/Instructions/debug_instruction_table.js" type="module"></script>
+    <input type="file" id="fileInput" />
+    <canvas id="screen" width="160" height="144"></canvas>
+    <!-- <label for="stepInstructions">Instructions to step</label> -->
+    <input
+      type="number"
+      name="stepInstructions"
+      id="stepInstructions"
+      min="1"
+      value="1"
+    />
+    <button id="next">Step</button>
+    <table class="debug">
+      <tr>
+        <td colspan="2">PC</td>
+        <td colspan="2" id="pc">$0000</td>
+      </tr>
+      <tr>
+        <td colspan="2">SP</td>
+        <td colspan="2" id="sp">$0000</td>
+      </tr>
+      <tr>
+        <td>A</td>
+        <td id="a">$00</td>
+        <td>F</td>
+        <td id="f">----</td>
+      </tr>
+      <tr>
+        <td>B</td>
+        <td id="b">$00</td>
+        <td>C</td>
+        <td id="c">$00</td>
+      </tr>
+      <tr>
+        <td>D</td>
+        <td id="d">$00</td>
+        <td>E</td>
+        <td id="e">$00</td>
+      </tr>
+      <tr>
+        <td>H</td>
+        <td id="h">$00</td>
+        <td>L</td>
+        <td id="l">$00</td>
+      </tr>
+    </table>
+
+    <label for="hexAddress">Query address</label>
+    <input type="text" name="hexAddress" id="hexAddress" value="0X" />
+    <span>Value: </span>
+    <span id="memValue">0x</span>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="./debug/debug_bios_disassemble.js" type="module"></script>
+    <!-- <script src="./debug/debug.js" type="module"></script> -->
+    <!-- <script src="./debug/GPU/debug_Render.js" type="module"></script> -->
   </body>
 </html>

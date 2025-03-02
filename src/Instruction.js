@@ -1091,7 +1091,7 @@ export class Instruction {
     // Target is a simple register
     else value = this.cpu.getRegister(register);
 
-    result = ((value >> bit) & 1) === 1;
+    result = ((value >> bit) & 1) === 0;
 
     // Set Z10- flags
     this.cpu.setFlags("Z01-", { Z: result });

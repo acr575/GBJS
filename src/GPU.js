@@ -171,7 +171,7 @@ export class GPU {
     // tile is the scanline on?
     let tileRow = Math.floor(yPos / 8) * 32;
 
-    const context = this.screen.getContext("2d");
+    const context = this.screen.getContext("2d", {willReadFrequently: true});
     const imageData = context.getImageData(
       0,
       0,
@@ -276,7 +276,6 @@ export class GPU {
       imageData.data[pixelIndex + 1] = green; // G
       imageData.data[pixelIndex + 2] = blue;
       imageData.data[pixelIndex + 3] = 255; // Opacity
-      console.log(imageData.data[pixelIndex], imageData.data[pixelIndex + 1], imageData.data[pixelIndex + 2]);
     }
 
     context.putImageData(imageData, 0, 0);
@@ -286,7 +285,7 @@ export class GPU {
     let use8x16 = false;
     if ((this.mmu.readByte(this.lcdc) >> 2) & 1) use8x16 = true;
 
-    const context = this.screen.getContext("2d");
+    const context = this.screen.getContext("2d", {willReadFrequently: true});
     const imageData = context.getImageData(
       0,
       0,
@@ -302,6 +301,8 @@ export class GPU {
       let tileLocation = this.mmu.readByte(0xfe00 + index + 2);
       let attributes = this.mmu.readByte(0xfe00 + index + 3);
 
+      // console.log(`Sprite ${sprite}: X=${xPos}, Y=${yPos}, Tile=${tileLocation.toString(16)}, Attributes=${attributes.toString(2)}`);
+
       let yFlip = (attributes >> 6) & 1;
       let xFlip = (attributes >> 5) & 1;
 
@@ -313,11 +314,11 @@ export class GPU {
       // does this sprite intercept with the scanline?
       if (scanline >= yPos && scanline < yPos + ysize) {
         let line = scanline - yPos;
+        // console.log(`Line: ${line}`);
 
         // read the sprite in backwards in the y axis
         if (yFlip) {
-          line -= ysize;
-          line *= -1;
+          line = (ysize - 1) - line;
         }
 
         line *= 2; // same as for tiles

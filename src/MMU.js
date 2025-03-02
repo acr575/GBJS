@@ -47,11 +47,10 @@ export class MMU {
           throw new Error("Cartridge too big for memory");
 
         // Load bytes
-        for (let i = 0; i < lSize; ++i) {
-          this.rom[i] = byteArray[i];
-        }
+        this.rom.set(byteArray.subarray(0, this.rom.length));
+        
         console.log("Program loaded successfully.");
-        resolve();
+        resolve(lSize);
       };
     });
   }
@@ -81,7 +80,7 @@ export class MMU {
       // Graphics: VRAM
       case 0x8000:
       case 0x9000:
-      return this.cpu.gpu.vram[addr & 0x1fff];
+        return this.cpu.gpu.vram[addr & 0x1fff];
 
       // External RAM
       case 0xa000:
@@ -116,8 +115,8 @@ export class MMU {
 
           // OAM
           case 0xe00:
-          // FEA0-FEFF: Not usable area
-          if (addr < 0xfea0) return this.cpu.gpu.oam[addr & 0xff];
+            // FEA0-FEFF: Not usable area
+            if (addr < 0xfea0) return this.cpu.gpu.oam[addr & 0xff];
           // else return 0;
 
           // High RAM or I/O
@@ -225,5 +224,23 @@ export class MMU {
   writeWord(addr, val) {
     this.writeByte(addr, val & 0xff); // Low byte
     this.writeByte(addr + 1, val >> 8); // High byte
+  }
+
+  setupAddressInput() {
+    const addressInput = document.getElementById("hexAddress");
+    const memValue = document.getElementById("memValue");
+
+    const updateMemValue = (addr) => {
+      return addr !== undefined && !isNaN(addr) ? this.readByte(addr) : 0;
+    };
+
+    addressInput.addEventListener("input", function () {
+      this.value = this.value.toUpperCase().replace(/[^0-9A-FX]/g, ""); // Hex. regex
+      if (!this.value.startsWith("0X"))
+        this.value = "0X" + this.value.replace(/^0X/, "");
+      this.value = this.value.slice(0, 6);
+
+      memValue.innerHTML = "0X" + updateMemValue(parseInt(this.value)).toString(16).toUpperCase().padStart(2, "0");
+    });
   }
 }

@@ -7,6 +7,7 @@ export class OpcodeTable {
         instruction: () => {},
         length: 1,
         cycles: 4,
+        mnemonic: ["NOP"],
       },
 
       // LD BC, d16
@@ -14,6 +15,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_n_nn("BC"),
         length: 3,
         cycles: 12,
+        mnemonic: ["LD", "BC", "d16"],
       },
 
       // LD (BC), A
@@ -21,6 +23,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_n_A("BC", true),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "(BC)", "A"],
       },
 
       // INC BC
@@ -28,6 +31,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.INC_nn("BC"),
         length: 1,
         cycles: 8,
+        mnemonic: ["INC", "BC"],
       },
 
       // INC B
@@ -35,6 +39,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.INC_n("B"),
         length: 1,
         cycles: 4,
+        mnemonic: ["INC", "B"],
       },
 
       // DEC B
@@ -42,6 +47,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.DEC_n("B"),
         length: 1,
         cycles: 4,
+        mnemonic: ["DEC", "B"],
       },
 
       // LD B, d8
@@ -49,6 +55,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_nn_n("B"),
         length: 2,
         cycles: 8,
+        mnemonic: ["LD", "B", "d8"],
       },
 
       // RLCA
@@ -56,6 +63,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.RLCA(),
         length: 1,
         cycles: 4,
+        mnemonic: ["RLCA"],
       },
 
       // LD (a16), SP
@@ -63,6 +71,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_nn_SP(),
         length: 3,
         cycles: 20,
+        mnemonic: ["LD", "a16", "SP"],
       },
 
       // ADD HL, BC
@@ -70,6 +79,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADD_HL_n("BC"),
         length: 1,
         cycles: 8,
+        mnemonic: ["ADD", "HL", "BC"],
       },
 
       // LD A, (BC)
@@ -77,6 +87,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_A_n("BC", true),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "A", "(BC)"],
       },
 
       // DEC BC
@@ -84,6 +95,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.DEC_nn("BC"),
         length: 1,
         cycles: 8,
+        mnemonic: ["DEC", "BC"],
       },
 
       // INC C
@@ -91,6 +103,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.INC_n("C"),
         length: 1,
         cycles: 4,
+        mnemonic: ["INC", "C"],
       },
 
       // DEC C
@@ -98,6 +111,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.DEC_n("C"),
         length: 1,
         cycles: 4,
+        mnemonic: ["DEC", "C"],
       },
 
       // LD C, d8
@@ -105,6 +119,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_nn_n("C"),
         length: 2,
         cycles: 8,
+        mnemonic: ["LD", "C", "d8"],
       },
 
       // RRCA
@@ -112,6 +127,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.RRCA(),
         length: 1,
         cycles: 4,
+        mnemonic: ["RRCA"],
       },
 
       // STOP
@@ -119,6 +135,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.STOP(),
         length: 2,
         cycles: 4,
+        mnemonic: ["STOP"],
       },
 
       // LD DE, d16
@@ -126,6 +143,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_n_nn("DE"),
         length: 3,
         cycles: 12,
+        mnemonic: ["LD", "DE", "d16"],
       },
 
       // LD (DE), A
@@ -133,6 +151,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_n_A("DE", true),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "(DE)", "A"],
       },
 
       // INC DE
@@ -140,6 +159,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.INC_nn("DE"),
         length: 1,
         cycles: 8,
+        mnemonic: ["INC", "DE"],
       },
 
       // INC D
@@ -147,6 +167,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.INC_n("D"),
         length: 1,
         cycles: 4,
+        mnemonic: ["INC", "D"],
       },
 
       // DEC D
@@ -154,6 +175,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.DEC_n("D"),
         length: 1,
         cycles: 4,
+        mnemonic: ["DEC", "D"],
       },
 
       // LD D, d8
@@ -161,6 +183,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_nn_n("D"),
         length: 2,
         cycles: 8,
+        mnemonic: ["LD", "D", "d8"],
       },
 
       // RLA
@@ -168,6 +191,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.RLA(),
         length: 1,
         cycles: 4,
+        mnemonic: ["RLA"],
       },
 
       // JR r8
@@ -175,6 +199,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.JR_n(cpu.getSignedImmediate8Bit()), // r8 is at next PC address
         length: 2,
         cycles: 12,
+        mnemonic: ["JR", "r8"],
       },
 
       // ADD HL, DE
@@ -182,6 +207,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADD_HL_n("DE"),
         length: 1,
         cycles: 8,
+        mnemonic: ["ADD", "HL", "DE"],
       },
 
       // LD A, (DE)
@@ -189,6 +215,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_A_n("DE", true),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "A", "(DE)"],
       },
 
       // DEC DE
@@ -196,6 +223,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.DEC_nn("DE"),
         length: 1,
         cycles: 8,
+        mnemonic: ["DEC", "DE"],
       },
 
       // INC E
@@ -203,6 +231,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.INC_n("E"),
         length: 1,
         cycles: 4,
+        mnemonic: ["INC", "E"],
       },
 
       // DEC E
@@ -210,6 +239,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.DEC_n("E"),
         length: 1,
         cycles: 4,
+        mnemonic: ["DEC", "E"],
       },
 
       // LD E, d8
@@ -217,6 +247,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_nn_n("E"),
         length: 2,
         cycles: 8,
+        mnemonic: ["LD", "E", "d8"],
       },
 
       // RRA
@@ -224,6 +255,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.RRA(),
         length: 1,
         cycles: 4,
+        mnemonic: ["RRA"],
       },
 
       // JR NZ r8
@@ -235,6 +267,7 @@ export class OpcodeTable {
           )), // r8 is at next pc address
         length: 2,
         cycles: () => this.lastCycles,
+        mnemonic: ["JR", "NZ", "r8"],
       },
 
       // LD HL, d16
@@ -242,6 +275,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_n_nn("HL"),
         length: 3,
         cycles: 12,
+        mnemonic: ["LD", "HL", "d16"],
       },
 
       // LDI (HL), A
@@ -249,6 +283,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LDI_HL_A(),
         length: 1,
         cycles: 8,
+        mnemonic: ["LDI", "(HL)", "A"],
       },
 
       // INC HL
@@ -256,6 +291,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.INC_nn("HL"),
         length: 1,
         cycles: 8,
+        mnemonic: ["INC", "HL"],
       },
 
       // INC H
@@ -263,6 +299,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.INC_n("H"),
         length: 1,
         cycles: 4,
+        mnemonic: ["INC", "H"],
       },
 
       // DEC H
@@ -270,6 +307,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.DEC_n("H"),
         length: 1,
         cycles: 4,
+        mnemonic: ["DEC", "H"],
       },
 
       // LD H, d8
@@ -277,6 +315,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_nn_n("H"),
         length: 2,
         cycles: 8,
+        mnemonic: ["LD", "H", "d8"],
       },
 
       // DAA
@@ -284,6 +323,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.DAA(),
         length: 1,
         cycles: 4,
+        mnemonic: ["DAA"],
       },
 
       // JR Z r8
@@ -295,6 +335,7 @@ export class OpcodeTable {
           )), // r8 is at next pc address
         length: 2,
         cycles: () => this.lastCycles,
+        mnemonic: ["JR", "Z", "r8"],
       },
 
       // ADD HL, HL
@@ -302,6 +343,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADD_HL_n("HL"),
         length: 1,
         cycles: 8,
+        mnemonic: ["ADD", "HL", "HL"],
       },
 
       // LDI A, (HL)
@@ -309,6 +351,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LDI_A_HL(),
         length: 1,
         cycles: 8,
+        mnemonic: ["LDI", "A", "(HL)"],
       },
 
       // DEC HL
@@ -316,6 +359,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.DEC_nn("HL"),
         length: 1,
         cycles: 8,
+        mnemonic: ["DEC", "HL"],
       },
 
       // INC L
@@ -323,6 +367,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.INC_n("L"),
         length: 1,
         cycles: 4,
+        mnemonic: ["INC", "L"],
       },
 
       // DEC L
@@ -330,6 +375,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.DEC_n("L"),
         length: 1,
         cycles: 4,
+        mnemonic: ["DEC", "L"],
       },
 
       // LD L, d8
@@ -337,6 +383,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_nn_n("L"),
         length: 2,
         cycles: 8,
+        mnemonic: ["LD", "L", "d8"],
       },
 
       // CPL
@@ -344,6 +391,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.CPL(),
         length: 1,
         cycles: 4,
+        mnemonic: ["CPL"],
       },
 
       // JR NC r8
@@ -355,6 +403,7 @@ export class OpcodeTable {
           )), // r8 is at next pc address
         length: 2,
         cycles: () => this.lastCycles,
+        mnemonic: ["JR", "NC", "r8"],
       },
 
       // LD SP, d16
@@ -362,6 +411,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_n_nn("SP"),
         length: 3,
         cycles: 12,
+        mnemonic: ["LD", "SP", "d16"],
       },
 
       // LDD (HL), A
@@ -369,6 +419,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LDD_HL_A(),
         length: 1,
         cycles: 8,
+        mnemonic: ["LDD", "(HL)", "A"],
       },
 
       // INC SP
@@ -376,6 +427,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.INC_nn("SP"),
         length: 1,
         cycles: 8,
+        mnemonic: ["INC", "SP"],
       },
 
       // INC (HL)
@@ -383,6 +435,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.INC_n("HL"),
         length: 1,
         cycles: 12,
+        mnemonic: ["INC", "(HL)"],
       },
 
       // DEC (HL)
@@ -390,14 +443,16 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.DEC_n("HL"),
         length: 1,
         cycles: 12,
+        mnemonic: ["DEC", "(HL)"],
       },
 
       // LD (HL), d8
       0x36: {
         instruction: () =>
-          cpu.instruction.LD_r1_r2("HL", cpu.mmu.readByte([cpu.pc+1])), // d8 is at next PC address
+          cpu.instruction.LD_r1_r2("HL", cpu.mmu.readByte([cpu.pc + 1])), // d8 is at next PC address
         length: 2,
         cycles: 12,
+        mnemonic: ["LD", "(HL)", "d8"],
       },
 
       // SCF
@@ -405,6 +460,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.SCF(),
         length: 1,
         cycles: 4,
+        mnemonic: ["SCF"],
       },
 
       // JR C r8
@@ -416,6 +472,7 @@ export class OpcodeTable {
           )), // r8 is at next pc address
         length: 2,
         cycles: () => this.lastCycles,
+        mnemonic: ["JR", "C", "r8"],
       },
 
       // ADD HL, SP
@@ -423,6 +480,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADD_HL_n("SP"),
         length: 1,
         cycles: 8,
+        mnemonic: ["ADD", "HL", "SP"],
       },
 
       // LDD A, (HL)
@@ -430,6 +488,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LDD_A_HL(),
         length: 1,
         cycles: 8,
+        mnemonic: ["LDD", "A", "(HL)"],
       },
 
       // DEC SP
@@ -437,6 +496,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.DEC_nn("SP"),
         length: 1,
         cycles: 8,
+        mnemonic: ["DEC", "SP"],
       },
 
       // INC A
@@ -444,6 +504,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.INC_n("A"),
         length: 1,
         cycles: 4,
+        mnemonic: ["INC", "A"],
       },
 
       // DEC A
@@ -451,6 +512,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.DEC_n("A"),
         length: 1,
         cycles: 4,
+        mnemonic: ["DEC", "A"],
       },
 
       // LD A, d8
@@ -458,6 +520,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_A_n("d8"),
         length: 2,
         cycles: 8,
+        mnemonic: ["LD", "A", "d8"],
       },
 
       // CCF
@@ -465,6 +528,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.CCF(),
         length: 1,
         cycles: 4,
+        mnemonic: ["CCF"],
       },
 
       // LD B, B
@@ -472,6 +536,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("B", "B"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "B", "B"],
       },
 
       // LD B, C
@@ -479,6 +544,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("B", "C"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "B", "C"],
       },
 
       // LD B, D
@@ -486,6 +552,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("B", "D"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "B", "D"],
       },
 
       // LD B, E
@@ -493,6 +560,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("B", "E"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "B", "E"],
       },
 
       // LD B, H
@@ -500,6 +568,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("B", "H"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "B", "H"],
       },
 
       // LD B, L
@@ -507,6 +576,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("B", "L"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "B", "L"],
       },
 
       // LD B, (HL)
@@ -514,6 +584,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("B", "HL"),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "B", "(HL)"],
       },
 
       // LD B, A
@@ -521,6 +592,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_n_A("B"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "B", "A"],
       },
 
       // LD C, B
@@ -528,6 +600,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("C", "B"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "C", "B"],
       },
 
       // LD C, C
@@ -535,6 +608,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("C", "C"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "C", "C"],
       },
 
       // LD C, D
@@ -542,6 +616,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("C", "D"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "C", "D"],
       },
 
       // LD C, E
@@ -549,6 +624,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("C", "E"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "C", "E"],
       },
 
       // LD C, H
@@ -556,6 +632,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("C", "H"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "C", "H"],
       },
 
       // LD C, L
@@ -563,6 +640,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("C", "L"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "C", "L"],
       },
 
       // LD C, (HL)
@@ -570,6 +648,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("C", "HL"),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "C", "(HL)"],
       },
 
       // LD C, A
@@ -577,6 +656,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_n_A("C"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "C", "A"],
       },
 
       // LD D, B
@@ -584,6 +664,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("D", "B"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "D", "B"],
       },
 
       // LD D, C
@@ -591,6 +672,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("D", "C"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "D", "C"],
       },
 
       // LD D, D
@@ -598,6 +680,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("D", "D"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "D", "D"],
       },
 
       // LD D, E
@@ -605,6 +688,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("D", "E"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "D", "E"],
       },
 
       // LD D, H
@@ -612,6 +696,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("D", "H"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "D", "H"],
       },
 
       // LD D, L
@@ -619,6 +704,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("D", "L"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "D", "L"],
       },
 
       // LD D, (HL)
@@ -626,6 +712,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("D", "HL"),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "D", "(HL)"],
       },
 
       // LD D, A
@@ -633,6 +720,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_n_A("D"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "D", "A"],
       },
 
       // LD E, B
@@ -640,6 +728,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("E", "B"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "E", "B"],
       },
 
       // LD E, C
@@ -647,6 +736,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("E", "C"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "E", "C"],
       },
 
       // LD E, D
@@ -654,6 +744,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("E", "D"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "E", "D"],
       },
 
       // LD E, E
@@ -661,6 +752,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("E", "E"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "E", "E"],
       },
 
       // LD E, H
@@ -668,6 +760,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("E", "H"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "E", "H"],
       },
 
       // LD E, L
@@ -675,6 +768,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("E", "L"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "E", "L"],
       },
 
       // LD E, (HL)
@@ -682,6 +776,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("E", "HL"),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "E", "(HL)"],
       },
 
       // LD E, A
@@ -689,6 +784,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_n_A("E"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "E", "A"],
       },
 
       // LD H, B
@@ -696,6 +792,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("H", "B"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "H", "B"],
       },
 
       // LD H, C
@@ -703,6 +800,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("H", "C"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "H", "C"],
       },
 
       // LD H, D
@@ -710,6 +808,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("H", "D"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "H", "D"],
       },
 
       // LD H, E
@@ -717,6 +816,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("H", "E"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "H", "E"],
       },
 
       // LD H, H
@@ -724,6 +824,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("H", "H"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "H", "H"],
       },
 
       // LD H, L
@@ -731,6 +832,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("H", "L"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "H", "L"],
       },
 
       // LD H, (HL)
@@ -738,6 +840,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("H", "HL"),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "H", "(HL)"],
       },
 
       // LD H, A
@@ -745,6 +848,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_n_A("H"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "H", "A"],
       },
 
       // LD L, B
@@ -752,6 +856,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("L", "B"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "L", "B"],
       },
 
       // LD L, C
@@ -759,6 +864,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("L", "C"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "L", "C"],
       },
 
       // LD L, D
@@ -766,6 +872,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("L", "D"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "L", "D"],
       },
 
       // LD L, E
@@ -773,6 +880,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("L", "E"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "L", "E"],
       },
 
       // LD L, H
@@ -780,6 +888,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("L", "H"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "L", "H"],
       },
 
       // LD L, L
@@ -787,6 +896,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("L", "L"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "L", "L"],
       },
 
       // LD L, (HL)
@@ -794,6 +904,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("L", "HL"),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "L", "(HL)"],
       },
 
       // LD L, A
@@ -801,6 +912,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_n_A("L"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "L", "A"],
       },
 
       // LD (HL), B
@@ -808,6 +920,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("HL", "B"),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "(HL)", "B"],
       },
 
       // LD (HL), C
@@ -815,6 +928,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("HL", "C"),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "(HL)", "C"],
       },
 
       // LD (HL), D
@@ -822,6 +936,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("HL", "D"),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "(HL)", "D"],
       },
 
       // LD (HL), E
@@ -829,6 +944,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("HL", "E"),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "(HL)", "E"],
       },
 
       // LD (HL), H
@@ -836,6 +952,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("HL", "H"),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "(HL)", "H"],
       },
 
       // LD (HL), L
@@ -843,6 +960,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("HL", "L"),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "(HL)", "L"],
       },
 
       // HALT
@@ -850,6 +968,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.HALT(),
         length: 1,
         cycles: 4,
+        mnemonic: ["HALT"],
       },
 
       // LD (HL), A
@@ -857,6 +976,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_n_A("HL", true),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "(HL)", "A"],
       },
 
       // LD A, B
@@ -864,6 +984,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("A", "B"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "A", "B"],
       },
 
       // LD A, C
@@ -871,6 +992,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("A", "C"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "A", "C"],
       },
 
       // LD A, D
@@ -878,6 +1000,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("A", "D"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "A", "D"],
       },
 
       // LD A, E
@@ -885,6 +1008,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("A", "E"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "A", "E"],
       },
 
       // LD A, H
@@ -892,6 +1016,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("A", "H"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "A", "H"],
       },
 
       // LD A, L
@@ -899,6 +1024,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("A", "L"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "A", "L"],
       },
 
       // LD A, (HL)
@@ -906,6 +1032,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("A", "HL"),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "A", "(HL)"],
       },
 
       // LD A, A
@@ -913,6 +1040,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_r1_r2("A", "A"),
         length: 1,
         cycles: 4,
+        mnemonic: ["LD", "A", "A"],
       },
 
       // ADD A, B
@@ -920,6 +1048,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADD_A_n("B"),
         length: 1,
         cycles: 4,
+        mnemonic: ["ADD", "A", "B"],
       },
 
       // ADD A, C
@@ -927,6 +1056,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADD_A_n("C"),
         length: 1,
         cycles: 4,
+        mnemonic: ["ADD", "A", "C"],
       },
 
       // ADD A, D
@@ -934,6 +1064,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADD_A_n("D"),
         length: 1,
         cycles: 4,
+        mnemonic: ["ADD", "A", "D"],
       },
 
       // ADD A, E
@@ -941,6 +1072,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADD_A_n("E"),
         length: 1,
         cycles: 4,
+        mnemonic: ["ADD", "A", "E"],
       },
 
       // ADD A, H
@@ -948,6 +1080,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADD_A_n("H"),
         length: 1,
         cycles: 4,
+        mnemonic: ["ADD", "A", "H"],
       },
 
       // ADD A, L
@@ -955,6 +1088,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADD_A_n("L"),
         length: 1,
         cycles: 4,
+        mnemonic: ["ADD", "A", "L"],
       },
 
       // ADD A, (HL)
@@ -962,6 +1096,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADD_A_n("HL"),
         length: 1,
         cycles: 8,
+        mnemonic: ["ADD", "A", "(HL)"],
       },
 
       // ADD A, A
@@ -969,6 +1104,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADD_A_n("A"),
         length: 1,
         cycles: 4,
+        mnemonic: ["ADD", "A", "A"],
       },
 
       // ADC A, B
@@ -976,6 +1112,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADC_A_n("B"),
         length: 1,
         cycles: 4,
+        mnemonic: ["ADC", "A", "B"],
       },
 
       // ADC A, C
@@ -983,6 +1120,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADC_A_n("C"),
         length: 1,
         cycles: 4,
+        mnemonic: ["ADC", "A", "C"],
       },
 
       // ADC A, D
@@ -990,6 +1128,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADC_A_n("D"),
         length: 1,
         cycles: 4,
+        mnemonic: ["ADC", "A", "D"],
       },
 
       // ADC A, E
@@ -997,6 +1136,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADC_A_n("E"),
         length: 1,
         cycles: 4,
+        mnemonic: ["ADC", "A", "E"],
       },
 
       // ADC A, H
@@ -1004,6 +1144,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADC_A_n("H"),
         length: 1,
         cycles: 4,
+        mnemonic: ["ADC", "A", "H"],
       },
 
       // ADC A, L
@@ -1011,6 +1152,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADC_A_n("L"),
         length: 1,
         cycles: 4,
+        mnemonic: ["ADC", "A", "L"],
       },
 
       // ADC A, (HL)
@@ -1018,6 +1160,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADC_A_n("HL"),
         length: 1,
         cycles: 8,
+        mnemonic: ["ADC", "A", "(HL)"],
       },
 
       // ADC A, A
@@ -1025,6 +1168,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADC_A_n("A"),
         length: 1,
         cycles: 4,
+        mnemonic: ["ADC", "A", "A"],
       },
 
       // SUB A, B
@@ -1032,6 +1176,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.SUB_A_n("B"),
         length: 1,
         cycles: 4,
+        mnemonic: ["SUB", "A", "B"],
       },
 
       // SUB A, C
@@ -1039,6 +1184,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.SUB_A_n("C"),
         length: 1,
         cycles: 4,
+        mnemonic: ["SUB", "A", "C"],
       },
 
       // SUB A, D
@@ -1046,6 +1192,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.SUB_A_n("D"),
         length: 1,
         cycles: 4,
+        mnemonic: ["SUB", "A", "D"],
       },
 
       // SUB A, E
@@ -1053,6 +1200,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.SUB_A_n("E"),
         length: 1,
         cycles: 4,
+        mnemonic: ["SUB", "A", "E"],
       },
 
       // SUB A, H
@@ -1060,6 +1208,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.SUB_A_n("H"),
         length: 1,
         cycles: 4,
+        mnemonic: ["SUB", "A", "H"],
       },
 
       // SUB A, L
@@ -1067,6 +1216,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.SUB_A_n("L"),
         length: 1,
         cycles: 4,
+        mnemonic: ["SUB", "A", "L"],
       },
 
       // SUB A, (HL)
@@ -1074,6 +1224,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.SUB_A_n("HL"),
         length: 1,
         cycles: 8,
+        mnemonic: ["SUB", "A", "(HL)"],
       },
 
       // SUB A, A
@@ -1081,6 +1232,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.SUB_A_n("A"),
         length: 1,
         cycles: 4,
+        mnemonic: ["SUB", "A", "A"],
       },
 
       // SBC A, B
@@ -1088,6 +1240,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.SBC_A_n("B"),
         length: 1,
         cycles: 4,
+        mnemonic: ["SBC", "A", "B"],
       },
 
       // SBC A, C
@@ -1095,6 +1248,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.SBC_A_n("C"),
         length: 1,
         cycles: 4,
+        mnemonic: ["SBC", "A", "C"],
       },
 
       // SBC A, D
@@ -1102,6 +1256,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.SBC_A_n("D"),
         length: 1,
         cycles: 4,
+        mnemonic: ["SBC", "A", "D"],
       },
 
       // SBC A, E
@@ -1109,6 +1264,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.SBC_A_n("E"),
         length: 1,
         cycles: 4,
+        mnemonic: ["SBC", "A", "E"],
       },
 
       // SBC A, H
@@ -1116,6 +1272,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.SBC_A_n("H"),
         length: 1,
         cycles: 4,
+        mnemonic: ["SBC", "A", "H"],
       },
 
       // SBC A, L
@@ -1123,6 +1280,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.SBC_A_n("L"),
         length: 1,
         cycles: 4,
+        mnemonic: ["SBC", "A", "L"],
       },
 
       // SBC A, (HL)
@@ -1130,6 +1288,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.SBC_A_n("HL"),
         length: 1,
         cycles: 8,
+        mnemonic: ["SBC", "A", "(HL)"],
       },
 
       // SBC A, A
@@ -1137,6 +1296,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.SBC_A_n("A"),
         length: 1,
         cycles: 4,
+        mnemonic: ["SBC", "A", "A"],
       },
 
       // AND B
@@ -1144,6 +1304,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.AND_n("B"),
         length: 1,
         cycles: 4,
+        mnemonic: ["AND", "A", "B"],
       },
 
       // AND C
@@ -1151,6 +1312,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.AND_n("C"),
         length: 1,
         cycles: 4,
+        mnemonic: ["AND", "A", "C"],
       },
 
       // AND D
@@ -1158,6 +1320,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.AND_n("D"),
         length: 1,
         cycles: 4,
+        mnemonic: ["AND", "A", "D"],
       },
 
       // AND E
@@ -1165,6 +1328,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.AND_n("E"),
         length: 1,
         cycles: 4,
+        mnemonic: ["AND", "A", "E"],
       },
 
       // AND H
@@ -1172,6 +1336,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.AND_n("H"),
         length: 1,
         cycles: 4,
+        mnemonic: ["AND", "A", "H"],
       },
 
       // AND L
@@ -1179,6 +1344,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.AND_n("L"),
         length: 1,
         cycles: 4,
+        mnemonic: ["AND", "A", "L"],
       },
 
       // AND (HL)
@@ -1186,6 +1352,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.AND_n("HL"),
         length: 1,
         cycles: 8,
+        mnemonic: ["AND", "A", "(HL)"],
       },
 
       // AND A
@@ -1193,6 +1360,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.AND_n("A"),
         length: 1,
         cycles: 4,
+        mnemonic: ["AND", "A", "A"],
       },
 
       // XOR B
@@ -1200,6 +1368,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.XOR_n("B"),
         length: 1,
         cycles: 4,
+        mnemonic: ["XOR", "A", "B"],
       },
 
       // XOR C
@@ -1207,6 +1376,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.XOR_n("C"),
         length: 1,
         cycles: 4,
+        mnemonic: ["XOR", "A", "C"],
       },
 
       // XOR D
@@ -1214,6 +1384,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.XOR_n("D"),
         length: 1,
         cycles: 4,
+        mnemonic: ["XOR", "A", "D"],
       },
 
       // XOR E
@@ -1221,6 +1392,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.XOR_n("E"),
         length: 1,
         cycles: 4,
+        mnemonic: ["XOR", "A", "E"],
       },
 
       // XOR H
@@ -1228,6 +1400,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.XOR_n("H"),
         length: 1,
         cycles: 4,
+        mnemonic: ["XOR", "A", "H"],
       },
 
       // XOR L
@@ -1235,6 +1408,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.XOR_n("L"),
         length: 1,
         cycles: 4,
+        mnemonic: ["XOR", "A", "L"],
       },
 
       // XOR (HL)
@@ -1242,6 +1416,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.XOR_n("HL"),
         length: 1,
         cycles: 8,
+        mnemonic: ["XOR", "A", "(HL)"],
       },
 
       // XOR A
@@ -1249,6 +1424,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.XOR_n("A"),
         length: 1,
         cycles: 4,
+        mnemonic: ["XOR", "A", "A"],
       },
 
       // OR B
@@ -1256,6 +1432,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.OR_n("B"),
         length: 1,
         cycles: 4,
+        mnemonic: ["OR", "A", "B"],
       },
 
       // OR C
@@ -1263,6 +1440,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.OR_n("C"),
         length: 1,
         cycles: 4,
+        mnemonic: ["OR", "A", "C"],
       },
 
       // OR D
@@ -1270,6 +1448,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.OR_n("D"),
         length: 1,
         cycles: 4,
+        mnemonic: ["OR", "A", "D"],
       },
 
       // OR E
@@ -1277,6 +1456,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.OR_n("E"),
         length: 1,
         cycles: 4,
+        mnemonic: ["OR", "A", "E"],
       },
 
       // OR H
@@ -1284,6 +1464,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.OR_n("H"),
         length: 1,
         cycles: 4,
+        mnemonic: ["OR", "A", "H"],
       },
 
       // OR L
@@ -1291,6 +1472,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.OR_n("L"),
         length: 1,
         cycles: 4,
+        mnemonic: ["OR", "A", "L"],
       },
 
       // OR (HL)
@@ -1298,6 +1480,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.OR_n("HL"),
         length: 1,
         cycles: 8,
+        mnemonic: ["OR", "A", "(HL)"],
       },
 
       // OR A
@@ -1305,6 +1488,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.OR_n("A"),
         length: 1,
         cycles: 4,
+        mnemonic: ["OR", "A", "A"],
       },
 
       // CP B
@@ -1312,6 +1496,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.CP_n("B"),
         length: 1,
         cycles: 4,
+        mnemonic: ["CP", "A", "B"],
       },
 
       // CP C
@@ -1319,6 +1504,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.CP_n("C"),
         length: 1,
         cycles: 4,
+        mnemonic: ["CP", "A", "C"],
       },
 
       // CP D
@@ -1326,6 +1512,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.CP_n("D"),
         length: 1,
         cycles: 4,
+        mnemonic: ["CP", "A", "D"],
       },
 
       // CP E
@@ -1333,6 +1520,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.CP_n("E"),
         length: 1,
         cycles: 4,
+        mnemonic: ["CP", "A", "E"],
       },
 
       // CP H
@@ -1340,6 +1528,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.CP_n("H"),
         length: 1,
         cycles: 4,
+        mnemonic: ["CP", "A", "H"],
       },
 
       // CP L
@@ -1347,6 +1536,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.CP_n("L"),
         length: 1,
         cycles: 4,
+        mnemonic: ["CP", "A", "L"],
       },
 
       // CP (HL)
@@ -1354,6 +1544,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.CP_n("HL"),
         length: 1,
         cycles: 8,
+        mnemonic: ["CP", "A", "(HL)"],
       },
 
       // CP A
@@ -1361,6 +1552,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.CP_n("A"),
         length: 1,
         cycles: 4,
+        mnemonic: ["CP", "A", "A"],
       },
 
       // RET NZ
@@ -1368,6 +1560,7 @@ export class OpcodeTable {
         instruction: () => (this.lastCycles = cpu.instruction.RET_cc("NZ")),
         length: 1,
         cycles: () => this.lastCycles,
+        mnemonic: ["RET", "NZ"],
       },
 
       // POP BC
@@ -1375,6 +1568,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.pop("BC"),
         length: 1,
         cycles: 12,
+        mnemonic: ["POP", "BC"],
       },
 
       // JP NZ a16
@@ -1386,6 +1580,7 @@ export class OpcodeTable {
           )), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: () => this.lastCycles,
+        mnemonic: ["JP", "NZ", "a16"],
       },
 
       // JP a16
@@ -1393,6 +1588,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.JP_nn(cpu.getImmediate16Bit()), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: 16,
+        mnemonic: ["JP", "a16"],
       },
 
       // CALL NZ, a16
@@ -1404,6 +1600,7 @@ export class OpcodeTable {
           )), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: () => this.lastCycles,
+        mnemonic: ["CALL", "NZ", "a16"],
       },
 
       // PUSH BC
@@ -1411,13 +1608,16 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.push("BC"),
         length: 1,
         cycles: 16,
+        mnemonic: ["PUSH", "BC"],
       },
 
       // ADD A, d8
       0xc6: {
-        instruction: () => cpu.instruction.ADD_A_n(cpu.mmu.readByte([cpu.pc+1])), // d8 is at next pc address
+        instruction: () =>
+          cpu.instruction.ADD_A_n(cpu.mmu.readByte([cpu.pc + 1])), // d8 is at next pc address
         length: 2,
         cycles: 8,
+        mnemonic: ["ADD", "A", "d8"],
       },
 
       // RST 00H
@@ -1425,6 +1625,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.RST_n(0x00),
         length: 1,
         cycles: 16,
+        mnemonic: ["RST", "00"],
       },
 
       // RET Z
@@ -1432,6 +1633,7 @@ export class OpcodeTable {
         instruction: () => (this.lastCycles = cpu.instruction.RET_cc("Z")),
         length: 1,
         cycles: () => this.lastCycles,
+        mnemonic: ["RET", "Z"],
       },
 
       // RET
@@ -1439,6 +1641,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.RET(),
         length: 1,
         cycles: 16,
+        mnemonic: ["RET"],
       },
 
       // JP Z a16
@@ -1450,14 +1653,18 @@ export class OpcodeTable {
           )), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: () => this.lastCycles,
+        mnemonic: ["JP", "Z", "a16"],
       },
 
       // PREFIX CB
       0xcb: {
         instruction: () =>
-          (this.lastCycles = cpu.instruction.PREFIX_CB(cpu.mmu.readByte([cpu.pc+1]))), // The prefixed opcode is at next pc address
+          (this.lastCycles = cpu.instruction.PREFIX_CB(
+            cpu.mmu.readByte([cpu.pc + 1])
+          )), // The prefixed opcode is at next pc address
         length: 2,
         cycles: () => this.lastCycles ?? 8,
+        mnemonic: ["PREFIX", "CB"],
       },
 
       // CALL Z, a16
@@ -1469,6 +1676,7 @@ export class OpcodeTable {
           )), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: () => this.lastCycles,
+        mnemonic: ["CALL", "Z", "a16"],
       },
 
       // CALL a16
@@ -1476,13 +1684,16 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.CALL_nn(cpu.getImmediate16Bit()), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: 24,
+        mnemonic: ["CALL", "a16"],
       },
 
       // ADC A, d8
       0xce: {
-        instruction: () => cpu.instruction.ADC_A_n(cpu.mmu.readByte([cpu.pc+1])), // d8 is at next pc address
+        instruction: () =>
+          cpu.instruction.ADC_A_n(cpu.mmu.readByte([cpu.pc + 1])), // d8 is at next pc address
         length: 2,
         cycles: 8,
+        mnemonic: ["ADC", "A", "d8"],
       },
 
       // RST 08H
@@ -1490,6 +1701,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.RST_n(0x08),
         length: 1,
         cycles: 16,
+        mnemonic: ["RST", "08"],
       },
 
       // RET NC
@@ -1497,6 +1709,7 @@ export class OpcodeTable {
         instruction: () => (this.lastCycles = cpu.instruction.RET_cc("NC")),
         length: 1,
         cycles: () => this.lastCycles,
+        mnemonic: ["RET", "NC"],
       },
 
       // POP DE
@@ -1504,6 +1717,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.pop("DE"),
         length: 1,
         cycles: 12,
+        mnemonic: ["POP", "DE"],
       },
 
       // JP NC a16
@@ -1515,6 +1729,7 @@ export class OpcodeTable {
           )), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: () => this.lastCycles,
+        mnemonic: ["JP", "NC", "a16"],
       },
 
       // CALL NC, a16
@@ -1526,6 +1741,7 @@ export class OpcodeTable {
           )), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: () => this.lastCycles,
+        mnemonic: ["CALL", "NC", "a16"],
       },
 
       // PUSH DE
@@ -1533,13 +1749,16 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.push("DE"),
         length: 1,
         cycles: 16,
+        mnemonic: ["PUSH", "DE"],
       },
 
       // SUB A, d8
       0xd6: {
-        instruction: () => cpu.instruction.SUB_A_n(cpu.mmu.readByte([cpu.pc+1])), // d8 is at next pc address
+        instruction: () =>
+          cpu.instruction.SUB_A_n(cpu.mmu.readByte([cpu.pc + 1])), // d8 is at next pc address
         length: 2,
         cycles: 8,
+        mnemonic: ["SUB", "A", "d8"],
       },
 
       // RST 10H
@@ -1547,6 +1766,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.RST_n(0x10),
         length: 1,
         cycles: 16,
+        mnemonic: ["RST", "10"],
       },
 
       // RET C
@@ -1554,6 +1774,7 @@ export class OpcodeTable {
         instruction: () => (this.lastCycles = cpu.instruction.RET_cc("C")),
         length: 1,
         cycles: () => this.lastCycles,
+        mnemonic: ["RET", "C"],
       },
 
       // RETI
@@ -1561,6 +1782,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.RETI(),
         length: 1,
         cycles: 16,
+        mnemonic: ["RETI"],
       },
 
       // JP C a16
@@ -1572,6 +1794,7 @@ export class OpcodeTable {
           )), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: () => this.lastCycles,
+        mnemonic: ["JP", "C", "a16"],
       },
 
       // CALL C, a16
@@ -1583,13 +1806,16 @@ export class OpcodeTable {
           )), // a16 is at next 2 bytes from pc address
         length: 3,
         cycles: () => this.lastCycles,
+        mnemonic: ["CALL", "C", "a16"],
       },
 
       // SBC A, d8
       0xde: {
-        instruction: () => cpu.instruction.SBC_A_n(cpu.mmu.readByte([cpu.pc+1])), // d8 is at next pc address
+        instruction: () =>
+          cpu.instruction.SBC_A_n(cpu.mmu.readByte([cpu.pc + 1])), // d8 is at next pc address
         length: 2,
         cycles: 8,
+        mnemonic: ["SBC", "A", "d8"],
       },
 
       // RST 18H
@@ -1597,13 +1823,16 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.RST_n(0x18),
         length: 1,
         cycles: 16,
+        mnemonic: ["RST", "18"],
       },
 
       // LDH (a8), A
       0xe0: {
-        instruction: () => cpu.instruction.LDH_n_A(cpu.mmu.readByte([cpu.pc+1])), // a8 is at next pc address
+        instruction: () =>
+          cpu.instruction.LDH_n_A(cpu.mmu.readByte([cpu.pc + 1])), // a8 is at next pc address
         length: 2,
         cycles: 12,
+        mnemonic: ["LDH", "a8", "A"],
       },
 
       // POP HL
@@ -1611,6 +1840,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.pop("HL"),
         length: 1,
         cycles: 12,
+        mnemonic: ["POP", "HL"],
       },
 
       // LD (C), A
@@ -1618,6 +1848,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_OffsetC_A(),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "(C)", "A"],
       },
 
       // PUSH HL
@@ -1625,13 +1856,16 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.push("HL"),
         length: 1,
         cycles: 16,
+        mnemonic: ["PUSH", "HL"],
       },
 
       // AND d8
       0xe6: {
-        instruction: () => cpu.instruction.AND_n(cpu.mmu.readByte([cpu.pc+1])), // d8 is at next pc address
+        instruction: () =>
+          cpu.instruction.AND_n(cpu.mmu.readByte([cpu.pc + 1])), // d8 is at next pc address
         length: 2,
         cycles: 8,
+        mnemonic: ["AND", "A", "d8"],
       },
 
       // RST 20H
@@ -1639,6 +1873,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.RST_n(0x20),
         length: 1,
         cycles: 16,
+        mnemonic: ["RST", "20"],
       },
 
       // ADD SP, r8
@@ -1646,6 +1881,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.ADD_SP_n(),
         length: 2,
         cycles: 16,
+        mnemonic: ["ADD", "SP", "r8"],
       },
 
       // JP (HL)
@@ -1653,6 +1889,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.JP_HL(),
         length: 1,
         cycles: 4,
+        mnemonic: ["JP", "(HL)"],
       },
 
       // LD (a16), A
@@ -1660,13 +1897,16 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_n_A("a16", true),
         length: 3,
         cycles: 16,
+        mnemonic: ["LD", "a16", "A"],
       },
 
       // XOR d8
       0xee: {
-        instruction: () => cpu.instruction.XOR_n(cpu.mmu.readByte([cpu.pc+1])), // d8 is at next pc address
+        instruction: () =>
+          cpu.instruction.XOR_n(cpu.mmu.readByte([cpu.pc + 1])), // d8 is at next pc address
         length: 2,
         cycles: 8,
+        mnemonic: ["XOR", "A", "d8"],
       },
 
       // RST 28H
@@ -1674,13 +1914,16 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.RST_n(0x28),
         length: 1,
         cycles: 16,
+        mnemonic: ["RST", "28"],
       },
 
       // LDH A, (a8)
       0xf0: {
-        instruction: () => cpu.instruction.LDH_A_n(cpu.mmu.readByte([cpu.pc+1])), // a8 is at next pc address
+        instruction: () =>
+          cpu.instruction.LDH_A_n(cpu.mmu.readByte([cpu.pc + 1])), // a8 is at next pc address
         length: 2,
         cycles: 12,
+        mnemonic: ["LDH", "A", "a8"],
       },
 
       // POP AF
@@ -1688,6 +1931,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.pop("AF"),
         length: 1,
         cycles: 12,
+        mnemonic: ["POP", "AF"],
       },
 
       // LD A, (C)
@@ -1695,6 +1939,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_A_OffsetC(),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "A", "(C)"],
       },
 
       // DI
@@ -1702,6 +1947,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.DI(),
         length: 1,
         cycles: 4,
+        mnemonic: ["DI"],
       },
 
       // PUSH AF
@@ -1709,13 +1955,15 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.push("AF"),
         length: 1,
         cycles: 16,
+        mnemonic: ["PUSH", "AF"],
       },
 
       // OR d8
       0xf6: {
-        instruction: () => cpu.instruction.OR_n(cpu.mmu.readByte([cpu.pc+1])), // d8 is at next pc address
+        instruction: () => cpu.instruction.OR_n(cpu.mmu.readByte([cpu.pc + 1])), // d8 is at next pc address
         length: 2,
         cycles: 8,
+        mnemonic: ["OR", "A", "d8"],
       },
 
       // RST 30H
@@ -1723,6 +1971,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.RST_n(0x30),
         length: 1,
         cycles: 16,
+        mnemonic: ["RST", "30"],
       },
 
       // LDHL SP, r8
@@ -1730,6 +1979,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LDHL_SP_n(),
         length: 2,
         cycles: 12,
+        mnemonic: ["LDHL", "SP", "r8"],
       },
 
       // LD SP, HL
@@ -1737,6 +1987,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_SP_HL(),
         length: 1,
         cycles: 8,
+        mnemonic: ["LD", "SP", "HL"],
       },
 
       // LD A, (a16)
@@ -1744,6 +1995,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.LD_A_n("a16", true),
         length: 3,
         cycles: 16,
+        mnemonic: ["LD", "A", "a16"],
       },
 
       // EI
@@ -1751,13 +2003,15 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.EI(),
         length: 1,
         cycles: 4,
+        mnemonic: ["EI"],
       },
 
       // CP d8
       0xfe: {
-        instruction: () => cpu.instruction.CP_n(cpu.mmu.readByte([cpu.pc+1])), // d8 is at next pc address
+        instruction: () => cpu.instruction.CP_n(cpu.mmu.readByte([cpu.pc + 1])), // d8 is at next pc address
         length: 2,
         cycles: 8,
+        mnemonic: ["CP", "A", "d8"],
       },
 
       // RST 38H
@@ -1765,6 +2019,7 @@ export class OpcodeTable {
         instruction: () => cpu.instruction.RST_n(0x38),
         length: 1,
         cycles: 16,
+        mnemonic: ["RST", "38"],
       },
     };
 

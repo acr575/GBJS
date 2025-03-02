@@ -4,6 +4,18 @@ import { MMU } from "./MMU.js";
 import { Timer } from "./Timer.js";
 import { GPU } from "./GPU.js";
 
+const nextButton = document.getElementById("next");
+const debugPC = document.getElementById("pc");
+const debugSP = document.getElementById("sp");
+const debugA = document.getElementById("a");
+const debugF = document.getElementById("f");
+const debugB = document.getElementById("b");
+const debugC = document.getElementById("c");
+const debugD = document.getElementById("d");
+const debugE = document.getElementById("e");
+const debugH = document.getElementById("h");
+const debugL = document.getElementById("l");
+
 export class CPU {
   constructor() {
     this.registersValues = new Uint8Array(8); // a-l 8 bit registers
@@ -28,6 +40,37 @@ export class CPU {
   /* TODO: Init function that sets registers, SP, PC & ROM registers to its initial value
      Ref: http://www.codeslinger.co.uk/pages/projects/gameboy/hardware.html
   */
+  init() {
+    // this.mmu = new MMU(this);
+
+    this.pc = 0x100;
+    this.setRegister("AF", 0x01b0);
+    this.setRegister("BC", 0x0013);
+    this.setRegister("DE", 0x00d8);
+    this.setRegister("HL", 0x014d);
+    this.sp = 0xfffe;
+
+    this.mmu.writeByte(0xff10, 0x80);
+    this.mmu.writeByte(0xff11, 0xbf);
+    this.mmu.writeByte(0xff12, 0xf3);
+    this.mmu.writeByte(0xff14, 0xbf);
+    this.mmu.writeByte(0xff16, 0x3f);
+    this.mmu.writeByte(0xff17, 0x00);
+    this.mmu.writeByte(0xff19, 0xbf);
+    this.mmu.writeByte(0xff1a, 0x7f);
+    this.mmu.writeByte(0xff1b, 0xff);
+    this.mmu.writeByte(0xff1c, 0x9f);
+    this.mmu.writeByte(0xff1e, 0xbf);
+    this.mmu.writeByte(0xff20, 0xff);
+    this.mmu.writeByte(0xff23, 0xbf);
+    this.mmu.writeByte(0xff24, 0x77);
+    this.mmu.writeByte(0xff25, 0xf3);
+    this.mmu.writeByte(0xff26, 0xf1);
+    this.mmu.writeByte(0xff40, 0x91);
+    this.mmu.writeByte(0xff47, 0xfc);
+    this.mmu.writeByte(0xff48, 0xff);
+    this.mmu.writeByte(0xff49, 0xff);
+  }
 
   static Registers = Object.freeze({
     A: "A",
@@ -181,7 +224,7 @@ export class CPU {
   }
 
   getSignedImmediate8Bit() {
-    return (this.mmu.readByte(this.pc + 1) << 24) >> 24;
+    return this.getSignedValue(this.mmu.readByte(this.pc + 1));
   }
 
   getImmediate16Bit() {
@@ -194,11 +237,8 @@ export class CPU {
 
     if (!fetch) throw new Error("Unknown opcode: 0x" + opcode.toString(16));
 
-    // console.log(`PC: ${this.pc.toString(16)} Opcode: ${opcode.toString(16)}`);
-
-    const oldPC = this.pc;
     fetch.instruction(); // Execute opcode
-    if (oldPC === this.pc) this.pc += fetch.length; // Update PC if wasn't modified by an instruction
+    if (fetch.mnemonic[0] !== "CALL") this.pc += fetch.length; // Update PC if instructtion wasn't a CALL
 
     // Return instruction cycles
     return typeof fetch.cycles === "function" ? fetch.cycles() : fetch.cycles;
@@ -210,16 +250,33 @@ export class CPU {
     let cycleCounter = 0;
 
     while (cycleCounter < maxCycles) {
-      let cycles = this.emulateCycle();
-      cycleCounter += cycles;
-      this.timer.updateTimers(cycles);
-      this.gpu.updateGraphics(cycles);
-      this.doInterrupts();
+    // nextButton.addEventListener("click", () => {
+    //   const stepsInput = parseInt(
+    //     document.getElementById("stepInstructions").value
+    //   );
+    //   const instructionCount =
+    //     !isNaN(stepsInput) && stepsInput !== 0 ? stepsInput : 1;
 
-      // Enable IME requested by EI. EI sets requestIme to 2.
-      this.handleRequestIme();
+    //   for (let i = 0; i < instructionCount; i++) {
+        let cycles = this.emulateCycle();
+        cycleCounter += cycles;
+
+        this.timer.updateTimers(cycles);
+        this.gpu.updateGraphics(cycles);
+        this.doInterrupts();
+
+        // Enable IME requested by EI. EI sets requestIme to 2.
+        this.handleRequestIme();
+
+    //     this.updateDebugBox();
+
+    //     if (cycleCounter >= maxCycles) {
+    //       // Reset the cycle counter to 0 after reaching max cycles
+    //       cycleCounter = 0;
+    //     }
+    //   }
+    // });
     }
-    // TODO: this.gpu.renderScreen();
   }
 
   requestInterrupt(interruptId) {
@@ -277,5 +334,47 @@ export class CPU {
       if (this.requestIme == 1) this.ime = 1;
       this.requestIme--;
     }
+  }
+
+  updateDebugBox() {
+    debugPC.innerHTML = `$${this.pc
+      .toString(16)
+      .toUpperCase()
+      .padStart(4, "0")}`;
+    debugSP.innerHTML = `$${this.sp
+      .toString(16)
+      .toUpperCase()
+      .padStart(4, "0")}`;
+    debugA.innerHTML = `$${this.getRegister("A")
+      .toString(16)
+      .toUpperCase()
+      .padStart(2, "0")}`;
+    debugB.innerHTML = `$${this.getRegister("B")
+      .toString(16)
+      .toUpperCase()
+      .padStart(2, "0")}`;
+    debugC.innerHTML = `$${this.getRegister("C")
+      .toString(16)
+      .toUpperCase()
+      .padStart(2, "0")}`;
+    debugD.innerHTML = `$${this.getRegister("D")
+      .toString(16)
+      .toUpperCase()
+      .padStart(2, "0")}`;
+    debugE.innerHTML = `$${this.getRegister("E")
+      .toString(16)
+      .toUpperCase()
+      .padStart(2, "0")}`;
+    debugH.innerHTML = `$${this.getRegister("H")
+      .toString(16)
+      .toUpperCase()
+      .padStart(2, "0")}`;
+    debugL.innerHTML = `$${this.getRegister("L")
+      .toString(16)
+      .toUpperCase()
+      .padStart(2, "0")}`;
+    debugF.innerHTML = `$${(this.getRegister("F") >> 4)
+      .toString(2)
+      .padStart(4, "0")}`;
   }
 }
