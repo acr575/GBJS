@@ -1272,8 +1272,8 @@ export class Instruction {
     if (!this.isImmediate(address))
       throw new Error(address + " is not an valid address");
 
-    // Push address of next instruction onto stack
-    this.push(this.cpu.pc + 1);
+    // Push address of next instruction onto stack. It's after 3 bytes
+    this.push(this.cpu.pc + 3);
 
     // Jump to address nn
     this.cpu.pc = address & 0xffff;

@@ -237,8 +237,10 @@ export class CPU {
 
     if (!fetch) throw new Error("Unknown opcode: 0x" + opcode.toString(16));
 
+    const oldPC = this.pc;
     fetch.instruction(); // Execute opcode
-    if (fetch.mnemonic[0] !== "CALL") this.pc += fetch.length; // Update PC if instructtion wasn't a CALL
+    if (oldPC === this.pc || fetch.mnemonic[0] === "JR")
+      this.pc += fetch.length; // Update PC if it wasn't modified by a jump or subroutine instruction, except JR
 
     // Return instruction cycles
     return typeof fetch.cycles === "function" ? fetch.cycles() : fetch.cycles;
@@ -268,13 +270,12 @@ export class CPU {
         // Enable IME requested by EI. EI sets requestIme to 2.
         this.handleRequestIme();
 
-    //     this.updateDebugBox();
-
     //     if (cycleCounter >= maxCycles) {
     //       // Reset the cycle counter to 0 after reaching max cycles
     //       cycleCounter = 0;
     //     }
     //   }
+    //   this.updateDebugBox();
     // });
     }
   }

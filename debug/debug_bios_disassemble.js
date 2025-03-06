@@ -51,10 +51,13 @@ document
         cpu.mmu.rom[memAddr++] = nintendoLogo[i];
       }
 
+      // Value to bypass checksum
+      cpu.mmu.rom[0x14d] = 0xe7;
+
       // Disassemble
       disassembler.disassemble(romSize);
 
-      // // Start emulation
+      // Start emulation
       // cpu.emulateFrame();
 
       const frameRate = 1000 / 59.7; // ms
@@ -63,6 +66,7 @@ document
       setInterval(() => {
         cpu.emulateFrame();
       }, frameRate);
+
     } catch (error) {
       console.error(error);
     }
