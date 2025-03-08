@@ -8,7 +8,7 @@ export class GPU {
     this.cpu = cpu;
     this.mmu = cpu.mmu;
 
-    this.screen = document.getElementById("screen");
+    // this.screen = document.getElementById("screen");
 
     this.oam = new Uint8Array(160); // OAM   160 B.   Area FE00 - FE9F
     this.vram = new Uint8Array(8192)//VRAM   8 KiB.   Area 8000 - 9FFF

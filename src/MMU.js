@@ -15,44 +15,31 @@ export class MMU {
   }
 
   // Function to load a program into the memory
-  async load(file) {
+  load(file) {
     console.log("Loading program: " + file.name);
 
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
+    try {
+      // Convierte el archivo en un Buffer
+      const byteArray = new Uint8Array(file.buffer);
 
-      reader.onerror = () => {
-        console.error("Error reading file.");
-        reject("File read error");
-      };
+      if (byteArray.length === 0) {
+        throw new Error("Error: Loaded byte array is empty");
+      }
 
-      reader.readAsArrayBuffer(file);
+      // Verifica si la ROM es demasiado grande
+      if (byteArray.length > this.rom.length) {
+        throw new Error("Cartridge too big for memory");
+      }
 
-      reader.onload = () => {
-        const arrayBuffer = reader.result;
-        const byteArray = new Uint8Array(arrayBuffer);
+      // Carga los bytes en la ROM
+      this.rom.set(byteArray.subarray(0, this.rom.length));
 
-        if (!byteArray) {
-          console.error(
-            "Error loading program. The byte array loaded is null."
-          );
-          reject("Error: Loaded byte array is null");
-          return;
-        }
-
-        const lSize = byteArray.length;
-
-        // Check if cartridge fits rom. Change later when MBC's are implemented
-        if (lSize > this.rom.length)
-          throw new Error("Cartridge too big for memory");
-
-        // Load bytes
-        this.rom.set(byteArray.subarray(0, this.rom.length));
-        
-        console.log("Program loaded successfully.");
-        resolve(lSize);
-      };
-    });
+      console.log("Program loaded successfully.");
+      return byteArray.length;
+    } catch (error) {
+      console.error("Error loading program:", error.message);
+      return -1; // Indica error
+    }
   }
 
   readByte(addr) {
@@ -125,6 +112,7 @@ export class MMU {
               return addr == 0xffff ? this.ie : this.hram[addr & 0x7f];
             } else {
               // TODO: I/O control handling
+              if (addr == 0xff44) return 0x90; // GB Doctor requires to return 0x90 when the LY register is read
               return this.ioRegs[addr & 0x7f];
             }
         }
@@ -240,7 +228,12 @@ export class MMU {
         this.value = "0X" + this.value.replace(/^0X/, "");
       this.value = this.value.slice(0, 6);
 
-      memValue.innerHTML = "0X" + updateMemValue(parseInt(this.value)).toString(16).toUpperCase().padStart(2, "0");
+      memValue.innerHTML =
+        "0X" +
+        updateMemValue(parseInt(this.value))
+          .toString(16)
+          .toUpperCase()
+          .padStart(2, "0");
     });
   }
 }

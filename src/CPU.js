@@ -4,20 +4,20 @@ import { MMU } from "./MMU.js";
 import { Timer } from "./Timer.js";
 import { GPU } from "./GPU.js";
 
-const nextButton = document.getElementById("next");
-const debugPC = document.getElementById("pc");
-const debugSP = document.getElementById("sp");
-const debugA = document.getElementById("a");
-const debugF = document.getElementById("f");
-const debugB = document.getElementById("b");
-const debugC = document.getElementById("c");
-const debugD = document.getElementById("d");
-const debugE = document.getElementById("e");
-const debugH = document.getElementById("h");
-const debugL = document.getElementById("l");
+// const nextButton = document.getElementById("next");
+// const debugPC = document.getElementById("pc");
+// const debugSP = document.getElementById("sp");
+// const debugA = document.getElementById("a");
+// const debugF = document.getElementById("f");
+// const debugB = document.getElementById("b");
+// const debugC = document.getElementById("c");
+// const debugD = document.getElementById("d");
+// const debugE = document.getElementById("e");
+// const debugH = document.getElementById("h");
+// const debugL = document.getElementById("l");
 
 export class CPU {
-  constructor() {
+  constructor(stream) {
     this.registersValues = new Uint8Array(8); // a-l 8 bit registers
     this.pc = 0x100; // Program Counter. Initialized at 0x100
     this.sp = 0xfffe; // Stack Pointer.  Initialized at 0xfffe
@@ -35,11 +35,10 @@ export class CPU {
     this.opcodeTable = new OpcodeTable(this); // Init opcode table
     this.instructionTable = this.opcodeTable.instructionTable; // Links each opcode with it instruction, length and cycles
     this.prefixInstructionTable = this.opcodeTable.prefixInstructionTable; // Links each CB prefixed opcode with it instruction, length and cycles
+
+    this.stream = stream;
   }
 
-  /* TODO: Init function that sets registers, SP, PC & ROM registers to its initial value
-     Ref: http://www.codeslinger.co.uk/pages/projects/gameboy/hardware.html
-  */
   init() {
     // this.mmu = new MMU(this);
 
@@ -50,26 +49,26 @@ export class CPU {
     this.setRegister("HL", 0x014d);
     this.sp = 0xfffe;
 
-    this.mmu.writeByte(0xff10, 0x80);
-    this.mmu.writeByte(0xff11, 0xbf);
-    this.mmu.writeByte(0xff12, 0xf3);
-    this.mmu.writeByte(0xff14, 0xbf);
-    this.mmu.writeByte(0xff16, 0x3f);
-    this.mmu.writeByte(0xff17, 0x00);
-    this.mmu.writeByte(0xff19, 0xbf);
-    this.mmu.writeByte(0xff1a, 0x7f);
-    this.mmu.writeByte(0xff1b, 0xff);
-    this.mmu.writeByte(0xff1c, 0x9f);
-    this.mmu.writeByte(0xff1e, 0xbf);
-    this.mmu.writeByte(0xff20, 0xff);
-    this.mmu.writeByte(0xff23, 0xbf);
-    this.mmu.writeByte(0xff24, 0x77);
-    this.mmu.writeByte(0xff25, 0xf3);
-    this.mmu.writeByte(0xff26, 0xf1);
-    this.mmu.writeByte(0xff40, 0x91);
-    this.mmu.writeByte(0xff47, 0xfc);
-    this.mmu.writeByte(0xff48, 0xff);
-    this.mmu.writeByte(0xff49, 0xff);
+    // this.mmu.writeByte(0xff10, 0x80);
+    // this.mmu.writeByte(0xff11, 0xbf);
+    // this.mmu.writeByte(0xff12, 0xf3);
+    // this.mmu.writeByte(0xff14, 0xbf);
+    // this.mmu.writeByte(0xff16, 0x3f);
+    // this.mmu.writeByte(0xff17, 0x00);
+    // this.mmu.writeByte(0xff19, 0xbf);
+    // this.mmu.writeByte(0xff1a, 0x7f);
+    // this.mmu.writeByte(0xff1b, 0xff);
+    // this.mmu.writeByte(0xff1c, 0x9f);
+    // this.mmu.writeByte(0xff1e, 0xbf);
+    // this.mmu.writeByte(0xff20, 0xff);
+    // this.mmu.writeByte(0xff23, 0xbf);
+    // this.mmu.writeByte(0xff24, 0x77);
+    // this.mmu.writeByte(0xff25, 0xf3);
+    // this.mmu.writeByte(0xff26, 0xf1);
+    // this.mmu.writeByte(0xff40, 0x91);
+    // this.mmu.writeByte(0xff47, 0xfc);
+    // this.mmu.writeByte(0xff48, 0xff);
+    // this.mmu.writeByte(0xff49, 0xff);
   }
 
   static Registers = Object.freeze({
@@ -105,7 +104,9 @@ export class CPU {
     if (register.length == 1 && register in CPU.Registers) {
       const index = Object.keys(CPU.Registers).indexOf(register);
       return this.registersValues[index];
-    } else if (register.length == 2) {
+    }
+    // Combined register
+    else if (register.length == 2) {
       const left = register.split("")[0];
       const right = register.split("")[1];
 
@@ -142,7 +143,8 @@ export class CPU {
     // Simple register
     if (register.length == 1 && register in CPU.Registers) {
       const index = Object.keys(CPU.Registers).indexOf(register);
-      this.registersValues[index] = value;
+      this.registersValues[index] =
+        register !== "F" ? value & 0xff : value & 0xf0;
     }
     // Combined register
     else if (register.length == 2) {
@@ -154,7 +156,8 @@ export class CPU {
         const rightIndex = Object.keys(CPU.Registers).indexOf(right);
 
         this.registersValues[leftIndex] = (value & 0xff00) >> 8;
-        this.registersValues[rightIndex] = value & 0xff;
+        this.registersValues[rightIndex] =
+          right !== "F" ? value & 0xff : value & 0xf0;
       } else throw new Error("Unknown combined register: " + register);
     } else throw new Error("Unknown register: " + register);
   }
@@ -252,31 +255,32 @@ export class CPU {
     let cycleCounter = 0;
 
     while (cycleCounter < maxCycles) {
-    // nextButton.addEventListener("click", () => {
-    //   const stepsInput = parseInt(
-    //     document.getElementById("stepInstructions").value
-    //   );
-    //   const instructionCount =
-    //     !isNaN(stepsInput) && stepsInput !== 0 ? stepsInput : 1;
+      // nextButton.addEventListener("click", () => {
+      //   const stepsInput = parseInt(
+      //     document.getElementById("stepInstructions").value
+      //   );
+      //   const instructionCount =
+      //     !isNaN(stepsInput) && stepsInput !== 0 ? stepsInput : 1;
 
-    //   for (let i = 0; i < instructionCount; i++) {
-        let cycles = this.emulateCycle();
-        cycleCounter += cycles;
+      //   for (let i = 0; i < instructionCount; i++) {
+      this.writeToLogFile(this.stream);
+      let cycles = this.emulateCycle();
+      cycleCounter += cycles;
 
-        this.timer.updateTimers(cycles);
-        this.gpu.updateGraphics(cycles);
-        this.doInterrupts();
+      this.timer.updateTimers(cycles);
+      this.gpu.updateGraphics(cycles);
+      this.doInterrupts();
 
-        // Enable IME requested by EI. EI sets requestIme to 2.
-        this.handleRequestIme();
+      // Enable IME requested by EI. EI sets requestIme to 2.
+      this.handleRequestIme();
 
-    //     if (cycleCounter >= maxCycles) {
-    //       // Reset the cycle counter to 0 after reaching max cycles
-    //       cycleCounter = 0;
-    //     }
-    //   }
-    //   this.updateDebugBox();
-    // });
+      //     if (cycleCounter >= maxCycles) {
+      //       // Reset the cycle counter to 0 after reaching max cycles
+      //       cycleCounter = 0;
+      //     }
+      //   }
+      //   this.updateDebugBox();
+      // });
     }
   }
 
@@ -377,5 +381,117 @@ export class CPU {
     debugF.innerHTML = `$${(this.getRegister("F") >> 4)
       .toString(2)
       .padStart(4, "0")}`;
+  }
+
+  writeToLogFile(stream) {
+    // Format: A:00 F:11 B:22 C:33 D:44 E:55 H:66 L:77 SP:8888 PC:9999 PCMEM:AA,BB,CC,DD
+    const formatValue = (value, pad) => {
+      return value.toString(16).toUpperCase().padStart(pad, "0");
+    };
+
+    const getRegisterFormatted = (register) => {
+      const registerValue =
+        register !== "PC" && register !== "SP"
+          ? this.getRegister(register)
+          : register === "PC"
+          ? this.pc
+          : this.sp;
+      return `${register}:${formatValue(
+        registerValue,
+        register === "PC" || register === "SP" ? 4 : 2
+      )}`;
+    };
+
+    const getPcMemValuesFormatted = () => {
+      const pcMem = formatValue(this.mmu.readByte(this.pc), 2);
+      const pcMem1 = formatValue(this.mmu.readByte(this.pc + 1), 2);
+      const pcMem2 = formatValue(this.mmu.readByte(this.pc + 2), 2);
+      const pcMem3 = formatValue(this.mmu.readByte(this.pc + 3), 2);
+
+      return `PCMEM:${pcMem},${pcMem1},${pcMem2},${pcMem3}`;
+    };
+
+    const A = getRegisterFormatted("A");
+    const F = getRegisterFormatted("F");
+    const B = getRegisterFormatted("B");
+    const C = getRegisterFormatted("C");
+    const D = getRegisterFormatted("D");
+    const E = getRegisterFormatted("E");
+    const H = getRegisterFormatted("H");
+    const L = getRegisterFormatted("L");
+    const SP = getRegisterFormatted("SP");
+    const PC = getRegisterFormatted("PC");
+    const PCMem = getPcMemValuesFormatted();
+
+    const logLine = `${A} ${F} ${B} ${C} ${D} ${E} ${H} ${L} ${SP} ${PC} ${PCMem}`;
+
+    stream.write(logLine + "\n");
+  }
+
+  downloadLog() {
+    console.log("Requested download");
+    const request = indexedDB.open("logs", 1);
+
+    request.onsuccess = (event) => {
+      const db = event.target.result;
+
+      const transaction = db.transaction("logs", "readonly");
+      const logsStore = transaction.objectStore("logs");
+
+      const getAllRequest = logsStore.getAll();
+
+      getAllRequest.onsuccess = () => {
+        const logs = getAllRequest.result;
+
+        if (logs.length === 0) {
+          console.log("No logs available to download.");
+          return;
+        }
+
+        const logsString = logs.join("\n");
+
+        const blob = new Blob([logsString], { type: "text/plain" });
+
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "logs.txt";
+
+        link.click();
+
+        console.log("Logs downloaded successfully.");
+      };
+
+      getAllRequest.onerror = () => {
+        console.error("Error retrieving logs from IndexedDB.");
+      };
+    };
+
+    request.onerror = () => {
+      console.error("Error opening IndexedDB.");
+    };
+  }
+
+  clearLogs() {
+    const request = indexedDB.deleteDatabase("logs");
+
+    request.onsuccess = () => {
+      console.log("Database deleted successfully.");
+    };
+
+    request.onerror = () => {
+      console.error("Error deleting database.");
+    };
+
+    request.onblocked = () => {
+      console.warn(
+        "Database deletion blocked (another tab might be using it)."
+      );
+    };
+  }
+
+  setupDownloadLogEvent() {
+    document
+      .getElementById("download-log")
+      .addEventListener("click", this.downloadLog);
   }
 }
