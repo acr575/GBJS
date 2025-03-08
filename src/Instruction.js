@@ -687,7 +687,10 @@ export class Instruction {
 
     if (flagN) {
       if (flagH) adjustment -= 0x6;
-      if (flagC) adjustment -= 0x60;
+      if (flagC) {
+        adjustment -= 0x60;
+        carry = true;
+      }
     } else {
       if (flagH || (registerA & 0xf) > 0x9) adjustment += 0x6;
       if (flagC || registerA > 0x99) {
@@ -696,10 +699,10 @@ export class Instruction {
       }
     }
 
-    result = registerA + adjustment;
+    result = (registerA + adjustment) & 0xff;
     this.cpu.setRegister("A", result);
 
-    this.cpu.setFlags("Z-0C", { Z: result == 0, C: carry });
+    this.cpu.setFlags("Z-0C", { Z: result === 0, C: carry });
   }
 
   CPL() {
@@ -842,9 +845,10 @@ export class Instruction {
    */
   RLCA() {
     let A = this.cpu.getRegister("A");
-    const leftRotation = this.leftRotate(A);
+    const leftRotation = this.leftRotate(A); // Sets Z & C flag
 
     this.cpu.setRegister("A", leftRotation);
+    this.cpu.setFlags("0---"); // Z flag is cleared in A rotations
   }
 
   /**
@@ -853,9 +857,10 @@ export class Instruction {
    */
   RLA() {
     let A = this.cpu.getRegister("A");
-    const leftRotation = this.leftRotateCarry(A);
+    const leftRotation = this.leftRotateCarry(A); // Sets Z & C flag
 
     this.cpu.setRegister("A", leftRotation);
+    this.cpu.setFlags("0---"); // Z flag is cleared in A rotations
   }
 
   /**
@@ -864,9 +869,10 @@ export class Instruction {
    */
   RRCA() {
     let A = this.cpu.getRegister("A");
-    const rightRotation = this.rightRotate(A);
+    const rightRotation = this.rightRotate(A); // Sets Z & C flag
 
     this.cpu.setRegister("A", rightRotation);
+    this.cpu.setFlags("0---"); // Z flag is cleared in A rotations
   }
 
   /**
@@ -875,9 +881,10 @@ export class Instruction {
    */
   RRA() {
     let A = this.cpu.getRegister("A");
-    const rightRotation = this.rightRotateCarry(A);
+    const rightRotation = this.rightRotateCarry(A); // Sets Z & C flag
 
     this.cpu.setRegister("A", rightRotation);
+    this.cpu.setFlags("0---"); // Z flag is cleared in A rotations
   }
 
   /**
