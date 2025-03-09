@@ -264,15 +264,15 @@ export class CPU {
 
       //   for (let i = 0; i < instructionCount; i++) {
       this.writeToLogFile(this.stream);
+      this.doInterrupts();
+
+      // Enable IME requested by EI. EI sets requestIme to 2.
+      this.handleRequestIme();
       let cycles = this.emulateCycle();
       cycleCounter += cycles;
 
       this.timer.updateTimers(cycles);
       this.gpu.updateGraphics(cycles);
-      this.doInterrupts();
-
-      // Enable IME requested by EI. EI sets requestIme to 2.
-      this.handleRequestIme();
 
       //     if (cycleCounter >= maxCycles) {
       //       // Reset the cycle counter to 0 after reaching max cycles
@@ -311,7 +311,7 @@ export class CPU {
     this.ime = 0;
     let ifValue = this.mmu.readByte(this.if);
     ifValue = ifValue & ~(1 << interruptId); // Reset serviced interrupt bit
-    this.mmu.writeByte(this.if, ifValue);
+    this.mmu.ioRegs[this.if & 0x7f] = ifValue;
 
     this.instruction.push(this.pc);
 
@@ -422,7 +422,7 @@ export class CPU {
     const SP = getRegisterFormatted("SP");
     const PC = getRegisterFormatted("PC");
     const PCMem = getPcMemValuesFormatted();
-
+    
     const logLine = `${A} ${F} ${B} ${C} ${D} ${E} ${H} ${L} ${SP} ${PC} ${PCMem}`;
 
     stream.write(logLine + "\n");
