@@ -37,9 +37,6 @@ export class CPU {
     this.prefixInstructionTable = this.opcodeTable.prefixInstructionTable; // Links each CB prefixed opcode with it instruction, length and cycles
   }
 
-  /* TODO: Init function that sets registers, SP, PC & ROM registers to its initial value
-     Ref: http://www.codeslinger.co.uk/pages/projects/gameboy/hardware.html
-  */
   init() {
     // this.mmu = new MMU(this);
 
@@ -105,7 +102,9 @@ export class CPU {
     if (register.length == 1 && register in CPU.Registers) {
       const index = Object.keys(CPU.Registers).indexOf(register);
       return this.registersValues[index];
-    } else if (register.length == 2) {
+    }
+    // Combined register
+    else if (register.length == 2) {
       const left = register.split("")[0];
       const right = register.split("")[1];
 
@@ -142,7 +141,8 @@ export class CPU {
     // Simple register
     if (register.length == 1 && register in CPU.Registers) {
       const index = Object.keys(CPU.Registers).indexOf(register);
-      this.registersValues[index] = value;
+      this.registersValues[index] =
+        register !== "F" ? value & 0xff : value & 0xf0;
     }
     // Combined register
     else if (register.length == 2) {
@@ -154,7 +154,8 @@ export class CPU {
         const rightIndex = Object.keys(CPU.Registers).indexOf(right);
 
         this.registersValues[leftIndex] = (value & 0xff00) >> 8;
-        this.registersValues[rightIndex] = value & 0xff;
+        this.registersValues[rightIndex] =
+          right !== "F" ? value & 0xff : value & 0xf0;
       } else throw new Error("Unknown combined register: " + register);
     } else throw new Error("Unknown register: " + register);
   }
@@ -252,31 +253,31 @@ export class CPU {
     let cycleCounter = 0;
 
     while (cycleCounter < maxCycles) {
-    // nextButton.addEventListener("click", () => {
-    //   const stepsInput = parseInt(
-    //     document.getElementById("stepInstructions").value
-    //   );
-    //   const instructionCount =
-    //     !isNaN(stepsInput) && stepsInput !== 0 ? stepsInput : 1;
+      // nextButton.addEventListener("click", () => {
+      //   const stepsInput = parseInt(
+      //     document.getElementById("stepInstructions").value
+      //   );
+      //   const instructionCount =
+      //     !isNaN(stepsInput) && stepsInput !== 0 ? stepsInput : 1;
 
-    //   for (let i = 0; i < instructionCount; i++) {
-        let cycles = this.emulateCycle();
-        cycleCounter += cycles;
+      //   for (let i = 0; i < instructionCount; i++) {
+      this.doInterrupts();
 
-        this.timer.updateTimers(cycles);
-        this.gpu.updateGraphics(cycles);
-        this.doInterrupts();
+      // Enable IME requested by EI. EI sets requestIme to 2.
+      this.handleRequestIme();
+      let cycles = this.emulateCycle();
+      cycleCounter += cycles;
 
-        // Enable IME requested by EI. EI sets requestIme to 2.
-        this.handleRequestIme();
+      this.timer.updateTimers(cycles);
+      this.gpu.updateGraphics(cycles);
 
-    //     if (cycleCounter >= maxCycles) {
-    //       // Reset the cycle counter to 0 after reaching max cycles
-    //       cycleCounter = 0;
-    //     }
-    //   }
-    //   this.updateDebugBox();
-    // });
+      //     if (cycleCounter >= maxCycles) {
+      //       // Reset the cycle counter to 0 after reaching max cycles
+      //       cycleCounter = 0;
+      //     }
+      //   }
+      //   this.updateDebugBox();
+      // });
     }
   }
 
@@ -307,7 +308,7 @@ export class CPU {
     this.ime = 0;
     let ifValue = this.mmu.readByte(this.if);
     ifValue = ifValue & ~(1 << interruptId); // Reset serviced interrupt bit
-    this.mmu.writeByte(this.if, ifValue);
+    this.mmu.ioRegs[this.if & 0x7f] = ifValue;
 
     this.instruction.push(this.pc);
 
