@@ -224,24 +224,17 @@ export class Instruction {
    * Updates the H and C flags.
    */
   LDHL_SP_n() {
-    const n = this.cpu.getSignedImmediate8Bit();
-    const result = this.cpu.sp + n;
+    const unsignedValue = this.cpu.mmu.readByte(this.cpu.pc + 1);
+    const signedValue = this.cpu.getSignedValue(unsignedValue);
+    const result = this.cpu.sp + signedValue;
     // Set sum's result in HL register
     this.cpu.setRegister("HL", result);
 
-    // Calculate the Half Carry flag (H): Carry from bit 3 to bit 4. If n is negative, check as a sub.
-    const halfCarry = this.isHalfCarry8bit(
-      this.cpu.sp,
-      Math.abs(n),
-      n < 0 ? "sub" : "add"
-    );
+    // Calculate the Half Carry flag (H): Carry from bit 3 to bit 4
+    const halfCarry = this.isHalfCarry8bit(this.cpu.sp, unsignedValue, "add");
 
-    // Calculate the Carry flag (C): Carry from bit 7 to bit 8. If n is negative, check as a sub.
-    const carry = this.isCarry8bit(
-      this.cpu.sp,
-      Math.abs(n),
-      n < 0 ? "sub" : "add"
-    );
+    // Calculate the Carry flag (C): Carry from bit 7 to bit 8
+    const carry = this.isCarry8bit(this.cpu.sp, unsignedValue, "add");
 
     // Update flags
     this.cpu.setFlags("00HC", { H: halfCarry, C: carry });
@@ -351,8 +344,12 @@ export class Instruction {
     // Calculate flags
     const flags = {
       Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
-      H: this.isHalfCarry8bit(registerA, add + carryBit, "add"), // Half-carry with carry bit included
-      C: this.isCarry8bit(registerA, add + carryBit, "add"), // Carry with carry bit included
+      H:
+        this.isHalfCarry8bit(registerA, add, "add") ||
+        this.isHalfCarry8bit(registerA + add, carryBit, "add"), // Half-carry with carry bit included
+      C:
+        this.isCarry8bit(registerA, add, "add") ||
+        this.isCarry8bit(registerA + add, carryBit, "add"), // Carry with carry bit included
     };
 
     // Update the A register with the result (truncated to 8 bits)
@@ -410,8 +407,12 @@ export class Instruction {
 
     const flags = {
       Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
-      H: this.isHalfCarry8bit(registerA, sub + carryBit, "sub"), // Half-carry with carry bit included
-      C: this.isCarry8bit(registerA, sub + carryBit, "sub"), // Carry with carry bit included
+      H:
+        this.isHalfCarry8bit(registerA, sub, "sub") ||
+        this.isHalfCarry8bit(registerA - sub, carryBit, "sub"), // Half-carry with carry bit included
+      C:
+        this.isCarry8bit(registerA, sub, "sub") ||
+        this.isCarry8bit(registerA - sub, carryBit, "sub"), // Carry with carry bit included
     };
 
     // Update the A register with the result (truncated to 8 bits)
@@ -616,13 +617,14 @@ export class Instruction {
    */
   ADD_SP_n() {
     const sp = this.cpu.sp;
-    const value = this.cpu.getSignedImmediate8Bit();
-    const result = sp + value;
+    const unsignedValue = this.cpu.mmu.readByte(this.cpu.pc + 1);
+    const signedValue = this.cpu.getSignedValue(unsignedValue);
+    const result = sp + signedValue;
 
     // Calculate flags
     const flags = {
-      H: this.isHalfCarry8bit(sp, Math.abs(value), value < 0 ? "sub" : "add"), // Half-carry. If value is negative, checks as a sub
-      C: this.isCarry8bit(sp, Math.abs(value), value < 0 ? "sub" : "add"), // Carry. If value is negative, checks as a sub
+      H: this.isHalfCarry8bit(sp, unsignedValue, "add"), // Half-carry
+      C: this.isCarry8bit(sp, unsignedValue, "add"), // Carry
     };
 
     // Update the SP with the result (truncated to 16 bits)
@@ -637,7 +639,8 @@ export class Instruction {
    * @param {string} register - The name of the 16-bit register to increment, or "SP" for the Stack Pointer.
    */
   INC_nn(register) {
-    if (register === "SP") this.cpu.sp++; // Dst. reg. is Stack Pointer
+    if (register === "SP")
+      this.cpu.sp = (this.cpu.sp + 1) & 0xffff; // Dst. reg. is Stack Pointer
     else this.cpu.setRegister(register, this.cpu.getRegister(register) + 1); // Dst. reg. is combined reg.
   }
 
@@ -646,7 +649,8 @@ export class Instruction {
    * @param {string} register - The name of the 16-bit register to decrement, or "SP" for the Stack Pointer.
    */
   DEC_nn(register) {
-    if (register === "SP") this.cpu.sp--; // Dst. reg. is Stack Pointer
+    if (register === "SP")
+      this.cpu.sp = (this.cpu.sp - 1) & 0xffff; // Dst. reg. is Stack Pointer
     else this.cpu.setRegister(register, this.cpu.getRegister(register) - 1); // Dst. reg. is combined reg.
   }
 
@@ -1338,8 +1342,8 @@ export class Instruction {
     if (!this.isImmediate(address) || !validAddresses.includes(address))
       throw new Error(address + " is not an valid address");
 
-    // Push present address onto stack
-    this.push(this.cpu.pc);
+    // Push next instruction's address onto stak
+    this.push(this.cpu.pc + 1);
 
     // Jump to address n
     this.cpu.pc = address;
