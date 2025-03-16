@@ -9,9 +9,10 @@ export class GPU {
     this.mmu = cpu.mmu;
 
     this.screen = document.getElementById("screen");
+    this.context = this.screen.getContext("2d", { willReadFrequently: true });
 
     this.oam = new Uint8Array(160); // OAM   160 B.   Area FE00 - FE9F
-    this.vram = new Uint8Array(8192)//VRAM   8 KiB.   Area 8000 - 9FFF
+    this.vram = new Uint8Array(8192); //VRAM   8 KiB.   Area 8000 - 9FFF
 
     this.scanlineCounter = 456; // Clock cycles to draw a scanline
 
@@ -23,6 +24,8 @@ export class GPU {
     this.lyc = 0xff45; // LY compare
     this.dma = 0xff46; // OAM DMA source address & start
     this.bgp = 0xff47; // BG palette data
+    this.obp0 = 0xff48;
+    this.obp1 = 0xff49;
     this.wy = 0xff4a;
     this.wx = 0xff4b;
   }
@@ -81,7 +84,7 @@ export class GPU {
       // Mode 2
       if (isMode2) {
         mode = 2;
-        status &= 0b11111110; // Reset STAT bits 0
+        status &= 0b11111110; // Reset STAT bit 0
         status |= 0b10; // Set STAT bit 1 (mode 2)
         requestInterrupt = ((status >> 5) & 1) == 1;
       }
@@ -127,7 +130,7 @@ export class GPU {
     let scrollY = this.mmu.readByte(this.scy);
     let scrollX = this.mmu.readByte(this.scx);
     let windowY = this.mmu.readByte(this.wy);
-    let windowX = this.mmu.readByte(this.wx) - 7;
+    let windowX = (this.mmu.readByte(this.wx) - 7) & 0xff;
 
     let usingWindow = false;
     let lcdc = this.mmu.readByte(this.lcdc);
@@ -162,17 +165,16 @@ export class GPU {
 
     // yPos is used to calculate which of 32 vertical tiles the
     // current scanline is drawing
-    if (!usingWindow) yPos = scrollY + this.mmu.readByte(this.ly);
+    if (!usingWindow) yPos = (scrollY + this.mmu.readByte(this.ly)) & 0xff;
     else {
-      yPos = this.mmu.readByte(this.ly) - windowY;
+      yPos = (this.mmu.readByte(this.ly) - windowY) & 0xff;
     }
 
     // which of the 8 vertical pixels of the current
     // tile is the scanline on?
-    let tileRow = Math.floor(yPos / 8) * 32;
+    let tileRow = (((yPos / 8) & 0xff) * 32) & 0xffff;
 
-    const context = this.screen.getContext("2d", {willReadFrequently: true});
-    const imageData = context.getImageData(
+    const imageData = this.context.getImageData(
       0,
       0,
       this.screen.width,
@@ -182,39 +184,44 @@ export class GPU {
     // time to start drawing the 160 horizontal pixels
     // for this scanline
     for (let pixel = 0; pixel < 160; pixel++) {
-      let xPos = pixel + scrollX;
+      let xPos = (pixel + scrollX) & 0xff;
 
       // translate the current x pos to window space if necessary
       if (usingWindow) {
         if (pixel >= windowX) {
-          xPos = pixel - windowX;
+          xPos = (pixel - windowX) & 0xff;
         }
       }
 
       // which of the 32 horizontal tiles does this xPos fall within?
-      let tileCol = Math.floor(xPos / 8) & 0xffff;
+      let tileCol = (xPos / 8) & 0xffff;
       let tileNum;
 
       // get the tile identity number. Remember it can be signed
       // or unsigned
-      let tileAddrss = backgroundMemory + tileRow + tileCol;
+      let tileAddrss = (backgroundMemory + tileRow + tileCol) & 0xffff;
       if (unsigned) tileNum = this.mmu.readByte(tileAddrss);
-      else tileNum = this.mmu.readByte(tileAddrss);
+      else tileNum = this.cpu.getSignedValue(this.mmu.readByte(tileAddrss));
 
       // deduce where this tile identifier is in memory. Remember i
       // shown this algorithm earlier
       let tileLocation = tileData;
 
-      if (unsigned) tileLocation += tileNum * 16;
-      else tileLocation += (tileNum + 128) * 16;
+      if (unsigned)
+        tileLocation =
+          (tileLocation + this.cpu.getSignedWord(tileNum * 16)) & 0xffff;
+      else
+        tileLocation =
+          (tileLocation + this.cpu.getSignedWord((tileNum + 128) * 16)) &
+          0xffff;
 
       // find the correct vertical line we're on of the
       // tile to get the tile data
       // from in memory
-      let line = yPos % 8;
-      line *= 2; // each vertical line takes up two bytes of memory
-      let data1 = this.mmu.readByte(tileLocation + line);
-      let data2 = this.mmu.readByte(tileLocation + line + 1);
+      let line = yPos % 8 & 0xff;
+      line = (line * 2) & 0xff; // each vertical line takes up two bytes of memory
+      let data1 = this.mmu.readByte((tileLocation + line) & 0xffff);
+      let data2 = this.mmu.readByte((tileLocation + line + 1) & 0xffff);
 
       // console.log(tileAddrss.toString(16), tileRow, tileCol, tileNum, tileLocation.toString(16), line, data1, data2);
 
@@ -278,15 +285,14 @@ export class GPU {
       imageData.data[pixelIndex + 3] = 255; // Opacity
     }
 
-    context.putImageData(imageData, 0, 0);
+    this.context.putImageData(imageData, 0, 0);
   }
 
   renderSprites() {
     let use8x16 = false;
     if ((this.mmu.readByte(this.lcdc) >> 2) & 1) use8x16 = true;
 
-    const context = this.screen.getContext("2d", {willReadFrequently: true});
-    const imageData = context.getImageData(
+    const imageData = this.context.getImageData(
       0,
       0,
       this.screen.width,
@@ -295,11 +301,11 @@ export class GPU {
 
     for (let sprite = 0; sprite < 40; sprite++) {
       // sprite occupies 4 bytes in the sprite attributes table
-      let index = sprite * 4;
-      let yPos = this.mmu.readByte(0xfe00 + index) - 16;
-      let xPos = this.mmu.readByte(0xfe00 + index + 1) - 8;
-      let tileLocation = this.mmu.readByte(0xfe00 + index + 2);
-      let attributes = this.mmu.readByte(0xfe00 + index + 3);
+      let index = (sprite * 4) & 0xff;
+      let yPos = (this.mmu.readByte(0xfe00 + index) - 16) & 0xff;
+      let xPos = (this.mmu.readByte(0xfe00 + ((index + 1) & 0xff)) - 8) & 0xff;
+      let tileLocation = this.mmu.readByte(0xfe00 + ((index + 2) & 0xff));
+      let attributes = this.mmu.readByte(0xfe00 + ((index + 3) & 0xff));
 
       // console.log(`Sprite ${sprite}: X=${xPos}, Y=${yPos}, Tile=${tileLocation.toString(16)}, Attributes=${attributes.toString(2)}`);
 
@@ -318,13 +324,13 @@ export class GPU {
 
         // read the sprite in backwards in the y axis
         if (yFlip) {
-          line = (ysize - 1) - line;
+          line = ysize - 1 - line;
         }
 
         line *= 2; // same as for tiles
-        let dataAddress = 0x8000 + tileLocation * 16 + line;
+        let dataAddress = (0x8000 + tileLocation * 16 + line) & 0xffff;
         let data1 = this.mmu.readByte(dataAddress);
-        let data2 = this.mmu.readByte(dataAddress + 1);
+        let data2 = this.mmu.readByte((dataAddress + 1) & 0xffff);
 
         // its easier to read in from right to left as pixel 0 is
         // bit 7 in the colour data, pixel 1 is bit 6 etc...
@@ -341,7 +347,7 @@ export class GPU {
           colourNum <<= 1;
           colourNum |= (data1 >> colourbit) & 1;
 
-          let colourAddress = (attributes >> 4) & 1 ? 0xff49 : 0xff48;
+          let colourAddress = (attributes >> 4) & 1 ? this.obp1 : this.obp0;
           let col = this.getColour(colourNum, colourAddress);
 
           // white is transparent for sprites.
@@ -389,7 +395,7 @@ export class GPU {
       }
     }
 
-    context.putImageData(imageData, 0, 0);
+    this.context.putImageData(imageData, 0, 0);
   }
 
   getColour(colourNum, paletteAddress) {

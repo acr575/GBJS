@@ -221,8 +221,13 @@ export class CPU {
     this.setRegister("F", registerF);
   }
 
+  // https://stackoverflow.com/questions/56577958/how-to-convert-one-byte-8-bit-to-signed-integer-in-javascript
   getSignedValue(value) {
     return (value << 24) >> 24;
+  }
+
+  getSignedWord(value) {
+    return (value << 16) >> 16;
   }
 
   getSignedImmediate8Bit() {
@@ -262,9 +267,6 @@ export class CPU {
       //     !isNaN(stepsInput) && stepsInput !== 0 ? stepsInput : 1;
 
       //   for (let i = 0; i < instructionCount; i++) {
-      this.doInterrupts();
-      // Enable IME requested by EI. EI sets requestIme to 2.
-      this.handleRequestIme();
 
       let cycles = 4;
       if (!this.isHalted) cycles = this.emulateCycle();
@@ -272,6 +274,10 @@ export class CPU {
 
       this.timer.updateTimers(cycles);
       this.gpu.updateGraphics(cycles);
+
+      this.doInterrupts();
+      // Enable IME requested by EI. EI sets requestIme to 2.
+      this.handleRequestIme();
 
       //     if (cycleCounter >= maxCycles) {
       //       // Reset the cycle counter to 0 after reaching max cycles
@@ -296,7 +302,7 @@ export class CPU {
       let ieValue = this.mmu.readByte(this.ie);
 
       if (ifValue > 0) {
-        for (let i = 4; i >= 0; i--) {
+        for (let i = 0; i < 5; i++) {
           let currentBitIf = (ifValue >> i) & 1;
           let currentBitIe = (ieValue >> i) & 1;
 
