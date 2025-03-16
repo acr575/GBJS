@@ -26,6 +26,7 @@ export class CPU {
     this.if = 0xff0f; // Interrupt request flag
     this.ime = 0; // Interrup master enable flag. Starts unset
     this.requestIme = 0; // Flag that sets IME flag after next instruccion. Used by EI instruction
+    this.isHalted = 0;
 
     this.instruction = new Instruction(this);
     this.mmu = new MMU(this); // Memory Management
@@ -262,10 +263,11 @@ export class CPU {
 
       //   for (let i = 0; i < instructionCount; i++) {
       this.doInterrupts();
-
       // Enable IME requested by EI. EI sets requestIme to 2.
       this.handleRequestIme();
-      let cycles = this.emulateCycle();
+
+      let cycles = 4;
+      if (!this.isHalted) cycles = this.emulateCycle();
       cycleCounter += cycles;
 
       this.timer.updateTimers(cycles);
@@ -285,6 +287,7 @@ export class CPU {
     let ifValue = this.mmu.readByte(this.if);
     ifValue |= 1 << interruptId;
     this.mmu.writeByte(this.if, ifValue);
+    this.isHalted = 0;
   }
 
   doInterrupts() {

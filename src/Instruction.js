@@ -729,8 +729,9 @@ export class Instruction {
     this.cpu.setFlags("-001");
   }
 
-  // TODO: HALT instrruction
-  HALT() {}
+  HALT() {
+    this.cpu.isHalted = 1;
+  }
 
   // TODO: STOP instrruction
   STOP() {}

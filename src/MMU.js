@@ -32,8 +32,8 @@ export class MMU {
         const arrayBuffer = reader.result;
         const byteArray = new Uint8Array(arrayBuffer);
 
-        if (!byteArray) {
-          console.error(
+      if (!byteArray) {
+        console.error(
             "Error loading program. The byte array loaded is null."
           );
           reject("Error: Loaded byte array is null");
@@ -44,13 +44,13 @@ export class MMU {
 
         // Check if cartridge fits rom. Change later when MBC's are implemented
         if (lSize > this.rom.length)
-          throw new Error("Cartridge too big for memory");
+        throw new Error("Cartridge too big for memory");
+      
+      // Load bytes
+      this.rom.set(byteArray.subarray(0, this.rom.length));
 
-        // Load bytes
-        this.rom.set(byteArray.subarray(0, this.rom.length));
-
-        console.log("Program loaded successfully.");
-        resolve(lSize);
+      console.log("Program loaded successfully.");
+      resolve(lSize);
       };
     });
   }
@@ -206,7 +206,6 @@ export class MMU {
                     this.cpu.timer.writeTAC(val); // TAC register
                   else if (addr == 0xff04)
                     this.ioRegs[addr & 0x7f] = 0; // Reset DIV register
-                  else if (addr == 0xff0f) this.updateIF(val); // IF register
                   else this.ioRegs[addr & 0x7f] = val;
                   break;
 
@@ -227,12 +226,6 @@ export class MMU {
   writeWord(addr, val) {
     this.writeByte(addr, val & 0xff); // Low byte
     this.writeByte(addr + 1, val >> 8); // High byte
-  }
-
-  updateIF(val) {
-    let currentIF = this.readByte(0xff0f);
-    let newIF = currentIF | val; // Just set/clear the bit requested
-    this.ioRegs[0xff0f & 0x7f] = newIF;
   }
 
   setupAddressInput() {
