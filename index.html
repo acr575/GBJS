@@ -10,22 +10,23 @@
       background-color: gray;
     }
 
+    .content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1em;
+    }
+
     #screen {
-      /* image-rendering: pixelated; Mantener el estilo pixelado */
       border: 5px solid #000;
       width: 160px;
     }
 
     .debug {
-      width: 70%;
-      height: 300px;
+      width: 50%;
       border: solid 2px black;
       overflow-y: auto;
-    }
-
-    table {
       border-collapse: collapse;
-      width: 100%;
     }
 
     th,
@@ -33,62 +34,107 @@
       border: 1px solid black;
       padding: 8px;
     }
+
+    button:hover {
+      cursor: pointer;
+    }
   </style>
   <body>
-    <input type="file" id="fileInput" />
-    <canvas id="screen" width="160" height="144"></canvas>
-    <!-- <label for="stepInstructions">Instructions to step</label> -->
-    <input
-      type="number"
-      name="stepInstructions"
-      id="stepInstructions"
-      min="1"
-      value="1"
-    />
-    <button id="next">Step</button>
-    <table class="debug">
-      <tr>
-        <td colspan="2">PC</td>
-        <td colspan="2" id="pc">$0000</td>
-      </tr>
-      <tr>
-        <td colspan="2">SP</td>
-        <td colspan="2" id="sp">$0000</td>
-      </tr>
-      <tr>
-        <td>A</td>
-        <td id="a">$00</td>
-        <td>F</td>
-        <td id="f">----</td>
-      </tr>
-      <tr>
-        <td>B</td>
-        <td id="b">$00</td>
-        <td>C</td>
-        <td id="c">$00</td>
-      </tr>
-      <tr>
-        <td>D</td>
-        <td id="d">$00</td>
-        <td>E</td>
-        <td id="e">$00</td>
-      </tr>
-      <tr>
-        <td>H</td>
-        <td id="h">$00</td>
-        <td>L</td>
-        <td id="l">$00</td>
-      </tr>
-    </table>
-
-    <label for="hexAddress">Query address</label>
-    <input type="text" name="hexAddress" id="hexAddress" value="0X" />
-    <span>Value: </span>
-    <span id="memValue">0x</span>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-    <script src="./debug/debug_bios_disassemble.js" type="module"></script>
-    <!-- <script src="./debug/debug.js" type="module"></script> -->
-    <!-- <script src="./debug/GPU/debug_Render.js" type="module"></script> -->
+    <div class="content">
+      <canvas id="screen" width="160" height="144"></canvas>
+      <div>
+        <b>Load rom:</b>
+        <input type="file" id="fileInput" />
+      </div>
+      <span>or</span>
+      <table class="debug">
+        <tr>
+          <td colspan="2" align="center"><b>Select ROM</b></td>
+        </tr>
+        <tr>
+          <td>Boot rom</td>
+          <td><button id="boot-rom-button">Run boot rom</button></td>
+        </tr>
+        <tr>
+          <td rowspan="12">Blargg cpu_instrs test roms</td>
+        </tr>
+        <tr>
+          <td>
+            <button class="test-button" name="01-special.gb">01-special</button>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <button class="test-button" name="02-interrupts.gb">
+              02-interrupts
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <button class="test-button" name="03-op sp,hl.gb">
+              03-op sp,hl
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <button class="test-button" name="04-op r,imm.gb">
+              04-op r,imm
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <button class="test-button" name="05-op rp.gb">05-op rp</button>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <button class="test-button" name="06-ld r,r.gb">06-ld r,r</button>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <button class="test-button" name="07-jr,jp,call,ret,rst.gb">
+              07-jr,jp,call,ret,rst
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <button class="test-button" name="08-misc instrs.gb">
+              08-misc instrs
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <button class="test-button" name="09-op r,r.gb">09-op r,r</button>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <button class="test-button" name="10-bit ops.gb">10-bit ops</button>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <button class="test-button" name="11-op a,(hl).gb">
+              11-op a,(hl)
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td>Acid PPU test rom</td>
+          <td>
+            <button class="test-button" name="dmg-acid2.gb">
+              Run PPU test
+            </button>
+          </td>
+        </tr>
+      </table>
+    </div>
+    <script src="./debug/debug.js" type="module"></script>
   </body>
 </html>

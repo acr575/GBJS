@@ -1,15 +1,100 @@
 import { CPU } from "../src/CPU.js";
-import { Disassembler } from "../src/Disassembler.js";
 
-const cpu = new CPU();
-const disassembler = new Disassembler(cpu);
-cpu.init();
-cpu.updateDebugBox();
-cpu.mmu.setupAddressInput();
+let cpu = new CPU();
 
+let interval = null;
+
+const reset = () => {
+  Object.keys(cpu).forEach((property) => {
+    cpu[property] = null;
+  });
+  cpu = null;
+};
+
+const fetchRom = async (url) => {
+  try {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ROM: ${response.statusText}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const blob = new Blob([arrayBuffer]);
+    const file = new File([blob], "rom.gb", {
+      type: "application/octet-stream",
+    });
+
+    clearInterval(interval);
+    reset();
+    cpu = new CPU();
+    await cpu.mmu.load(file);
+
+    return cpu;
+  } catch (error) {
+    console.error("Error loading ROM:", error);
+  }
+};
+
+const run = (cpu) => {
+  const frameRate = 1000 / 60;
+
+  interval = setInterval(() => {
+    cpu.emulateFrame();
+  }, frameRate);
+};
+
+// Run boot rom
+document
+  .getElementById("boot-rom-button")
+  .addEventListener("click", async () => {
+    const program = await fetchRom(
+      "https://raw.githubusercontent.com/acr575/GBJS/release-test-cpu-instrs-boot-rom/roms/dmg_boot_rom/dmg_boot.bin"
+    );
+
+    if (!program) throw new Error("Failed to load boot rom");
+
+    program.pc = 0;
+
+    // BIOS expect nintendo logo to be in memory
+    const nintendoLogo = [
+      0xce, 0xed, 0x66, 0x66, 0xcc, 0x0d, 0x00, 0x0b, 0x03, 0x73, 0x00, 0x83,
+      0x00, 0x0c, 0x00, 0x0d, 0x00, 0x08, 0x11, 0x1f, 0x88, 0x89, 0x00, 0x0e,
+      0xdc, 0xcc, 0x6e, 0xe6, 0xdd, 0xdd, 0xd9, 0x99, 0xbb, 0xbb, 0x67, 0x63,
+      0x6e, 0x0e, 0xec, 0xcc, 0xdd, 0xdc, 0x99, 0x9f, 0xbb, 0xb9, 0x33, 0x3e,
+    ];
+
+    // Load Nintendo logo
+    let memAddr = 0x104;
+    for (let i = 0; i < nintendoLogo.length; i++) {
+      program.mmu.rom[memAddr++] = nintendoLogo[i];
+    }
+
+    run(program);
+  });
+
+// Run CPU test rom
+const baseUrl =
+  "https://raw.githubusercontent.com/acr575/GBJS/release-test-cpu-instrs-boot-rom/roms/blargg/cpu_instrs/";
+const testButtons = document.getElementsByClassName("test-button");
+
+[...testButtons].forEach((test) => {
+  test.addEventListener("click", async () => {
+    const romUrl = baseUrl.concat(encodeURIComponent(test.name));
+    const program = await fetchRom(romUrl);
+    if (!program) throw new Error("Failed to load rom");
+    run(program);
+  });
+});
+
+// Run loaded file
 document
   .getElementById("fileInput")
   .addEventListener("change", async (event) => {
+    clearInterval(interval);
+    reset();
+    cpu = new CPU();
+    cpu.init();
     const file = event.target.files[0];
     let fileSize = 0;
     try {
@@ -67,14 +152,5 @@ document
       "Theorical Checksum: " + (computedChecksum & 0xff).toString(16)
     );
 
-    disassembler.disassemble(fileSize);
-
-    cpu.emulateFrame();
-
-    // const frameRate = 1000 / 59.7; // En milisegundos
-
-    // setInterval(() => {
-    //   // Llamada a emulateFrame, ejecuta un frame cada 1/59.7 segundos
-    //   cpu.emulateFrame();
-    // }, frameRate);
+    run(cpu);
   });
