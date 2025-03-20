@@ -2388,7 +2388,7 @@ export class OpcodeTable {
       // BIT 0, (HL)
       0x46: {
         instruction: () => cpu.instruction.BIT_b_r(0, "HL"),
-        cycles: 16,
+        cycles: 12,
       },
 
       // BIT 0, A
@@ -2429,7 +2429,7 @@ export class OpcodeTable {
       // BIT 1, (HL)
       0x4e: {
         instruction: () => cpu.instruction.BIT_b_r(1, "HL"),
-        cycles: 16,
+        cycles: 12,
       },
 
       // BIT 1, A
@@ -2470,7 +2470,7 @@ export class OpcodeTable {
       // BIT 2, (HL)
       0x56: {
         instruction: () => cpu.instruction.BIT_b_r(2, "HL"),
-        cycles: 16,
+        cycles: 12,
       },
 
       // BIT 2, A
@@ -2511,7 +2511,7 @@ export class OpcodeTable {
       // BIT 3, (HL)
       0x5e: {
         instruction: () => cpu.instruction.BIT_b_r(3, "HL"),
-        cycles: 16,
+        cycles: 12,
       },
 
       // BIT 3, A
@@ -2552,7 +2552,7 @@ export class OpcodeTable {
       // BIT 4, (HL)
       0x66: {
         instruction: () => cpu.instruction.BIT_b_r(4, "HL"),
-        cycles: 16,
+        cycles: 12,
       },
 
       // BIT 4, A
@@ -2593,7 +2593,7 @@ export class OpcodeTable {
       // BIT 5, (HL)
       0x6e: {
         instruction: () => cpu.instruction.BIT_b_r(5, "HL"),
-        cycles: 16,
+        cycles: 12,
       },
 
       // BIT 5, A
@@ -2634,7 +2634,7 @@ export class OpcodeTable {
       // BIT 6, (HL)
       0x76: {
         instruction: () => cpu.instruction.BIT_b_r(6, "HL"),
-        cycles: 16,
+        cycles: 12,
       },
 
       // BIT 6, A
@@ -2675,7 +2675,7 @@ export class OpcodeTable {
       // BIT 7, (HL)
       0x7e: {
         instruction: () => cpu.instruction.BIT_b_r(7, "HL"),
-        cycles: 16,
+        cycles: 12,
       },
 
       // BIT 7, A
