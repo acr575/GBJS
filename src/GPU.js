@@ -14,7 +14,10 @@ export class GPU {
     this.oam = new Uint8Array(160); // OAM   160 B.   Area FE00 - FE9F
     this.vram = new Uint8Array(8192); //VRAM   8 KiB.   Area 8000 - 9FFF
 
-    this.scanlineCounter = 456; // Clock cycles to draw a scanline
+    this.line = 0;
+    this.windowLine = 0;
+    this.clock = 0;
+    this.mode = 2;
 
     this.lcdc = 0xff40; // LCD Control
     this.stat = 0xff41; // LCD status
@@ -31,92 +34,88 @@ export class GPU {
   }
 
   updateGraphics(cycles) {
-    this.setLCDStatus();
+    this.clock += cycles;
+    let vBlank = false;
 
-    if (this.isLCDEnabled()) this.scanlineCounter -= cycles;
-    else return;
+    switch (this.mode) {
+      case 0: // HBLANK
+        if (this.clock >= 204) {
+          this.clock -= 204;
+          this.line++;
+          this.updateLY();
+          if (this.line == 144) {
+            // Reached VBLANK
+            this.setMode(1);
+            vBlank = true;
+            this.cpu.requestInterrupt(0);
+          } else {
+            this.setMode(2);
+          }
+        }
+        break;
 
-    if (this.scanlineCounter <= 0) {
-      // Move onto next scanline
-      let currentLine = this.mmu.readByte(this.ly) + 1;
-      this.setLY(currentLine);
+      case 1: // VBLANK
+        if (this.clock >= 456) {
+          this.clock -= 456;
+          this.line++;
+          if (this.line > 153) {
+            this.line = 0;
+            this.windowLine = 0;
+            this.setMode(2);
+          }
+          this.updateLY();
+        }
+        break;
 
-      this.scanlineCounter = 456;
+      case 2: // SCANLINE OAM
+        if (this.clock >= 80) {
+          this.clock -= 80;
+          this.setMode(3);
+        }
+        break;
 
-      // V-Blank period
-      if (currentLine == 144) this.cpu.requestInterrupt(0);
-      // If gone past scanline 153 reset to 0
-      else if (currentLine > 153) this.setLY(0);
-      // Draw current scanline
-      else if (currentLine < 144) this.drawScanLine();
+      case 3: // SCANLINE VRAM
+        if (this.clock >= 172) {
+          this.clock -= 172;
+          this.drawScanLine();
+          this.setMode(0);
+        }
+        break;
+    }
+
+    return vBlank;
+  }
+
+  updateLY() {
+    this.setLY(this.line);
+    var statVal = this.mmu.readByte(this.stat);
+    if (this.cpu.mmu.readByte(this.ly) == this.cpu.mmu.readByte(this.lyc)) {
+      this.cpu.mmu.writeByte(this.stat, statVal | (1 << 2));
+      if (statVal & (1 << 6)) {
+        this.cpu.requestInterrupt(1);
+      }
+    } else {
+      this.cpu.mmu.writeByte(this.stat, statVal & (0xff - (1 << 2)));
     }
   }
 
-  setLCDStatus() {
-    let status = this.mmu.readByte(this.stat);
+  setMode(mode) {
+    this.mode = mode;
+    var newStat = this.cpu.mmu.readByte(this.stat);
+    newStat &= 0xfc;
+    newStat |= mode;
+    this.cpu.mmu.writeByte(this.stat, newStat);
 
-    if (!this.isLCDEnabled()) {
-      // Set the mode to 1 during LCD disabled and reset scanline
-      this.scanlineCounter = 456;
-      this.setLY(0);
-      status &= 0b11111100; // Reset STAT bits 0 & 1
-      status |= 1; // Set STAT bit 0 (mode 1)
-      this.mmu.writeByte(this.stat, status);
-      return;
-    }
-
-    let currentline = this.mmu.readByte(this.ly);
-    let currentmode = status & 0b11;
-
-    let mode = 0;
-    let requestInterrupt = false;
-
-    // In V-Blank: set mode to 1
-    if (currentline >= 144) {
-      mode = 1;
-      status &= 0b11111101; // Reset STAT bit 1
-      status |= 1; // Set STAT bit 0 (mode 1)
-      requestInterrupt = ((status >> 4) & 1) == 1;
-    } else {
-      const isMode2 = this.scanlineCounter >= 456 - 80;
-      const isMode3 = this.scanlineCounter >= 456 - 80 - 172;
-
-      // Mode 2
-      if (isMode2) {
-        mode = 2;
-        status &= 0b11111110; // Reset STAT bit 0
-        status |= 0b10; // Set STAT bit 1 (mode 2)
-        requestInterrupt = ((status >> 5) & 1) == 1;
-      }
-      // Mode 3
-      else if (isMode3) {
-        mode = 3;
-        status |= 0b11; // Set STAT bits 1 & 2 (mode 3)
-      }
-      // Mode 0
-      else {
-        mode = 0;
-        status &= 0b11111100; // Reset STAT bits 0 & 1 (mode 0)
-        requestInterrupt = ((status >> 3) & 1) == 1;
+    if (mode < 3) {
+      if (newStat & (1 << (3 + mode))) {
+        this.cpu.requestInterrupt(1);
       }
     }
-
-    // Just entered a new mode so request interrupt
-    if (requestInterrupt && mode != currentmode) this.cpu.requestInterrupt(1);
-
-    // Check the conincidence flag
-    if (this.mmu.readByte(this.ly) == this.mmu.readByte(this.lyc)) {
-      status |= 0b100; // Set STAT bit 2
-      if ((status >> 6) & 1) this.cpu.requestInterrupt(1);
-    } else {
-      status &= 0b11111011; // Reset STAT bit 2
-    }
-
-    this.mmu.writeByte(this.stat, status); // Update STAT
   }
 
   drawScanLine() {
     let lcdc = this.mmu.readByte(0xff40);
+    if (!(lcdc >> 7) & 1) return;
     if (lcdc & 1) this.renderTiles();
     if ((lcdc >> 1) & 1) this.renderSprites();
   }
@@ -139,7 +138,16 @@ export class GPU {
     if ((lcdc >> 5) & 1) {
       // is the current scanline we're drawing
       // within the windows Y pos?,
-      if (windowY <= this.mmu.readByte(this.ly)) usingWindow = true;
+      if (
+        windowY > 0 &&
+        windowY <= 143 &&
+        windowY <= this.mmu.readByte(this.ly) &&
+        windowX >= 0 &&
+        windowX <= 166
+      ) {
+        usingWindow = true;
+        this.windowLine++;
+      }
     }
 
     // which tile data are we using?
@@ -167,12 +175,12 @@ export class GPU {
     // current scanline is drawing
     if (!usingWindow) yPos = (scrollY + this.mmu.readByte(this.ly)) & 0xff;
     else {
-      yPos = (this.mmu.readByte(this.ly) - windowY) & 0xff;
+      yPos = this.mmu.readByte(this.ly) - windowY;
     }
 
     // which of the 8 vertical pixels of the current
     // tile is the scanline on?
-    let tileRow = (((yPos / 8) & 0xff) * 32) & 0xffff;
+    let tileRow = (Math.floor(yPos / 8) * 32) & 0xffff;
 
     const imageData = this.context.getImageData(
       0,
@@ -189,12 +197,12 @@ export class GPU {
       // translate the current x pos to window space if necessary
       if (usingWindow) {
         if (pixel >= windowX) {
-          xPos = (pixel - windowX) & 0xff;
+          xPos = pixel - windowX;
         }
       }
 
       // which of the 32 horizontal tiles does this xPos fall within?
-      let tileCol = (xPos / 8) & 0xffff;
+      let tileCol = Math.floor(xPos / 8);
       let tileNum;
 
       // get the tile identity number. Remember it can be signed
