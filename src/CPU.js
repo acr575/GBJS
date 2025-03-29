@@ -3,6 +3,7 @@ import { OpcodeTable } from "./OpcodeTable.js";
 import { MMU } from "./MMU.js";
 import { Timer } from "./Timer.js";
 import { GPU } from "./GPU.js";
+import { Joypad } from "./Joypad.js";
 
 const nextButton = document.getElementById("next");
 const debugPC = document.getElementById("pc");
@@ -35,6 +36,7 @@ export class CPU {
     this.mmu = new MMU(this); // Memory Management
     this.timer = new Timer(this); // System timer
     this.gpu = new GPU(this); // Graphics Processing Unit
+    this.joypad = new Joypad(this); // Input
 
     this.opcodeTable = new OpcodeTable(this); // Init opcode table
     this.instructionTable = this.opcodeTable.instructionTable; // Links each opcode with it instruction, length and cycles
@@ -51,6 +53,7 @@ export class CPU {
     this.setRegister("HL", 0x014d);
     this.sp = 0xfffe;
 
+    this.mmu.ioRegs[0xff00 & 0x7f] = 0xcf; // P1
     this.mmu.writeByte(0xff10, 0x80);
     this.mmu.writeByte(0xff11, 0xbf);
     this.mmu.writeByte(0xff12, 0xf3);
