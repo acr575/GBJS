@@ -32,8 +32,8 @@ export class MMU {
         const arrayBuffer = reader.result;
         const byteArray = new Uint8Array(arrayBuffer);
 
-      if (!byteArray) {
-        console.error(
+        if (!byteArray) {
+          console.error(
             "Error loading program. The byte array loaded is null."
           );
           reject("Error: Loaded byte array is null");
@@ -44,13 +44,13 @@ export class MMU {
 
         // Check if cartridge fits rom. Change later when MBC's are implemented
         if (lSize > this.rom.length)
-        throw new Error("Cartridge too big for memory");
-      
-      // Load bytes
-      this.rom.set(byteArray.subarray(0, this.rom.length));
+          throw new Error("Cartridge too big for memory");
 
-      console.log("Program loaded successfully.");
-      resolve(lSize);
+        // Load bytes
+        this.rom.set(byteArray.subarray(0, this.rom.length));
+
+        console.log("Program loaded successfully.");
+        resolve(lSize);
       };
     });
   }
@@ -121,12 +121,10 @@ export class MMU {
 
           // High RAM or I/O
           case 0xf00:
-            if (addr >= 0xff80) {
+            if (addr >= 0xff80)
               return addr == 0xffff ? this.ie : this.hram[addr & 0x7f];
-            } else {
-              // TODO: I/O control handling
-              return this.ioRegs[addr & 0x7f];
-            }
+            else if (addr == 0xff00) return this.cpu.joypad.readJoypad();
+            else return this.ioRegs[addr & 0x7f];
         }
     }
   }
@@ -206,6 +204,8 @@ export class MMU {
                     this.cpu.timer.writeTAC(val); // TAC register
                   else if (addr == 0xff04)
                     this.ioRegs[addr & 0x7f] = 0; // Reset DIV register
+                  else if (addr == 0xff00)
+                    this.cpu.joypad.writeByte(addr & 0x7f, val);
                   else this.ioRegs[addr & 0x7f] = val;
                   break;
 

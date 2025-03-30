@@ -3,6 +3,7 @@ import { OpcodeTable } from "./OpcodeTable.js";
 import { MMU } from "./MMU.js";
 import { Timer } from "./Timer.js";
 import { GPU } from "./GPU.js";
+import { Joypad } from "./Joypad.js";
 
 const nextButton = document.getElementById("next");
 const debugPC = document.getElementById("pc");
@@ -27,11 +28,13 @@ export class CPU {
     this.ime = 0; // Interrup master enable flag. Starts unset
     this.requestIme = 0; // Flag that sets IME flag after next instruccion. Used by EI instruction
     this.isHalted = 0;
+    this.cycleCounter = 0;
 
     this.instruction = new Instruction(this);
     this.mmu = new MMU(this); // Memory Management
     this.timer = new Timer(this); // System timer
     this.gpu = new GPU(this); // Graphics Processing Unit
+    this.joypad = new Joypad(this); // Input
 
     this.opcodeTable = new OpcodeTable(this); // Init opcode table
     this.instructionTable = this.opcodeTable.instructionTable; // Links each opcode with it instruction, length and cycles
@@ -48,6 +51,7 @@ export class CPU {
     this.setRegister("HL", 0x014d);
     this.sp = 0xfffe;
 
+    this.mmu.ioRegs[0xff00 & 0x7f] = 0xcf; // P1
     this.mmu.writeByte(0xff10, 0x80);
     this.mmu.writeByte(0xff11, 0xbf);
     this.mmu.writeByte(0xff12, 0xf3);
@@ -253,12 +257,10 @@ export class CPU {
     return typeof fetch.cycles === "function" ? fetch.cycles() : fetch.cycles;
   }
 
-  // 69905 cycles / frame
   emulateFrame() {
-    const maxCycles = 69905;
-    let cycleCounter = 0;
+    let vBlank = false;
 
-    while (cycleCounter < maxCycles) {
+    while (!vBlank) {
       // nextButton.addEventListener("click", () => {
       //   const stepsInput = parseInt(
       //     document.getElementById("stepInstructions").value
@@ -267,23 +269,27 @@ export class CPU {
       //     !isNaN(stepsInput) && stepsInput !== 0 ? stepsInput : 1;
 
       //   for (let i = 0; i < instructionCount; i++) {
-
+      // console.log(this.cycleCounter);
       let cycles = 4;
       if (!this.isHalted) cycles = this.emulateCycle();
-      cycleCounter += cycles;
+      this.cycleCounter += cycles;
 
       this.timer.updateTimers(cycles);
-      this.gpu.updateGraphics(cycles);
+      vBlank = this.gpu.updateGraphics(cycles);
 
+      // console.log("Scanline: " + this.mmu.readByte(this.gpu.ly));
       this.doInterrupts();
       // Enable IME requested by EI. EI sets requestIme to 2.
       this.handleRequestIme();
 
-      //     if (cycleCounter >= maxCycles) {
+      //     if (vBlank) {
       //       // Reset the cycle counter to 0 after reaching max cycles
-      //       cycleCounter = 0;
+      //       this.cycleCounter = 0;
       //     }
+
+      //     console.log(`LY:${this.mmu.readByte(this.gpu.ly).toString(16)}, LYC:${this.mmu.readByte(this.gpu.lyc).toString(16)}`);
       //   }
+
       //   this.updateDebugBox();
       // });
     }
@@ -306,8 +312,10 @@ export class CPU {
           let currentBitIf = (ifValue >> i) & 1;
           let currentBitIe = (ieValue >> i) & 1;
 
-          // Unsupported id 3 interrupt (Serial Interrupt)
-          if (currentBitIf && currentBitIe && i != 3) this.serviceInterrupt(i);
+          if (currentBitIf && currentBitIe) {
+            this.serviceInterrupt(i);
+            break;
+          }
         }
       }
     }
@@ -318,6 +326,8 @@ export class CPU {
     let ifValue = this.mmu.readByte(this.if);
     ifValue = ifValue & ~(1 << interruptId); // Reset serviced interrupt bit
     this.mmu.ioRegs[this.if & 0x7f] = ifValue;
+    this.isHalted = 0;
+    this.cycleCounter += 20;
 
     this.instruction.push(this.pc);
 
@@ -332,6 +342,10 @@ export class CPU {
 
       case 2:
         this.pc = 0x50;
+        break;
+
+      case 3:
+        this.pc = 0x58;
         break;
 
       case 4:

@@ -11,7 +11,7 @@ export class Timer {
     this.tma = 0xff06; // Timer modulo
     this.tac = 0xff07; // Timer control
 
-    this.timerCounter = 1024;
+    this.timerCounter = 0;
     this.dividerCounter = 0;
   }
 
@@ -19,21 +19,30 @@ export class Timer {
     this.incDividerRegister(cycles);
 
     // TIMA (clock) must be enabled to update it
-    if (this.isTimaEnabled()) {
-      this.timerCounter -= cycles;
+    if (!this.isTimaEnabled()) return;
 
-      // Enough cpu clock cycles have happened to update TIMA
-      if (this.timerCounter <= 0) {
-        // Reset timerCounter to the correct value
-        this.setClockFreq();
+    this.timerCounter += cycles;
+    const clockFreq = this.setClockFreq();
 
-        // Timer about to overflow
-        if (this.mmu.readByte(this.tima) >= 0xff) {
-          this.mmu.writeByte(this.tima, this.mmu.readByte(this.tma)); // Set TIMA to TMA
-          this.cpu.requestInterrupt(2);
-        } else {
-          this.mmu.writeByte(this.tima, this.mmu.readByte(this.tima) + 1); // Increment TIMA
-        }
+    // Here, we need to increment the timer's internal counter relative to the tick size. The
+    // counter may have to be incremented multiple times for a given tick. While this
+    // technically could happen for the div internal counter, in practice it doesn't: no
+    // instruction takes longer to execute than it takes to increment DIV once. However, it
+    // _is_ possible to have the timer internal counter increment multiple times during a given
+    // instruction.
+    //
+    // Notably, getting this wrong will cause blargg's instr_timing test ROM to fail with
+    // the cryptic "Failure #255" message.
+    // Source: https://github.com/feo-boy/feo-boy/blob/master/src/bus/timer.rs#L56-L66
+    while (this.timerCounter >= clockFreq) {
+      this.timerCounter -= clockFreq;
+
+      // Timer about to overflow
+      if (this.mmu.readByte(this.tima) >= 0xff) {
+        this.mmu.writeByte(this.tima, this.mmu.readByte(this.tma)); // Set TIMA to TMA
+        this.cpu.requestInterrupt(2);
+      } else {
+        this.mmu.writeByte(this.tima, this.mmu.readByte(this.tima) + 1); // Increment TIMA
       }
     }
   }
@@ -69,7 +78,7 @@ export class Timer {
         break;
     }
 
-    this.timerCounter = CLOCKSPEED / freq;
+    return CLOCKSPEED / freq;
   }
 
   // TODO: Note that writing to DIV register may increase TIMA once!
