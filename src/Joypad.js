@@ -6,6 +6,16 @@ export class Joypad {
     this.p1 = 0xff00;
 
     this.buttons = ["J", "K", "SHIFT", "ENTER", "D", "A", "W", "S"];
+    this.mobileButtons = [
+      "a",
+      "b",
+      "select",
+      "start",
+      "right",
+      "left",
+      "up",
+      "down",
+    ];
     this.state = 0xff;
 
     this.handleInput();
@@ -23,6 +33,20 @@ export class Joypad {
       const key = event.key.toUpperCase();
 
       this.updateJoypad(this.buttons.indexOf(key), 1);
+    });
+
+    // Press mobile button
+    this.mobileButtons.forEach((button) => {
+      document.getElementById(button).addEventListener("touchstart", () => {
+        this.updateJoypad(this.mobileButtons.indexOf(button), 0);
+      });
+    });
+
+    // Release mobile button
+    this.mobileButtons.forEach((button) => {
+      document.getElementById(button).addEventListener("touchend", () => {
+        this.updateJoypad(this.mobileButtons.indexOf(button), 1);
+      });
     });
   }
 

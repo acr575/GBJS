@@ -10,23 +10,22 @@
       background-color: gray;
     }
 
-    .content {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1em;
-    }
-
     #screen {
+      /* image-rendering: pixelated; Mantener el estilo pixelado */
       border: 5px solid #000;
       width: 160px;
     }
 
     .debug {
-      width: 50%;
+      width: 70%;
+      height: 300px;
       border: solid 2px black;
       overflow-y: auto;
+    }
+
+    table {
       border-collapse: collapse;
+      width: 100%;
     }
 
     th,
@@ -35,106 +34,138 @@
       padding: 8px;
     }
 
-    button:hover {
+    .content {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .buttons-mobile {
+      display: none;
+      width: 160px;
+      height: 200px;
+      border: 5px solid black;
+    }
+
+    .dpad-a-b {
+      display: flex;
+      align-items: center; /* Centra verticalmente la cruceta y los botones A/B */
+      gap: 15px; /* Espacio entre la cruceta y los botones */
+      padding: 10px;
+    }
+
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 20px);
+      grid-template-rows: repeat(3, 20px);
+      gap: 5px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .direction {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #ccc;
+      width: 10px;
+      height: 10px;
+      font-size: 24px;
+      border-radius: 10px;
       cursor: pointer;
+    }
+
+    /* Posicionamos los botones en la cruceta */
+    #up {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    #left {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    #right {
+      grid-column: 3;
+      grid-row: 2;
+    }
+    #down {
+      grid-column: 2;
+      grid-row: 3;
+    }
+
+    /* Sección A/B */
+    .a-b {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px; /* Espaciado entre A y B */
+      position: relative;
+    }
+
+    #a,
+    #b {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: red;
+      color: white;
+      width: 30px;
+      height: 30px;
+      font-size: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    #a {
+      position: relative;
+      left: 25px;
+    }
+
+    #b {
+      position: relative;
+      top: -5px; /* Baja el botón B */
+    }
+
+    .start-select {
+      width: 100%;
+      height: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    @media (max-width: 768px) {
+      .buttons-mobile {
+        display: block;
+      }
     }
   </style>
   <body>
     <div class="content">
+      <input type="file" id="fileInput" />
       <canvas id="screen" width="160" height="144"></canvas>
-      <div>
-        <b>Load rom:</b>
-        <input type="file" id="fileInput" />
+      <div class="buttons-mobile">
+        <div class="dpad-a-b">
+          <div class="dpad">
+            <div id="up" class="direction">🔼</div>
+            <div id="down" class="direction">🔽</div>
+            <div id="left" class="direction">◀️</div>
+            <div id="right" class="direction">➡️</div>
+          </div>
+          <div class="a-b">
+            <div id="a">A</div>
+            <div id="b">B</div>
+          </div>
+        </div>
+        <div class="start-select">
+          <button id="start">START</button>
+          <button id="select">SELECT</button>
+        </div>
       </div>
-      <span>or</span>
-      <table class="debug">
-        <tr>
-          <td colspan="2" align="center"><b>Select ROM</b></td>
-        </tr>
-        <tr>
-          <td>Boot rom</td>
-          <td><button id="boot-rom-button">Run boot rom</button></td>
-        </tr>
-        <tr>
-          <td rowspan="12">Blargg cpu_instrs test roms</td>
-        </tr>
-        <tr>
-          <td>
-            <button class="test-button" name="01-special.gb">01-special</button>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <button class="test-button" name="02-interrupts.gb">
-              02-interrupts
-            </button>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <button class="test-button" name="03-op sp,hl.gb">
-              03-op sp,hl
-            </button>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <button class="test-button" name="04-op r,imm.gb">
-              04-op r,imm
-            </button>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <button class="test-button" name="05-op rp.gb">05-op rp</button>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <button class="test-button" name="06-ld r,r.gb">06-ld r,r</button>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <button class="test-button" name="07-jr,jp,call,ret,rst.gb">
-              07-jr,jp,call,ret,rst
-            </button>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <button class="test-button" name="08-misc instrs.gb">
-              08-misc instrs
-            </button>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <button class="test-button" name="09-op r,r.gb">09-op r,r</button>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <button class="test-button" name="10-bit ops.gb">10-bit ops</button>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <button class="test-button" name="11-op a,(hl).gb">
-              11-op a,(hl)
-            </button>
-          </td>
-        </tr>
-        <tr>
-          <td>Acid PPU test rom</td>
-          <td>
-            <button class="test-button" name="dmg-acid2.gb">
-              Run PPU test
-            </button>
-          </td>
-        </tr>
-      </table>
     </div>
+
     <script src="./debug/debug.js" type="module"></script>
   </body>
 </html>

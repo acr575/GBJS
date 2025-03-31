@@ -16,6 +16,7 @@ const debugD = document.getElementById("d");
 const debugE = document.getElementById("e");
 const debugH = document.getElementById("h");
 const debugL = document.getElementById("l");
+const stop = document.getElementById("stop");
 
 export class CPU {
   constructor() {
@@ -28,6 +29,7 @@ export class CPU {
     this.ime = 0; // Interrup master enable flag. Starts unset
     this.requestIme = 0; // Flag that sets IME flag after next instruccion. Used by EI instruction
     this.isHalted = 0;
+    this.isStopped = 0;
     this.cycleCounter = 0;
 
     this.instruction = new Instruction(this);
@@ -402,4 +404,11 @@ export class CPU {
       .toString(2)
       .padStart(4, "0")}`;
   }
+
+  // setupStopButton() {
+  //   stop.addEventListener("click", () => {
+  //     if (this.isStopped) this.isStopped = 0;
+  //     else this.isStopped = 1;
+  //   });
+  // }
 }
