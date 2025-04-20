@@ -1,5 +1,3 @@
-const CLOCKSPEED = 4194304; // Hz
-
 export class Timer {
   constructor(cpu) {
     this.cpu = cpu;
@@ -78,11 +76,9 @@ export class Timer {
         break;
     }
 
-    return CLOCKSPEED / freq;
+    return this.cpu.CLOCKSPEED / freq;
   }
 
-  // TODO: Note that writing to DIV register may increase TIMA once!
-  // Ref: https://gbdev.io/pandocs/Timer_Obscure_Behaviour.html#relation-between-timer-and-divider-register
   incDividerRegister(cycles) {
     this.dividerCounter += cycles;
     if (this.dividerCounter >= 0xff) {

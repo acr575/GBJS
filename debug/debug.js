@@ -71,7 +71,7 @@ document
 
     // cpu.emulateFrame();
 
-    const frameRate = 1000 / 59.7; // En milisegundos
+    const frameRate = 1000 / 60; // En milisegundos
 
     setInterval(() => {
       // Llamada a emulateFrame, ejecuta un frame cada 1/59.7 segundos
