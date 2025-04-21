@@ -18,6 +18,7 @@ export class APU {
     this.channelsTriggerAddrs = {
       0xff14: this.ch1,
       0xff19: this.ch2,
+      0xff1e: this.ch3,
     };
 
     this.channelsDACAddrs = {
@@ -52,6 +53,7 @@ export class APU {
 
     this.ch1.update(cycles);
     this.ch2.update(cycles);
+    this.ch3.update(cycles);
   }
 
   writeByte(addr, val) {
@@ -73,6 +75,8 @@ export class APU {
 
   handleChannelTrigger(addr, val) {
     this.cpu.mmu.ioRegs[addr & 0x7f] = val;
+
+    if (!testBit(val, 7)) return;
 
     const targetChannel = this.channelsTriggerAddrs[addr];
     const targetChannelIndex = Object.keys(this.channelsTriggerAddrs).indexOf(
