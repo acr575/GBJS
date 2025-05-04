@@ -47,7 +47,7 @@ export class CH2 {
     return testBit(this.apu.cpu.mmu.readByte(this.nr22), 3); // Bit 3
   }
 
-  getSweepPace() {
+  getEnvelopePace() {
     return this.apu.cpu.mmu.readByte(this.nr22) & 0b111; // Bits 0-2
   }
 
@@ -96,12 +96,12 @@ export class CH2 {
     this.lengthTimerCycles -= cycles;
 
     // Envelope. A 0 Sweep Pace disables the funcionality
-    if (this.getSweepPace() != 0 && this.envelopeTimerCycles <= 0) {
-      this.envelopeTimerCycles = 65536;
+    if (this.getEnvelopePace() != 0 && this.envelopeTimerCycles <= 0) {
+      this.envelopeTimerCycles += 65536;
       this.envelopeTimer++;
 
       // Update volume
-      if (this.envelopeTimer >= this.getSweepPace()) {
+      if (this.envelopeTimer >= this.getEnvelopePace()) {
         const gainStep = 1 / 15;
 
         if (this.getEnvelopeDir()) {
@@ -135,7 +135,7 @@ export class CH2 {
 
     // Length
     if (this.isLengthEnabled() && this.lengthTimerCycles <= 0) {
-      this.lengthTimerCycles = 16384;
+      this.lengthTimerCycles += 16384;
       this.lengthTimer++;
 
       // Shut down channel

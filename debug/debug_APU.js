@@ -25,7 +25,7 @@ console.log("CH2 Length Timer: " + apu.ch2.getInitialLengthTimer().toString(2));
 console.log("CH2 Wave duty: " + apu.ch2.getWaveDuty());
 console.log("CH2 Initial volume: " + apu.ch2.getInitialVolume());
 console.log("CH2 Envelop dir: " + apu.ch2.getEnvelopeDir());
-console.log("CH2 Sweep pace: " + apu.ch2.getSweepPace().toString(2));
+console.log("CH2 Envelope pace: " + apu.ch2.getEnvelopePace().toString(2));
 console.log("CH2 Period: " + apu.ch2.getPeriodFreq());
 console.log("CH2 DAC: " + apu.ch2.isDACOn());
 
@@ -56,7 +56,40 @@ console.log(
 );
 console.log("Length enabled: " + apu.ch3.isLengthEnabled());
 
+console.log("\n");
+
+// CH4
+cpu.mmu.writeByte(apu.ch4.nr41, 0b00101000);
+cpu.mmu.writeByte(apu.ch4.nr42, 0b10101110);
+cpu.mmu.writeByte(apu.ch4.nr43, 0b10101101);
+
+console.log("CH3 Length timer: " + apu.ch4.getInitialLengthTimer().toString(2));
+console.log("CH4 Initial volume: " + apu.ch4.getInitialVolume());
+console.log("CH4 Envelop dir: " + apu.ch4.getEnvelopeDir());
+console.log("CH4 Envelope pace: " + apu.ch4.getEnvelopePace().toString(2));
+console.log("CH4 DAC: " + apu.ch4.isDACOn());
+console.log("CH4 Clock shift: " + apu.ch4.getClockShift().toString(2));
+console.log("CH4 LFSR width: " + apu.ch4.getLFSRWidth().toString(2));
+console.log("CH4 Clock divider: " + apu.ch4.getClockDivider().toString(2));
+console.log("CH4 Clock freq: " + apu.ch4.getLFSRClockFreq());
+
 document.getElementById("beep").addEventListener("click", () => {
   // apu.ch2.trigger();
-  apu.ch3.trigger();
+  // apu.ch3.trigger();
+  var bufferSize = 4096 * 4;
+  const source = apu.audioCtx.createBufferSource();
+  const buffer = apu.audioCtx.createBuffer(
+    1,
+    bufferSize,
+    apu.audioCtx.sampleRate
+  );
+  const channelData = buffer.getChannelData(0);
+  for (var i = 0; i < bufferSize; i++) {
+    channelData[i] = Math.random() * 2 - 1;
+  }
+  source.buffer = buffer;
+  source.loop = true;
+  source.connect(apu.audioCtx.destination);
+
+  source.start();
 });

@@ -2,6 +2,7 @@ import { setBit, testBit } from "../GameBoyUtils.js";
 import { CH1 } from "./CH1.js";
 import { CH2 } from "./CH2.js";
 import { CH3 } from "./CH3.js";
+import { CH4 } from "./CH4.js";
 
 export class APU {
   constructor(cpu) {
@@ -11,6 +12,7 @@ export class APU {
     this.ch1 = new CH1(this);
     this.ch2 = new CH2(this);
     this.ch3 = new CH3(this);
+    // this.ch4 = new CH4(this);
 
     this.nr50 = 0xff24; // Master volume & VIN panning
     this.nr52 = 0xff26; // Audio master control
@@ -19,12 +21,14 @@ export class APU {
       0xff14: this.ch1,
       0xff19: this.ch2,
       0xff1e: this.ch3,
+      // 0xff23: this.ch4,
     };
 
     this.channelsDACAddrs = {
       0xff12: this.ch1,
       0xff17: this.ch2,
       0xff1a: this.ch3,
+      // 0xff21: this.ch4,
     };
   }
 
@@ -54,6 +58,7 @@ export class APU {
     this.ch1.update(cycles);
     this.ch2.update(cycles);
     this.ch3.update(cycles);
+    // this.ch4.update(cycles);
   }
 
   writeByte(addr, val) {

@@ -14,6 +14,8 @@ export class CH1 extends CH2 {
     // New CH1 sweep register
     this.nr10 = 0xff10;
 
+    this.currentPeriod = 0;
+    this.isSweepEnabled = false;
     this.sweepTimerCycles = 32768; // Remaining cycles to tick up sweepTimer (32768 cycles, 128 Hz)
     this.sweepTimer = 0; // Increments when sweepTimerCylces reaches 0
   }
@@ -30,6 +32,24 @@ export class CH1 extends CH2 {
     return this.apu.cpu.mmu.readByte(this.nr10) & 0b111;
   }
 
+  trigger() {
+    this.currentPeriod = this.getPeriod();
+
+    // Enabled flag is set either the sweep pace or individual step are non-zero, cleared otherwise
+    const step = this.getSweepStep();
+    this.isSweepEnabled = this.getSweepPace() != 0 || step != 0;
+
+    if (step != 0) {
+      let newPeriod = this.calculateSweepFreq(this.getSweepDirection());
+      if (newPeriod > 0x7ff) {
+        this.stop();
+        return;
+      }
+    }
+
+    super.trigger(); // Reset timers & play sound
+  }
+
   resetTimers() {
     super.resetTimers();
     this.sweepTimer = 0;
@@ -42,11 +62,15 @@ export class CH1 extends CH2 {
     this.sweepTimerCycles -= cycles;
 
     if (this.sweepTimerCycles <= 0) {
-      this.sweepTimerCycles = 32768;
+      this.sweepTimerCycles += 32768;
       this.sweepTimer++;
 
       // Sweep funcionality: inc or dec the period
-      if (this.getSweepPace() != 0 && this.sweepTimer >= this.getSweepPace()) {
+      if (
+        this.isSweepEnabled &&
+        this.getSweepPace() != 0 &&
+        this.sweepTimer >= this.getSweepPace()
+      ) {
         this.sweepTimer = 0;
 
         let newPeriod = this.getPeriod();
@@ -74,7 +98,7 @@ export class CH1 extends CH2 {
   }
 
   calculateSweepFreq(direction) {
-    const currentPeriod = this.getPeriod();
+    const currentPeriod = this.currentPeriod;
     const periodDivider = currentPeriod / Math.pow(2, this.getSweepStep());
     const newPeriod =
       currentPeriod + (!direction ? periodDivider : -periodDivider);
@@ -83,6 +107,7 @@ export class CH1 extends CH2 {
   }
 
   updatePeriod(newPeriod) {
+    this.currentPeriod = newPeriod;
     // Bits 0-7 to NR13
     const lowPeriod = newPeriod & 0xff;
     this.apu.cpu.mmu.writeByte(this.nr23, lowPeriod);

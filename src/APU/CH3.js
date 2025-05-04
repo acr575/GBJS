@@ -64,7 +64,7 @@ export class CH3 {
 
     // Length
     if (this.isLengthEnabled() && this.lengthTimerCycles <= 0) {
-      this.lengthTimerCycles = 16384;
+      this.lengthTimerCycles += 16384;
       this.lengthTimer++;
 
       // Shut down channel
