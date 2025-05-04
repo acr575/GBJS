@@ -1,3 +1,5 @@
+import { getSignedByte } from "./GameBoyUtils.js";
+
 export class Disassembler {
   constructor(cpu) {
     this.cpu = cpu;
@@ -44,12 +46,12 @@ export class Disassembler {
 
           if (operand === "r8") {
             // 1 signed byte operand
-            immediate = this.cpu
-              .getSignedValue(this.cpu.mmu.rom[i + 1])
-              .toString(16);
+            immediate = getSignedByte(this.cpu.mmu.rom[i + 1]).toString(16);
           }
 
-          return immediate ? `$${immediate.toUpperCase().padStart(2, "0")}` : operand;
+          return immediate
+            ? `$${immediate.toUpperCase().padStart(2, "0")}`
+            : operand;
         });
       }
 

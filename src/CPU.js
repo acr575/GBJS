@@ -1,10 +1,10 @@
-import { Instruction } from "./Instruction.js";
 import { OpcodeTable } from "./OpcodeTable.js";
 import { MMU } from "./MMU.js";
 import { Timer } from "./Timer.js";
 import { GPU } from "./GPU.js";
 import { Joypad } from "./Joypad.js";
 import { APU } from "./APU/APU.js";
+import { getSignedByte, resetBit, setBit } from "./GameBoyUtils.js";
 
 const nextButton = document.getElementById("next");
 const debugPC = document.getElementById("pc");
@@ -27,14 +27,13 @@ export class CPU {
 
     this.ie = 0xffff; // Interrupt enable flag
     this.if = 0xff0f; // Interrupt request flag
-    this.ime = 0; // Interrup master enable flag. Starts unset
+    this.ime = false; // Interrup master enable flag. Starts unset
     this.requestIme = 0; // Flag that sets IME flag after next instruccion. Used by EI instruction
     this.isHalted = 0;
     this.isStopped = 0;
     this.cycleCounter = 0;
     this.CLOCKSPEED = 4194304; // Hz
 
-    this.instruction = new Instruction(this);
     this.mmu = new MMU(this); // Memory Management
     this.timer = new Timer(this); // System timer
     this.gpu = new GPU(this); // Graphics Processing Unit
@@ -234,17 +233,8 @@ export class CPU {
     this.setRegister("F", registerF);
   }
 
-  // https://stackoverflow.com/questions/56577958/how-to-convert-one-byte-8-bit-to-signed-integer-in-javascript
-  getSignedValue(value) {
-    return (value << 24) >> 24;
-  }
-
-  getSignedWord(value) {
-    return (value << 16) >> 16;
-  }
-
   getSignedImmediate8Bit() {
-    return this.getSignedValue(this.mmu.readByte(this.pc + 1));
+    return getSignedByte(this.mmu.readByte(this.pc + 1));
   }
 
   getImmediate16Bit() {
@@ -288,7 +278,7 @@ export class CPU {
       this.apu.updateAudio(cycles);
 
       // console.log("Scanline: " + this.mmu.readByte(this.gpu.ly));
-      this.doInterrupts();
+      this.checkInterrupts();
       // Enable IME requested by EI. EI sets requestIme to 2.
       this.handleRequestIme();
 
@@ -307,12 +297,12 @@ export class CPU {
 
   requestInterrupt(interruptId) {
     let ifValue = this.mmu.readByte(this.if);
-    ifValue |= 1 << interruptId;
+    ifValue = setBit(ifValue, interruptId);
     this.mmu.writeByte(this.if, ifValue);
     this.isHalted = 0;
   }
 
-  doInterrupts() {
+  checkInterrupts() {
     if (this.ime) {
       let ifValue = this.mmu.readByte(this.if);
       let ieValue = this.mmu.readByte(this.ie);
@@ -332,14 +322,14 @@ export class CPU {
   }
 
   serviceInterrupt(interruptId) {
-    this.ime = 0;
+    this.ime = false;
     let ifValue = this.mmu.readByte(this.if);
-    ifValue = ifValue & ~(1 << interruptId); // Reset serviced interrupt bit
+    ifValue = resetBit(ifValue, interruptId); // Reset serviced interrupt bit
     this.mmu.ioRegs[this.if & 0x7f] = ifValue;
     this.isHalted = 0;
     this.cycleCounter += 20;
 
-    this.instruction.push(this.pc);
+    this.opcodeTable.instruction.push(this.pc);
 
     switch (interruptId) {
       case 0:
@@ -366,7 +356,7 @@ export class CPU {
 
   handleRequestIme() {
     if (this.requestIme > 0) {
-      if (this.requestIme == 1) this.ime = 1;
+      if (this.requestIme == 1) this.ime = true;
       this.requestIme--;
     }
   }
