@@ -30,6 +30,8 @@ export class APU {
       0xff1a: this.ch3,
       // 0xff21: this.ch4,
     };
+
+    this.masterVolume = 0.1;
   }
 
   getLeftVolume() {
@@ -55,8 +57,8 @@ export class APU {
   updateAudio(cycles) {
     if (!this.isAudioOn()) return;
 
-    this.ch1.update(cycles);
-    this.ch2.update(cycles);
+    if (this.ch1.isTriggered) this.ch1.update(cycles);
+    if (this.ch2.isTriggered) this.ch2.update(cycles);
     this.ch3.update(cycles);
     // this.ch4.update(cycles);
   }

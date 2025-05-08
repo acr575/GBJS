@@ -17,6 +17,7 @@ export class CH3 {
 
     this.lengthTimerCycles = 16384; // Remaining cycles to tick up length timer (16384 cycles, 256 Hz)
     this.lengthTimer = 0; // Increments when lengthTimerCycles reaches 0
+    this.isTriggered = false;
   }
 
   isDACOn() {
@@ -34,11 +35,11 @@ export class CH3 {
       case 0b00:
         return 0;
       case 0b01:
-        return 0.5;
+        return 1;
       case 0b10:
-        return 0.25;
+        return 0.5;
       case 0b11:
-        return 0.125;
+        return 0.25;
     }
   }
 
@@ -83,6 +84,7 @@ export class CH3 {
 
     // Play at frequency & volume
     this.playWave(this.getPeriodFreq(), this.getOutputLevel());
+    this.isTriggered = true;
   }
 
   getWaveRamSamples() {
@@ -120,7 +122,7 @@ export class CH3 {
       (frequency * buffer.length) / this.apu.audioCtx.sampleRate;
 
     this.gainNode = this.apu.audioCtx.createGain();
-    this.gainNode.gain.value = volume;
+    this.gainNode.gain.value = volume * this.apu.masterVolume;
 
     this.source.connect(this.gainNode).connect(this.apu.audioCtx.destination);
     this.source.start();
@@ -128,5 +130,6 @@ export class CH3 {
 
   stop() {
     this.source?.stop();
+    this.isTriggered = false;
   }
 }

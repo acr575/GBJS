@@ -15,6 +15,8 @@ export class CH2 {
     this.envelopeTimer = 0; // Increments when envelopeTimerCycles reaches 0
     this.periodTimerCycles = 4; // Remaining cycles to tick up periodTimer (4 cycles, 1048576 Hz)
     this.periodTimer = 0; // Increments when periodTimerCylces reaches 0
+
+    this.isTriggered = false;
   }
 
   getInitialLengthTimer() {
@@ -79,6 +81,7 @@ export class CH2 {
     this.stop();
 
     this.playSquareWave(this.getPeriodFreq(), this.getInitialVolume());
+    this.isTriggered = true;
   }
 
   resetTimers() {
@@ -102,17 +105,17 @@ export class CH2 {
 
       // Update volume
       if (this.envelopeTimer >= this.getEnvelopePace()) {
-        const gainStep = 1 / 15;
+        const gainStep = (1 / 15) * this.apu.masterVolume;
 
         if (this.getEnvelopeDir()) {
           this.gainNode.gain.value = Math.min(
-            1,
-            this.gainNode.gain.value + gainStep
+            this.apu.masterVolume,
+            (this.gainNode.gain.value + gainStep)
           );
         } else {
           this.gainNode.gain.value = Math.max(
             0,
-            this.gainNode.gain.value - gainStep
+            (this.gainNode.gain.value - gainStep)
           );
         }
         this.envelopeTimer = 0;
@@ -172,7 +175,7 @@ export class CH2 {
       (frequency * buffer.length) / this.apu.audioCtx.sampleRate;
 
     this.gainNode = this.apu.audioCtx.createGain();
-    this.gainNode.gain.value = volume;
+    this.gainNode.gain.value = volume * this.apu.masterVolume;
 
     this.source.connect(this.gainNode).connect(this.apu.audioCtx.destination);
 
@@ -181,5 +184,6 @@ export class CH2 {
 
   stop() {
     this.source?.stop();
+    this.isTriggered = false;
   }
 }
