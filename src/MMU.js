@@ -22,7 +22,7 @@ export class MMU {
     this.currentRomBank = 1; // ROM bank loaded. 1 by default bc 0 is loaded always
     this.currentRamBank = 0; // RAM bank loaded
     this.isRamBankingEnabled = false;
-    this.isRomBankingEnabled = false;
+    this.bankingAdvancedMode = false;
     this.CARTRIDGE_MAX_SIZE = 1572864; // 1.5 MiB
     this.RAM_BANK_SIZE = 0x2000; // 8 KiB
     this.ROM_BANK_SIZE = 0x4000; // 16 KiB
@@ -65,7 +65,7 @@ export class MMU {
         this.cartridge.set(byteArray.subarray(0, this.cartridge.length));
 
         const cartridgeType = this.cartridge[0x147];
-        const ramBanks = this.cartridge[0x149];
+        const ramBanks = this.getRamBanksNumber(this.cartridge[0x149]);
 
         // Set memory banking mode
         if (cartridgeType >= 1 && cartridgeType <= 3) this.MBC1 = true;
@@ -78,6 +78,25 @@ export class MMU {
         resolve(size);
       };
     });
+  }
+
+  getRamBanksNumber(ramSizeCode) {
+    switch (ramSizeCode) {
+      case 0x2:
+        return 1;
+
+      case 0x3:
+        return 4;
+
+      case 0x4:
+        return 16;
+
+      case 0x5:
+        return 8;
+
+      default:
+        return 0;
+    }
   }
 
   readByte(addr) {
@@ -160,11 +179,11 @@ export class MMU {
     if (addr < 0x2000 && (this.MBC1 || this.MBC2))
       this.enableRamBanking(addr, val);
     // ROM bank change
-    else if ((addr >= 0x2000 && addr < 0x4000 && this.MBC1) || this.MBC2)
+    else if (addr >= 0x2000 && addr < 0x4000 && (this.MBC1 || this.MBC2))
       this.changeLoRomBank(val);
     // ROM or RAM bank change
     else if (addr >= 0x4000 && addr < 0x6000 && this.MBC1) {
-      if (this.isRomBankingEnabled) this.changeHiRomBank(val);
+      if (this.bankingAdvancedMode) this.changeHiRomBank(val);
       else this.changeRamBank(val);
     }
     // Change ROM banking or RAM banking mode
@@ -192,7 +211,7 @@ export class MMU {
   }
 
   changeHiRomBank(val) {
-    let upperBits = val & 0b11100000;
+    let upperBits = val & 0b01100000;
     this.currentRomBank &= 0b00011111; // Reset upper 3 bits
     this.currentRomBank = this.currentRomBank | upperBits || 1;
   }
@@ -202,8 +221,8 @@ export class MMU {
   }
 
   changeMode(val) {
-    this.isRomBankingEnabled = testBit(val, 0);
-    if (this.isRomBankingEnabled) this.currentRamBank = 0;
+    this.bankingAdvancedMode = testBit(val, 0);
+    if (this.bankingAdvancedMode) this.currentRamBank = 0;
   }
 
   setupAddressInput() {

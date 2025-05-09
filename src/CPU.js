@@ -241,7 +241,7 @@ export class CPU {
     return this.mmu.readWord(this.pc + 1);
   }
 
-  emulateCycle() {
+  execInstruction() {
     const opcode = this.mmu.readByte(this.pc); // Fetch opcode
     const fetch = this.instructionTable[opcode]; // Decode opcode
 
@@ -268,9 +268,8 @@ export class CPU {
       //     !isNaN(stepsInput) && stepsInput !== 0 ? stepsInput : 1;
 
       //   for (let i = 0; i < instructionCount; i++) {
-      // console.log(this.cycleCounter);
       let cycles = 4;
-      if (!this.isHalted) cycles = this.emulateCycle();
+      if (!this.isHalted) cycles = this.execInstruction();
       this.cycleCounter += cycles;
 
       this.timer.updateTimers(cycles);
@@ -286,8 +285,6 @@ export class CPU {
       //       // Reset the cycle counter to 0 after reaching max cycles
       //       this.cycleCounter = 0;
       //     }
-
-      //     console.log(`LY:${this.mmu.readByte(this.gpu.ly).toString(16)}, LYC:${this.mmu.readByte(this.gpu.lyc).toString(16)}`);
       //   }
 
       //   this.updateDebugBox();
