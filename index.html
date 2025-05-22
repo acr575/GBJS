@@ -25,67 +25,186 @@
 
     table {
       border-collapse: collapse;
-      width: 100%;
+      width: 10%;
+      font-size: 8pt;
     }
 
     th,
     td {
       border: 1px solid black;
-      padding: 8px;
+      padding: 1px;
+      text-align: center;
+    }
+
+    .content {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .buttons-mobile {
+      display: none;
+      width: 160px;
+      height: 200px;
+      border: 5px solid black;
+    }
+
+    .dpad-a-b {
+      display: flex;
+      align-items: center; /* Centra verticalmente la cruceta y los botones A/B */
+      gap: 15px; /* Espacio entre la cruceta y los botones */
+      padding: 10px;
+    }
+
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 20px);
+      grid-template-rows: repeat(3, 20px);
+      gap: 5px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .direction {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #ccc;
+      width: 10px;
+      height: 10px;
+      font-size: 24px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    /* Posicionamos los botones en la cruceta */
+    #up {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    #left {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    #right {
+      grid-column: 3;
+      grid-row: 2;
+    }
+    #down {
+      grid-column: 2;
+      grid-row: 3;
+    }
+
+    /* Sección A/B */
+    .a-b {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px; /* Espaciado entre A y B */
+      position: relative;
+    }
+
+    #a,
+    #b {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: red;
+      color: white;
+      width: 30px;
+      height: 30px;
+      font-size: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    #a {
+      position: relative;
+      left: 25px;
+    }
+
+    #b {
+      position: relative;
+      top: -5px; /* Baja el botón B */
+    }
+
+    .start-select {
+      width: 100%;
+      height: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    @media (max-width: 768px) {
+      .buttons-mobile {
+        display: block;
+      }
     }
   </style>
   <body>
-    <input type="file" id="fileInput" accept=".gb,.bin" />
-    <canvas id="screen" width="160" height="144"></canvas>
-    <!-- <label for="stepInstructions">Instructions to step</label> -->
-    <input
-      type="number"
-      name="stepInstructions"
-      id="stepInstructions"
-      min="1"
-      value="1"
-    />
-    <button id="next">Step</button>
-    <button id="stop">Stop</button>
-    <table class="debug">
-      <tr>
-        <td colspan="2">PC</td>
-        <td colspan="2" id="pc">$0000</td>
-      </tr>
-      <tr>
-        <td colspan="2">SP</td>
-        <td colspan="2" id="sp">$0000</td>
-      </tr>
-      <tr>
-        <td>A</td>
-        <td id="a">$00</td>
-        <td>F</td>
-        <td id="f">----</td>
-      </tr>
-      <tr>
-        <td>B</td>
-        <td id="b">$00</td>
-        <td>C</td>
-        <td id="c">$00</td>
-      </tr>
-      <tr>
-        <td>D</td>
-        <td id="d">$00</td>
-        <td>E</td>
-        <td id="e">$00</td>
-      </tr>
-      <tr>
-        <td>H</td>
-        <td id="h">$00</td>
-        <td>L</td>
-        <td id="l">$00</td>
-      </tr>
-    </table>
-
-    <label for="hexAddress">Query address</label>
-    <input type="text" name="hexAddress" id="hexAddress" value="0X" />
-    <span>Value: </span>
-    <span id="memValue">0x</span>
+    <div class="content">
+      <input type="file" id="fileInput" />
+      <canvas id="screen" width="160" height="144"></canvas>
+      <div class="buttons-mobile">
+        <div class="dpad-a-b">
+          <div class="dpad">
+            <div id="up" class="direction">🔼</div>
+            <div id="down" class="direction">🔽</div>
+            <div id="left" class="direction">◀️</div>
+            <div id="right" class="direction">➡️</div>
+          </div>
+          <div class="a-b">
+            <div id="a">A</div>
+            <div id="b">B</div>
+          </div>
+        </div>
+        <div class="start-select">
+          <button id="start">START</button>
+          <button id="select">SELECT</button>
+        </div>
+      </div>
+      <table>
+        <tr>
+          <th>GB Button</th>
+          <th>Key</th>
+        </tr>
+        <tr>
+          <td><strong>Up</strong></td>
+          <td>W</td>
+        </tr>
+        <tr>
+          <td><strong>Down</strong></td>
+          <td>S</td>
+        </tr>
+        <tr>
+          <td><strong>Left</strong></td>
+          <td>A</td>
+        </tr>
+        <tr>
+          <td><strong>Right</strong></td>
+          <td>D</td>
+        </tr>
+        <tr>
+          <td><strong>A</strong></td>
+          <td>J</td>
+        </tr>
+        <tr>
+          <td><strong>B</strong></td>
+          <td>K</td>
+        </tr>
+        <tr>
+          <td><strong>Select</strong></td>
+          <td>Shift</td>
+        </tr>
+        <tr>
+          <td><strong>Start</strong></td>
+          <td>Enter</td>
+        </tr>
+      </table>
+    </div>
 
     <script src="./debug/debug.js" type="module"></script>
   </body>

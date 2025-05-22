@@ -400,10 +400,10 @@ export class CPU {
       .padStart(4, "0")}`;
   }
 
-  setupStopButton() {
-    stop.addEventListener("click", () => {
-      if (this.isStopped) this.isStopped = 0;
-      else this.isStopped = 1;
-    });
-  }
+  // setupStopButton() {
+  //   stop.addEventListener("click", () => {
+  //     if (this.isStopped) this.isStopped = 0;
+  //     else this.isStopped = 1;
+  //   });
+  // }
 }

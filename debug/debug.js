@@ -4,8 +4,6 @@ import { Disassembler } from "../src/Disassembler.js";
 const cpu = new CPU();
 const disassembler = new Disassembler(cpu);
 cpu.init();
-cpu.updateDebugBox();
-cpu.mmu.setupAddressInput();
 
 document
   .getElementById("fileInput")
