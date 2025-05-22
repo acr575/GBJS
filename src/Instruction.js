@@ -1,3 +1,5 @@
+import { getSignedByte } from "./GameBoyUtils.js";
+
 export class Instruction {
   constructor(cpu) {
     this.cpu = cpu;
@@ -225,7 +227,7 @@ export class Instruction {
    */
   LDHL_SP_n() {
     const unsignedValue = this.cpu.mmu.readByte(this.cpu.pc + 1);
-    const signedValue = this.cpu.getSignedValue(unsignedValue);
+    const signedValue = getSignedByte(unsignedValue);
     const result = this.cpu.sp + signedValue;
     // Set sum's result in HL register
     this.cpu.setRegister("HL", result);
@@ -618,7 +620,7 @@ export class Instruction {
   ADD_SP_n() {
     const sp = this.cpu.sp;
     const unsignedValue = this.cpu.mmu.readByte(this.cpu.pc + 1);
-    const signedValue = this.cpu.getSignedValue(unsignedValue);
+    const signedValue = getSignedByte(unsignedValue);
     const result = sp + signedValue;
 
     // Calculate flags
@@ -737,7 +739,7 @@ export class Instruction {
   STOP() {}
 
   DI() {
-    this.cpu.ime = 0;
+    this.cpu.ime = false;
   }
 
   EI() {
@@ -1394,7 +1396,7 @@ export class Instruction {
 
   RETI() {
     this.RET();
-    this.cpu.ime = 1; // IME is set right after this instruction
+    this.cpu.ime = true; // IME is set right after this instruction
   }
 
   /**

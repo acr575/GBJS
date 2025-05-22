@@ -1,4 +1,4 @@
-const CLOCKSPEED = 4194304; // Hz
+import { testBit } from "./GameBoyUtils.js";
 
 export class Timer {
   constructor(cpu) {
@@ -11,7 +11,7 @@ export class Timer {
     this.tma = 0xff06; // Timer modulo
     this.tac = 0xff07; // Timer control
 
-    this.timerCounter = 0;
+    this.timerCounter = this.getClockFreq();
     this.dividerCounter = 0;
   }
 
@@ -22,7 +22,7 @@ export class Timer {
     if (!this.isTimaEnabled()) return;
 
     this.timerCounter += cycles;
-    const clockFreq = this.setClockFreq();
+    const clockFreq = this.getClockFreq();
 
     // Here, we need to increment the timer's internal counter relative to the tick size. The
     // counter may have to be incremented multiple times for a given tick. While this
@@ -49,15 +49,15 @@ export class Timer {
 
   isTimaEnabled() {
     const tacValue = this.mmu.readByte(this.tac);
-    return (tacValue >> 2) & 1; // Bit 2 controls whether TIMA is incremented
+    return testBit(tacValue, 2); // Bit 2 controls whether TIMA is incremented
   }
 
-  getClockFreq() {
+  getClockSelect() {
     return this.mmu.readByte(this.tac) & 0b11; // Freq. stored at TAC's last 2 bits
   }
 
-  setClockFreq() {
-    const freqIndex = this.getClockFreq();
+  getClockFreq() {
+    const freqIndex = this.getClockSelect();
     let freq;
 
     switch (freqIndex) {
@@ -78,24 +78,14 @@ export class Timer {
         break;
     }
 
-    return CLOCKSPEED / freq;
+    return this.cpu.CLOCKSPEED / freq;
   }
 
-  // TODO: Note that writing to DIV register may increase TIMA once!
-  // Ref: https://gbdev.io/pandocs/Timer_Obscure_Behaviour.html#relation-between-timer-and-divider-register
   incDividerRegister(cycles) {
     this.dividerCounter += cycles;
     if (this.dividerCounter >= 0xff) {
       this.dividerCounter = 0;
       this.mmu.ioRegs[this.div & 0x7f]++;
     }
-  }
-
-  writeTAC(val) {
-    let currentFreq = this.getClockFreq();
-    this.mmu.ioRegs[this.tac & 0x7f] = val;
-    let newFreq = this.getClockFreq();
-
-    if (currentFreq != newFreq) this.setClockFreq();
   }
 }

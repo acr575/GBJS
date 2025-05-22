@@ -1,9 +1,10 @@
-import { Instruction } from "./Instruction.js";
 import { OpcodeTable } from "./OpcodeTable.js";
 import { MMU } from "./MMU.js";
 import { Timer } from "./Timer.js";
-import { GPU } from "./GPU.js";
+import { PPU } from "./GPU.js";
 import { Joypad } from "./Joypad.js";
+import { APU } from "./APU/APU.js";
+import { getSignedByte, resetBit, setBit } from "./GameBoyUtils.js";
 
 const nextButton = document.getElementById("next");
 const debugPC = document.getElementById("pc");
@@ -26,17 +27,18 @@ export class CPU {
 
     this.ie = 0xffff; // Interrupt enable flag
     this.if = 0xff0f; // Interrupt request flag
-    this.ime = 0; // Interrup master enable flag. Starts unset
+    this.ime = false; // Interrup master enable flag. Starts unset
     this.requestIme = 0; // Flag that sets IME flag after next instruccion. Used by EI instruction
     this.isHalted = 0;
     this.isStopped = 0;
     this.cycleCounter = 0;
+    this.CLOCKSPEED = 4194304; // Hz
 
-    this.instruction = new Instruction(this);
     this.mmu = new MMU(this); // Memory Management
     this.timer = new Timer(this); // System timer
-    this.gpu = new GPU(this); // Graphics Processing Unit
+    this.gpu = new PPU(this); // Graphics Processing Unit
     this.joypad = new Joypad(this); // Input
+    this.apu = new APU(this); // Audio
 
     this.opcodeTable = new OpcodeTable(this); // Init opcode table
     this.instructionTable = this.opcodeTable.instructionTable; // Links each opcode with it instruction, length and cycles
@@ -57,9 +59,10 @@ export class CPU {
     this.mmu.writeByte(0xff10, 0x80);
     this.mmu.writeByte(0xff11, 0xbf);
     this.mmu.writeByte(0xff12, 0xf3);
+    this.mmu.writeByte(0xff13, 0xff);
     this.mmu.writeByte(0xff14, 0xbf);
     this.mmu.writeByte(0xff16, 0x3f);
-    this.mmu.writeByte(0xff17, 0x00);
+    this.mmu.writeByte(0xff18, 0xff);
     this.mmu.writeByte(0xff19, 0xbf);
     this.mmu.writeByte(0xff1a, 0x7f);
     this.mmu.writeByte(0xff1b, 0xff);
@@ -71,6 +74,9 @@ export class CPU {
     this.mmu.writeByte(0xff25, 0xf3);
     this.mmu.writeByte(0xff26, 0xf1);
     this.mmu.writeByte(0xff40, 0x91);
+    this.mmu.writeByte(0xff41, 0x81);
+    this.mmu.writeByte(0xff44, 0x91);
+    this.mmu.writeByte(0xff46, 0xff);
     this.mmu.writeByte(0xff47, 0xfc);
     this.mmu.writeByte(0xff48, 0xff);
     this.mmu.writeByte(0xff49, 0xff);
@@ -227,24 +233,15 @@ export class CPU {
     this.setRegister("F", registerF);
   }
 
-  // https://stackoverflow.com/questions/56577958/how-to-convert-one-byte-8-bit-to-signed-integer-in-javascript
-  getSignedValue(value) {
-    return (value << 24) >> 24;
-  }
-
-  getSignedWord(value) {
-    return (value << 16) >> 16;
-  }
-
   getSignedImmediate8Bit() {
-    return this.getSignedValue(this.mmu.readByte(this.pc + 1));
+    return getSignedByte(this.mmu.readByte(this.pc + 1));
   }
 
   getImmediate16Bit() {
     return this.mmu.readWord(this.pc + 1);
   }
 
-  emulateCycle() {
+  execInstruction() {
     const opcode = this.mmu.readByte(this.pc); // Fetch opcode
     const fetch = this.instructionTable[opcode]; // Decode opcode
 
@@ -271,16 +268,16 @@ export class CPU {
       //     !isNaN(stepsInput) && stepsInput !== 0 ? stepsInput : 1;
 
       //   for (let i = 0; i < instructionCount; i++) {
-      // console.log(this.cycleCounter);
       let cycles = 4;
-      if (!this.isHalted) cycles = this.emulateCycle();
+      if (!this.isHalted) cycles = this.execInstruction();
       this.cycleCounter += cycles;
 
       this.timer.updateTimers(cycles);
       vBlank = this.gpu.updateGraphics(cycles);
+      this.apu.updateAudio(cycles);
 
       // console.log("Scanline: " + this.mmu.readByte(this.gpu.ly));
-      this.doInterrupts();
+      this.checkInterrupts();
       // Enable IME requested by EI. EI sets requestIme to 2.
       this.handleRequestIme();
 
@@ -288,8 +285,6 @@ export class CPU {
       //       // Reset the cycle counter to 0 after reaching max cycles
       //       this.cycleCounter = 0;
       //     }
-
-      //     console.log(`LY:${this.mmu.readByte(this.gpu.ly).toString(16)}, LYC:${this.mmu.readByte(this.gpu.lyc).toString(16)}`);
       //   }
 
       //   this.updateDebugBox();
@@ -299,12 +294,12 @@ export class CPU {
 
   requestInterrupt(interruptId) {
     let ifValue = this.mmu.readByte(this.if);
-    ifValue |= 1 << interruptId;
+    ifValue = setBit(ifValue, interruptId);
     this.mmu.writeByte(this.if, ifValue);
     this.isHalted = 0;
   }
 
-  doInterrupts() {
+  checkInterrupts() {
     if (this.ime) {
       let ifValue = this.mmu.readByte(this.if);
       let ieValue = this.mmu.readByte(this.ie);
@@ -324,14 +319,14 @@ export class CPU {
   }
 
   serviceInterrupt(interruptId) {
-    this.ime = 0;
+    this.ime = false;
     let ifValue = this.mmu.readByte(this.if);
-    ifValue = ifValue & ~(1 << interruptId); // Reset serviced interrupt bit
+    ifValue = resetBit(ifValue, interruptId); // Reset serviced interrupt bit
     this.mmu.ioRegs[this.if & 0x7f] = ifValue;
     this.isHalted = 0;
     this.cycleCounter += 20;
 
-    this.instruction.push(this.pc);
+    this.opcodeTable.instruction.push(this.pc);
 
     switch (interruptId) {
       case 0:
@@ -358,7 +353,7 @@ export class CPU {
 
   handleRequestIme() {
     if (this.requestIme > 0) {
-      if (this.requestIme == 1) this.ime = 1;
+      if (this.requestIme == 1) this.ime = true;
       this.requestIme--;
     }
   }

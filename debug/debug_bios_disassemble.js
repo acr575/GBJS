@@ -40,22 +40,25 @@ document
 
     try {
       const romSize = await cpu.mmu.load(file);
+      const biggerRom = new Uint8Array(romSize + 1000);
+      biggerRom.set(cpu.mmu.cartridge);
+      cpu.mmu.cartridge = biggerRom;
 
       // Check if BIOS is legit
-      const extractedBios = cpu.mmu.rom.slice(0, 0x100);
-      calcularMD5(extractedBios);
+      // const extractedBios = cpu.mmu.rom.slice(0, 0x100);
+      // calcularMD5(extractedBios);
 
       // Load Nintendo logo
       let memAddr = 0x104;
       for (let i = 0; i < nintendoLogo.length; i++) {
-        cpu.mmu.rom[memAddr++] = nintendoLogo[i];
+        cpu.mmu.cartridge[memAddr++] = nintendoLogo[i];
       }
 
       // Value to bypass checksum
-      cpu.mmu.rom[0x14d] = 0xe7;
+      cpu.mmu.cartridge[0x14d] = 0xe7;
 
       // Disassemble
-      disassembler.disassemble(romSize);
+      // disassembler.disassemble(romSize);
 
       // Start emulation
       // cpu.emulateFrame();
