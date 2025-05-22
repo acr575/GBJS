@@ -37,14 +37,14 @@ export class Joypad {
 
     // Press mobile button
     this.mobileButtons.forEach((button) => {
-      document.getElementById(button).addEventListener("touchstart", () => {
+      document.getElementById(button).addEventListener("pointerdown", () => {
         this.updateJoypad(this.mobileButtons.indexOf(button), 0);
       });
     });
 
     // Release mobile button
     this.mobileButtons.forEach((button) => {
-      document.getElementById(button).addEventListener("touchend", () => {
+      document.getElementById(button).addEventListener("pointerup", () => {
         this.updateJoypad(this.mobileButtons.indexOf(button), 1);
       });
     });
