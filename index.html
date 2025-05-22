@@ -8,12 +8,17 @@
   <style>
     body {
       background-color: gray;
+      display: flex;
+      align-items: center;
+      flex-direction: column;
+      gap: 1em;
     }
 
     #screen {
-      /* image-rendering: pixelated; Mantener el estilo pixelado */
+      image-rendering: pixelated;
+      width: 320px; /* 160px */
+      height: 288px; /* 144 */
       border: 5px solid #000;
-      width: 160px;
     }
 
     .debug {
@@ -38,13 +43,18 @@
     <input type="file" id="fileInput" accept=".gb,.bin" />
     <canvas id="screen" width="160" height="144"></canvas>
     <!-- <label for="stepInstructions">Instructions to step</label> -->
-    <input
+    <!-- <input
       type="number"
       name="stepInstructions"
       id="stepInstructions"
       min="1"
       value="1"
     />
+    <select name="screen-scale" id="screen-scale">
+      <option value="1">x1</option>
+      <option value="2">x2</option>
+      <option value="3">x3</option>
+    </select>
     <button id="next">Step</button>
     <button id="stop">Stop</button>
     <table class="debug">
@@ -85,7 +95,7 @@
     <label for="hexAddress">Query address</label>
     <input type="text" name="hexAddress" id="hexAddress" value="0X" />
     <span>Value: </span>
-    <span id="memValue">0x</span>
+    <span id="memValue">0x</span> -->
 
     <script src="./debug/debug.js" type="module"></script>
   </body>

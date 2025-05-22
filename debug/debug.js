@@ -4,8 +4,8 @@ import { Disassembler } from "../src/Disassembler.js";
 const cpu = new CPU();
 const disassembler = new Disassembler(cpu);
 cpu.init();
-cpu.updateDebugBox();
-cpu.mmu.setupAddressInput();
+// cpu.updateDebugBox();
+// cpu.mmu.setupAddressInput();
 
 document
   .getElementById("fileInput")
@@ -71,7 +71,7 @@ document
 
     // cpu.emulateFrame();
 
-    const frameRate = 1000 / 60; // En milisegundos
+    const frameRate = 1000 / (cpu.CLOCKSPEED / 70224); // En milisegundos
 
     setInterval(() => {
       // Llamada a emulateFrame, ejecuta un frame cada 1/59.7 segundos

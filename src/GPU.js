@@ -1,15 +1,21 @@
+import { getSignedByte, resetBit, setBit, testBit } from "./GameBoyUtils.js";
+
 const WHITE = 0;
 const LIGHT_GRAY = 1;
 const DARK_GRAY = 2;
 const BLACK = 3;
 
-export class GPU {
+export class PPU {
   constructor(cpu) {
     this.cpu = cpu;
     this.mmu = cpu.mmu;
 
     this.screen = document.getElementById("screen");
     this.context = this.screen.getContext("2d", { willReadFrequently: true });
+    this.frameBuffer = this.context.createImageData(
+      this.screen.width,
+      this.screen.height
+    );
 
     this.oam = new Uint8Array(160); // OAM   160 B.   Area FE00 - FE9F
     this.vram = new Uint8Array(8192); //VRAM   8 KiB.   Area 8000 - 9FFF
@@ -36,6 +42,15 @@ export class GPU {
   updateGraphics(cycles) {
     this.clock += cycles;
     let vBlank = false;
+
+    if (!this.isLCDEnabled()) {
+      this.setMode(0);
+      this.line = 0;
+      this.windowLine = 0;
+      this.clock = 0;
+      this.setLY(0);
+      return;
+    }
 
     switch (this.mode) {
       case 0: // HBLANK
@@ -88,171 +103,118 @@ export class GPU {
 
   updateLY() {
     this.setLY(this.line);
-    var statVal = this.mmu.readByte(this.stat);
+    let statVal = this.mmu.readByte(this.stat);
     if (this.cpu.mmu.readByte(this.ly) == this.cpu.mmu.readByte(this.lyc)) {
-      this.cpu.mmu.writeByte(this.stat, statVal | (1 << 2));
-      if (statVal & (1 << 6)) {
-        this.cpu.requestInterrupt(1);
-      }
+      // Set stat bit 2
+      let newStat = setBit(statVal, 2);
+      this.cpu.mmu.writeByte(this.stat, newStat);
+
+      // Interrupt if stat's bit 6 is set
+      if (testBit(statVal, 6)) this.cpu.requestInterrupt(1);
     } else {
-      this.cpu.mmu.writeByte(this.stat, statVal & (0xff - (1 << 2)));
+      this.cpu.mmu.writeByte(this.stat, resetBit(statVal, 2));
     }
   }
 
   setMode(mode) {
     this.mode = mode;
-    var newStat = this.cpu.mmu.readByte(this.stat);
-    newStat &= 0xfc;
-    newStat |= mode;
+    let newStat = this.cpu.mmu.readByte(this.stat);
+    newStat &= 0b11111100; // Reset bits 0 & 1
+    newStat |= mode; // Set 0 & 1 bits to mode
     this.cpu.mmu.writeByte(this.stat, newStat);
 
-    if (mode < 3) {
-      if (newStat & (1 << (3 + mode))) {
-        this.cpu.requestInterrupt(1);
-      }
-    }
+    // Interrupt if allowed
+    if (mode < 3 && testBit(newStat, 3 + mode)) this.cpu.requestInterrupt(1);
   }
 
   drawScanLine() {
     let lcdc = this.mmu.readByte(0xff40);
-    if (!(lcdc >> 7) & 1) return;
-    if (lcdc & 1) this.renderTiles();
-    if ((lcdc >> 1) & 1) this.renderSprites();
+    if (!testBit(lcdc, 7)) return;
+
+    const renderBGWin = testBit(lcdc, 0);
+    const renderSprites = testBit(lcdc, 1);
+    if (renderBGWin || renderSprites) {
+      if (renderBGWin) this.renderBGWin();
+      if (renderSprites) this.renderSprites();
+      this.context.putImageData(this.frameBuffer, 0, 0);
+    }
   }
 
-  renderTiles() {
+  renderBGWin() {
     let tileData = 0;
-    let backgroundMemory = 0;
     let unsigned = true;
 
-    // where to draw the visual area and the window
-    let scrollY = this.mmu.readByte(this.scy);
-    let scrollX = this.mmu.readByte(this.scx);
-    let windowY = this.mmu.readByte(this.wy);
-    let windowX = (this.mmu.readByte(this.wx) - 7) & 0xff;
+    const scrollY = this.mmu.readByte(this.scy);
+    const scrollX = this.mmu.readByte(this.scx);
+    const windowY = this.mmu.readByte(this.wy);
+    const windowX = (this.mmu.readByte(this.wx) - 7) & 0xff;
 
-    let usingWindow = false;
-    let lcdc = this.mmu.readByte(this.lcdc);
+    const lcdc = this.mmu.readByte(this.lcdc);
+    const ly = this.mmu.readByte(this.ly);
 
-    // is the window enabled?
-    if ((lcdc >> 5) & 1) {
-      // is the current scanline we're drawing
-      // within the windows Y pos?,
-      if (
-        windowY > 0 &&
-        windowY <= 143 &&
-        windowY <= this.mmu.readByte(this.ly) &&
-        windowX >= 0 &&
-        windowX <= 166
-      ) {
-        usingWindow = true;
-        this.windowLine++;
-      }
-    }
-
-    // which tile data are we using?
-    if ((lcdc >> 4) & 1) {
+    // Selección del área de datos de tiles
+    if (testBit(lcdc, 4)) {
       tileData = 0x8000;
+      unsigned = true;
     } else {
-      // IMPORTANT: This memory region uses signed bytes as tile identifiers
       tileData = 0x8800;
       unsigned = false;
     }
 
-    // which background mem?
-    if (!usingWindow) {
-      if ((lcdc >> 3) & 1) backgroundMemory = 0x9c00;
-      else backgroundMemory = 0x9800;
-    } else {
-      // which window memory?
-      if ((lcdc >> 6) & 1) backgroundMemory = 0x9c00;
-      else backgroundMemory = 0x9800;
-    }
+    const windowEnabled = testBit(lcdc, 5);
+    const imageData = this.frameBuffer.data;
 
-    let yPos = 0;
+    let usedWindowInThisLine = false; // Nueva bandera
 
-    // yPos is used to calculate which of 32 vertical tiles the
-    // current scanline is drawing
-    if (!usingWindow) yPos = (scrollY + this.mmu.readByte(this.ly)) & 0xff;
-    else {
-      yPos = this.mmu.readByte(this.ly) - windowY;
-    }
-
-    // which of the 8 vertical pixels of the current
-    // tile is the scanline on?
-    let tileRow = (Math.floor(yPos / 8) * 32) & 0xffff;
-
-    const imageData = this.context.getImageData(
-      0,
-      0,
-      this.screen.width,
-      this.screen.height
-    );
-
-    // time to start drawing the 160 horizontal pixels
-    // for this scanline
     for (let pixel = 0; pixel < 160; pixel++) {
-      let xPos = (pixel + scrollX) & 0xff;
+      let useWindow = false;
 
-      // translate the current x pos to window space if necessary
-      if (usingWindow) {
-        if (pixel >= windowX) {
-          xPos = pixel - windowX;
-        }
+      if (windowEnabled && ly >= windowY && pixel >= windowX) {
+        useWindow = true;
+        usedWindowInThisLine = true; // Se usó la ventana en esta línea
       }
 
-      // which of the 32 horizontal tiles does this xPos fall within?
-      let tileCol = Math.floor(xPos / 8);
-      let tileNum;
+      // Selección del mapa de fondo o ventana
+      const bgMemory = useWindow
+        ? testBit(lcdc, 6)
+          ? 0x9c00
+          : 0x9800
+        : testBit(lcdc, 3)
+        ? 0x9c00
+        : 0x9800;
 
-      // get the tile identity number. Remember it can be signed
-      // or unsigned
-      let tileAddrss = (backgroundMemory + tileRow + tileCol) & 0xffff;
-      if (unsigned) tileNum = this.mmu.readByte(tileAddrss);
-      else tileNum = this.cpu.getSignedValue(this.mmu.readByte(tileAddrss));
+      const xPos = useWindow
+        ? (pixel - windowX) & 0xff
+        : (pixel + scrollX) & 0xff;
 
-      // deduce where this tile identifier is in memory. Remember i
-      // shown this algorithm earlier
-      let tileLocation = tileData;
+      const yPos = useWindow ? this.windowLine & 0xff : (scrollY + ly) & 0xff;
 
-      if (unsigned)
-        tileLocation =
-          (tileLocation + this.cpu.getSignedWord(tileNum * 16)) & 0xffff;
-      else
-        tileLocation =
-          (tileLocation + this.cpu.getSignedWord((tileNum + 128) * 16)) &
-          0xffff;
+      const tileRow = Math.floor(yPos / 8) * 32;
+      const tileCol = Math.floor(xPos / 8);
+      const tileIndexAddr = (bgMemory + tileRow + tileCol) & 0xffff;
 
-      // find the correct vertical line we're on of the
-      // tile to get the tile data
-      // from in memory
-      let line = yPos % 8 & 0xff;
-      line = (line * 2) & 0xff; // each vertical line takes up two bytes of memory
-      let data1 = this.mmu.readByte((tileLocation + line) & 0xffff);
-      let data2 = this.mmu.readByte((tileLocation + line + 1) & 0xffff);
+      let tileNum = this.mmu.readByte(tileIndexAddr);
+      let tileLocation;
 
-      // console.log(tileAddrss.toString(16), tileRow, tileCol, tileNum, tileLocation.toString(16), line, data1, data2);
+      if (unsigned) {
+        tileLocation = (0x8000 + tileNum * 16) & 0xffff;
+      } else {
+        tileLocation = (0x9000 + getSignedByte(tileNum) * 16) & 0xffff;
+      }
 
-      // pixel 0 in the tile is it 7 of data 1 and data2.
-      // Pixel 1 is bit 6 etc..
-      let colourBit = xPos % 8;
-      colourBit -= 7;
-      colourBit *= -1;
+      const line = (yPos % 8) * 2;
+      const data1 = this.mmu.readByte((tileLocation + line) & 0xffff);
+      const data2 = this.mmu.readByte((tileLocation + line + 1) & 0xffff);
 
-      // combine data 2 and data 1 to get the colour id for this pixel
-      // in the tile
-      let colourNum = (data2 >> colourBit) & 1;
-      colourNum <<= 1;
+      const colourBit = 7 - (xPos % 8);
+      let colourNum = ((data2 >> colourBit) & 1) << 1;
       colourNum |= (data1 >> colourBit) & 1;
 
-      // now we have the colour id get the actual
-      // colour from palette BGP
-      let col = this.getColour(colourNum, this.bgp);
-      let red = 0;
-      let green = 0;
-      let blue = 0;
+      const col = this.getColour(colourNum, this.bgp);
+      let red = 0,
+        green = 0,
+        blue = 0;
 
-      // setup the RGB values
       switch (col) {
         case WHITE:
           red = 255;
@@ -269,45 +231,36 @@ export class GPU {
           green = 0x77;
           blue = 0x77;
           break;
-
-        case BLACK:
-          red = 0;
-          green = 0;
-          blue = 0;
-          break;
       }
 
-      let finaly = this.mmu.readByte(this.ly);
+      // Seguridad
+      if (ly < 0 || ly > 143 || pixel < 0 || pixel > 159) continue;
 
-      // safety check to make sure what im about
-      // to set is int the 160x144 bounds
-      if (finaly < 0 || finaly > 143 || pixel < 0 || pixel > 159) {
-        continue;
-      }
-
-      const pixelIndex = (finaly * this.screen.width + pixel) * 4;
-
-      imageData.data[pixelIndex] = red; // R
-      imageData.data[pixelIndex + 1] = green; // G
-      imageData.data[pixelIndex + 2] = blue;
-      imageData.data[pixelIndex + 3] = 255; // Opacity
+      const pixelIndex = (ly * this.screen.width + pixel) * 4;
+      imageData[pixelIndex] = red;
+      imageData[pixelIndex + 1] = green;
+      imageData[pixelIndex + 2] = blue;
+      imageData[pixelIndex + 3] = 255;
     }
 
-    this.context.putImageData(imageData, 0, 0);
+    // Incrementar contador interno de línea de ventana SOLO si se usó
+    if (usedWindowInThisLine) {
+      this.windowLine++;
+    }
+
+    // this.context.putImageData(this.frameBuffer, 0, 0);
   }
 
   renderSprites() {
     let use8x16 = false;
     if ((this.mmu.readByte(this.lcdc) >> 2) & 1) use8x16 = true;
 
-    const imageData = this.context.getImageData(
-      0,
-      0,
-      this.screen.width,
-      this.screen.height
-    );
+    const imageData = this.frameBuffer.data;
+    let spritesRendered = 0;
 
     for (let sprite = 0; sprite < 40; sprite++) {
+      if (spritesRendered == 10) break; // 10 sprites per line
+
       // sprite occupies 4 bytes in the sprite attributes table
       let index = (sprite * 4) & 0xff;
       let yPos = (this.mmu.readByte(0xfe00 + index) - 16) & 0xff;
@@ -320,95 +273,101 @@ export class GPU {
       let yFlip = (attributes >> 6) & 1;
       let xFlip = (attributes >> 5) & 1;
 
-      let scanline = this.mmu.readByte(0xff44);
+      let scanline = this.mmu.readByte(this.ly);
 
       let ysize = 8;
       if (use8x16) ysize = 16;
 
       // does this sprite intercept with the scanline?
-      if (scanline >= yPos && scanline < yPos + ysize) {
-        let line = scanline - yPos;
-        // console.log(`Line: ${line}`);
+      if (scanline < yPos || scanline >= yPos + ysize) continue;
 
-        // read the sprite in backwards in the y axis
-        if (yFlip) {
-          line = ysize - 1 - line;
+      let line = scanline - yPos;
+      // console.log(`Line: ${line}`);
+
+      // read the sprite in backwards in the y axis
+      if (yFlip) {
+        line = ysize - 1 - line;
+      }
+
+      line *= 2; // same as for tiles
+      let dataAddress = (0x8000 + tileLocation * 16 + line) & 0xffff;
+      let data1 = this.mmu.readByte(dataAddress);
+      let data2 = this.mmu.readByte((dataAddress + 1) & 0xffff);
+
+      // its easier to read in from right to left as pixel 0 is
+      // bit 7 in the colour data, pixel 1 is bit 6 etc...
+      for (let tilePixel = 7; tilePixel >= 0; tilePixel--) {
+        let colourbit = tilePixel;
+        // read the sprite in backwards for the x axis
+        if (xFlip) {
+          colourbit -= 7;
+          colourbit *= -1;
         }
 
-        line *= 2; // same as for tiles
-        let dataAddress = (0x8000 + tileLocation * 16 + line) & 0xffff;
-        let data1 = this.mmu.readByte(dataAddress);
-        let data2 = this.mmu.readByte((dataAddress + 1) & 0xffff);
+        // the rest is the same as for tiles
+        let colourNum = (data2 >> colourbit) & 1;
+        colourNum <<= 1;
+        colourNum |= (data1 >> colourbit) & 1;
 
-        // its easier to read in from right to left as pixel 0 is
-        // bit 7 in the colour data, pixel 1 is bit 6 etc...
-        for (let tilePixel = 7; tilePixel >= 0; tilePixel--) {
-          let colourbit = tilePixel;
-          // read the sprite in backwards for the x axis
-          if (xFlip) {
-            colourbit -= 7;
-            colourbit *= -1;
-          }
+        // white is transparent for sprites.
+        if (colourNum == WHITE) continue;
 
-          // the rest is the same as for tiles
-          let colourNum = (data2 >> colourbit) & 1;
-          colourNum <<= 1;
-          colourNum |= (data1 >> colourbit) & 1;
+        let colourAddress = (attributes >> 4) & 1 ? this.obp1 : this.obp0;
+        let col = this.getColour(colourNum, colourAddress);
 
-          let colourAddress = (attributes >> 4) & 1 ? this.obp1 : this.obp0;
-          let col = this.getColour(colourNum, colourAddress);
+        let red = 0;
+        let green = 0;
+        let blue = 0;
 
-          // white is transparent for sprites.
-          if (col == WHITE) continue;
+        switch (col) {
+          case WHITE:
+            red = 255;
+            green = 255;
+            blue = 255;
+            break;
+          case LIGHT_GRAY:
+            red = 0xcc;
+            green = 0xcc;
+            blue = 0xcc;
+            break;
+          case DARK_GRAY:
+            red = 0x77;
+            green = 0x77;
+            blue = 0x77;
+            break;
+        }
 
-          let red = 0;
-          let green = 0;
-          let blue = 0;
+        let xPix = 0 - tilePixel;
+        xPix += 7;
 
-          switch (col) {
-            case WHITE:
-              red = 255;
-              green = 255;
-              blue = 255;
-              break;
-            case LIGHT_GRAY:
-              red = 0xcc;
-              green = 0xcc;
-              blue = 0xcc;
-              break;
-            case DARK_GRAY:
-              red = 0x77;
-              green = 0x77;
-              blue = 0x77;
-              break;
-          }
+        let pixel = xPos + xPix;
 
-          let xPix = 0 - tilePixel;
-          xPix += 7;
+        // sanity check
+        if (scanline < 0 || scanline > 143 || pixel < 0 || pixel > 159) {
+          continue;
+        }
 
-          let pixel = xPos + xPix;
+        const pixelIndex = (scanline * this.screen.width + pixel) * 4;
+        const isBgWhite = imageData[pixelIndex] != 255;
+        const spritePriority = !testBit(attributes, 7);
 
-          // sanity check
-          if (scanline < 0 || scanline > 143 || pixel < 0 || pixel > 159) {
-            continue;
-          }
-
-          const pixelIndex = (scanline * this.screen.width + pixel) * 4;
-
-          imageData.data[pixelIndex] = red; // R
-          imageData.data[pixelIndex + 1] = green; // G
-          imageData.data[pixelIndex + 2] = blue;
-          imageData.data[pixelIndex + 3] = 255; // Opacity
+        // Render sprite over BG if sprite priority enabled & BG not white
+        if (spritePriority || (spritePriority && isBgWhite)) {
+          imageData[pixelIndex] = red; // R
+          imageData[pixelIndex + 1] = green; // G
+          imageData[pixelIndex + 2] = blue;
+          imageData[pixelIndex + 3] = 255; // Opacity
         }
       }
+      spritesRendered++;
     }
 
-    this.context.putImageData(imageData, 0, 0);
+    // this.context.putImageData(this.frameBuffer, 0, 0);
   }
 
-  getColour(colourNum, paletteAddress) {
+  getColour(colourNum, paletteAddr) {
     let resultColour = WHITE;
-    let palette = this.mmu.readByte(paletteAddress);
+    let palette = this.mmu.readByte(paletteAddr);
     let hi = 0;
     let lo = 0;
 
@@ -458,7 +417,7 @@ export class GPU {
   }
 
   isLCDEnabled() {
-    return (this.mmu.readByte(this.lcdc) >> 7) & 1;
+    return testBit(this.mmu.readByte(this.lcdc), 7);
   }
 
   writeByte(addr, val) {

@@ -31,7 +31,7 @@ export class APU {
       // 0xff21: this.ch4,
     };
 
-    this.masterVolume = 0.1;
+    this.masterVolume = 0.05;
   }
 
   getLeftVolume() {

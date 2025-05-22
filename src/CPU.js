@@ -1,7 +1,7 @@
 import { OpcodeTable } from "./OpcodeTable.js";
 import { MMU } from "./MMU.js";
 import { Timer } from "./Timer.js";
-import { GPU } from "./GPU.js";
+import { PPU } from "./GPU.js";
 import { Joypad } from "./Joypad.js";
 import { APU } from "./APU/APU.js";
 import { getSignedByte, resetBit, setBit } from "./GameBoyUtils.js";
@@ -36,7 +36,7 @@ export class CPU {
 
     this.mmu = new MMU(this); // Memory Management
     this.timer = new Timer(this); // System timer
-    this.gpu = new GPU(this); // Graphics Processing Unit
+    this.gpu = new PPU(this); // Graphics Processing Unit
     this.joypad = new Joypad(this); // Input
     this.apu = new APU(this); // Audio
 
