@@ -1,3 +1,4 @@
+import { getSignedWord, getSignedByte } from "./GameBoyUtils.js";
 const WHITE = 0;
 const LIGHT_GRAY = 1;
 const DARK_GRAY = 2;
@@ -209,7 +210,7 @@ export class GPU {
       // or unsigned
       let tileAddrss = (backgroundMemory + tileRow + tileCol) & 0xffff;
       if (unsigned) tileNum = this.mmu.readByte(tileAddrss);
-      else tileNum = this.cpu.getSignedValue(this.mmu.readByte(tileAddrss));
+      else tileNum = getSignedByte(this.mmu.readByte(tileAddrss));
 
       // deduce where this tile identifier is in memory. Remember i
       // shown this algorithm earlier
@@ -217,10 +218,10 @@ export class GPU {
 
       if (unsigned)
         tileLocation =
-          (tileLocation + this.cpu.getSignedWord(tileNum * 16)) & 0xffff;
+          (tileLocation + getSignedWord(tileNum * 16)) & 0xffff;
       else
         tileLocation =
-          (tileLocation + this.cpu.getSignedWord((tileNum + 128) * 16)) &
+          (tileLocation + getSignedWord((tileNum + 128) * 16)) &
           0xffff;
 
       // find the correct vertical line we're on of the
