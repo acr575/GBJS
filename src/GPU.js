@@ -152,7 +152,6 @@ export class PPU {
     const lcdc = this.mmu.readByte(this.lcdc);
     const ly = this.mmu.readByte(this.ly);
 
-    // Selección del área de datos de tiles
     if (testBit(lcdc, 4)) {
       tileData = 0x8000;
       unsigned = true;
@@ -164,17 +163,16 @@ export class PPU {
     const windowEnabled = testBit(lcdc, 5);
     const imageData = this.frameBuffer.data;
 
-    let usedWindowInThisLine = false; // Nueva bandera
+    let usedWindowInThisLine = false;
 
     for (let pixel = 0; pixel < 160; pixel++) {
       let useWindow = false;
 
       if (windowEnabled && ly >= windowY && pixel >= windowX) {
         useWindow = true;
-        usedWindowInThisLine = true; // Se usó la ventana en esta línea
+        usedWindowInThisLine = true;
       }
 
-      // Selección del mapa de fondo o ventana
       const bgMemory = useWindow
         ? testBit(lcdc, 6)
           ? 0x9c00
@@ -233,7 +231,6 @@ export class PPU {
           break;
       }
 
-      // Seguridad
       if (ly < 0 || ly > 143 || pixel < 0 || pixel > 159) continue;
 
       const pixelIndex = (ly * this.screen.width + pixel) * 4;
@@ -243,12 +240,9 @@ export class PPU {
       imageData[pixelIndex + 3] = 255;
     }
 
-    // Incrementar contador interno de línea de ventana SOLO si se usó
     if (usedWindowInThisLine) {
       this.windowLine++;
     }
-
-    // this.context.putImageData(this.frameBuffer, 0, 0);
   }
 
   renderSprites() {
@@ -261,55 +255,43 @@ export class PPU {
     for (let sprite = 0; sprite < 40; sprite++) {
       if (spritesRendered == 10) break; // 10 sprites per line
 
-      // sprite occupies 4 bytes in the sprite attributes table
       let index = (sprite * 4) & 0xff;
       let yPos = (this.mmu.readByte(0xfe00 + index) - 16) & 0xff;
       let xPos = (this.mmu.readByte(0xfe00 + ((index + 1) & 0xff)) - 8) & 0xff;
       let tileLocation = this.mmu.readByte(0xfe00 + ((index + 2) & 0xff));
       let attributes = this.mmu.readByte(0xfe00 + ((index + 3) & 0xff));
 
-      // console.log(`Sprite ${sprite}: X=${xPos}, Y=${yPos}, Tile=${tileLocation.toString(16)}, Attributes=${attributes.toString(2)}`);
-
       let yFlip = (attributes >> 6) & 1;
       let xFlip = (attributes >> 5) & 1;
 
-      let scanline = this.mmu.readByte(this.ly);
+      let ly = this.mmu.readByte(this.ly);
 
       let ysize = 8;
       if (use8x16) ysize = 16;
 
-      // does this sprite intercept with the scanline?
-      if (scanline < yPos || scanline >= yPos + ysize) continue;
+      if (ly < yPos || ly >= yPos + ysize) continue;
 
-      let line = scanline - yPos;
-      // console.log(`Line: ${line}`);
+      let line = ly - yPos;
 
-      // read the sprite in backwards in the y axis
-      if (yFlip) {
-        line = ysize - 1 - line;
-      }
+      if (yFlip) line = ysize - 1 - line;
 
-      line *= 2; // same as for tiles
+      line *= 2;
       let dataAddress = (0x8000 + tileLocation * 16 + line) & 0xffff;
       let data1 = this.mmu.readByte(dataAddress);
       let data2 = this.mmu.readByte((dataAddress + 1) & 0xffff);
 
-      // its easier to read in from right to left as pixel 0 is
-      // bit 7 in the colour data, pixel 1 is bit 6 etc...
       for (let tilePixel = 7; tilePixel >= 0; tilePixel--) {
         let colourbit = tilePixel;
-        // read the sprite in backwards for the x axis
+
         if (xFlip) {
           colourbit -= 7;
           colourbit *= -1;
         }
 
-        // the rest is the same as for tiles
         let colourNum = (data2 >> colourbit) & 1;
         colourNum <<= 1;
         colourNum |= (data1 >> colourbit) & 1;
 
-        // white is transparent for sprites.
         if (colourNum == WHITE) continue;
 
         let colourAddress = (attributes >> 4) & 1 ? this.obp1 : this.obp0;
@@ -342,17 +324,16 @@ export class PPU {
 
         let pixel = xPos + xPix;
 
-        // sanity check
-        if (scanline < 0 || scanline > 143 || pixel < 0 || pixel > 159) {
+        if (ly < 0 || ly > 143 || pixel < 0 || pixel > 159) {
           continue;
         }
 
-        const pixelIndex = (scanline * this.screen.width + pixel) * 4;
-        const isBgWhite = imageData[pixelIndex] != 255;
+        const pixelIndex = (ly * this.screen.width + pixel) * 4;
+        const isBgWhite = imageData[pixelIndex] == 255;
         const spritePriority = !testBit(attributes, 7);
 
         // Render sprite over BG if sprite priority enabled & BG not white
-        if (spritePriority || (spritePriority && isBgWhite)) {
+        if (spritePriority || isBgWhite) {
           imageData[pixelIndex] = red; // R
           imageData[pixelIndex + 1] = green; // G
           imageData[pixelIndex + 2] = blue;
@@ -361,8 +342,6 @@ export class PPU {
       }
       spritesRendered++;
     }
-
-    // this.context.putImageData(this.frameBuffer, 0, 0);
   }
 
   getColour(colourNum, paletteAddr) {
@@ -371,7 +350,6 @@ export class PPU {
     let hi = 0;
     let lo = 0;
 
-    // which bits of the colour palette does the colour id map to?
     switch (colourNum) {
       case 0:
         hi = 1;
