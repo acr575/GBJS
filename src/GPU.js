@@ -147,10 +147,12 @@ export class PPU {
     const scrollY = this.mmu.readByte(this.scy);
     const scrollX = this.mmu.readByte(this.scx);
     const windowY = this.mmu.readByte(this.wy);
-    const windowX = (this.mmu.readByte(this.wx) - 7) & 0xff;
+    const windowX = this.mmu.readByte(this.wx) - 7;
 
     const lcdc = this.mmu.readByte(this.lcdc);
     const ly = this.mmu.readByte(this.ly);
+
+    if (ly == 0) this.windowLine = 0;
 
     if (testBit(lcdc, 4)) {
       tileData = 0x8000;
@@ -240,9 +242,7 @@ export class PPU {
       imageData[pixelIndex + 3] = 255;
     }
 
-    if (usedWindowInThisLine) {
-      this.windowLine++;
-    }
+    if (usedWindowInThisLine) this.windowLine++;
   }
 
   renderSprites() {
