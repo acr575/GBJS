@@ -20,18 +20,23 @@ const debugL = document.getElementById("l");
 const stop = document.getElementById("stop");
 
 export class CPU {
+  #registersValues = null;
+  #ie = 0xffff; // Interrupt enable flag
+  #if = 0xff0f; // Interrupt request flag
+  #isStopped = false;
+  #cycleCounter = 0;
+  #opcodeTable = null;
+  #instructionTable = null;
+
   constructor() {
-    this.registersValues = new Uint8Array(8); // a-l 8 bit registers
+    this.#registersValues = new Uint8Array(8); // a-l 8 bit registers
     this.pc = 0x100; // Program Counter. Initialized at 0x100
     this.sp = 0xfffe; // Stack Pointer.  Initialized at 0xfffe
-
-    this.ie = 0xffff; // Interrupt enable flag
-    this.if = 0xff0f; // Interrupt request flag
     this.ime = false; // Interrup master enable flag. Starts unset
     this.requestIme = 0; // Flag that sets IME flag after next instruccion. Used by EI instruction
-    this.isHalted = 0;
-    this.isStopped = 0;
-    this.cycleCounter = 0;
+    this.isHalted = false;
+    this.#isStopped = false;
+    this.#cycleCounter = 0;
     this.CLOCKSPEED = 4194304; // Hz
 
     this.mmu = new MMU(this); // Memory Management
@@ -40,9 +45,9 @@ export class CPU {
     this.joypad = new Joypad(this); // Input
     this.apu = new APU(this); // Audio
 
-    this.opcodeTable = new OpcodeTable(this); // Init opcode table
-    this.instructionTable = this.opcodeTable.instructionTable; // Links each opcode with it instruction, length and cycles
-    this.prefixInstructionTable = this.opcodeTable.prefixInstructionTable; // Links each CB prefixed opcode with it instruction, length and cycles
+    this.#opcodeTable = new OpcodeTable(this); // Init opcode table
+    this.#instructionTable = this.#opcodeTable.instructionTable; // Links each opcode with it instruction, length and cycles
+    this.prefixInstructionTable = this.#opcodeTable.prefixInstructionTable; // Links each CB prefixed opcode with it instruction, length and cycles
   }
 
   init() {
@@ -114,7 +119,7 @@ export class CPU {
     // Simple register
     if (register.length == 1 && register in CPU.Registers) {
       const index = Object.keys(CPU.Registers).indexOf(register);
-      return this.registersValues[index];
+      return this.#registersValues[index];
     }
     // Combined register
     else if (register.length == 2) {
@@ -126,8 +131,8 @@ export class CPU {
         const rightIndex = Object.keys(CPU.Registers).indexOf(right);
 
         return (
-          (this.registersValues[leftIndex] << 8) |
-          this.registersValues[rightIndex]
+          (this.#registersValues[leftIndex] << 8) |
+          this.#registersValues[rightIndex]
         );
       } else console.error("Unknown combined register: " + register);
     } else console.error("Unknown register: " + register);
@@ -154,7 +159,7 @@ export class CPU {
     // Simple register
     if (register.length == 1 && register in CPU.Registers) {
       const index = Object.keys(CPU.Registers).indexOf(register);
-      this.registersValues[index] =
+      this.#registersValues[index] =
         register !== "F" ? value & 0xff : value & 0xf0;
     }
     // Combined register
@@ -166,8 +171,8 @@ export class CPU {
         const leftIndex = Object.keys(CPU.Registers).indexOf(left);
         const rightIndex = Object.keys(CPU.Registers).indexOf(right);
 
-        this.registersValues[leftIndex] = (value & 0xff00) >> 8;
-        this.registersValues[rightIndex] =
+        this.#registersValues[leftIndex] = (value & 0xff00) >> 8;
+        this.#registersValues[rightIndex] =
           right !== "F" ? value & 0xff : value & 0xf0;
       } else throw new Error("Unknown combined register: " + register);
     } else throw new Error("Unknown register: " + register);
@@ -241,11 +246,17 @@ export class CPU {
     return this.mmu.readWord(this.pc + 1);
   }
 
-  execInstruction() {
+  #execInstruction() {
     const opcode = this.mmu.readByte(this.pc); // Fetch opcode
-    const fetch = this.instructionTable[opcode]; // Decode opcode
+    const fetch = this.#instructionTable[opcode]; // Decode opcode
 
-    if (!fetch) throw new Error("Unknown opcode: 0x" + opcode.toString(16));
+    if (!fetch)
+      throw new Error(
+        "Unknown opcode: 0x" +
+          opcode.toString(16) +
+          " at 0x" +
+          this.pc.toString(16)
+      );
 
     const oldPC = this.pc;
     fetch.instruction(); // Execute opcode
@@ -269,17 +280,17 @@ export class CPU {
 
       //   for (let i = 0; i < instructionCount; i++) {
       let cycles = 4;
-      if (!this.isHalted) cycles = this.execInstruction();
-      this.cycleCounter += cycles;
+      if (!this.isHalted) cycles = this.#execInstruction();
+      this.#cycleCounter += cycles;
 
       this.timer.updateTimers(cycles);
       vBlank = this.gpu.updateGraphics(cycles);
       this.apu.updateAudio(cycles);
 
       // console.log("Scanline: " + this.mmu.readByte(this.gpu.ly));
-      this.checkInterrupts();
+      this.#checkInterrupts();
       // Enable IME requested by EI. EI sets requestIme to 2.
-      this.handleRequestIme();
+      this.#handleRequestIme();
 
       //     if (vBlank) {
       //       // Reset the cycle counter to 0 after reaching max cycles
@@ -293,16 +304,16 @@ export class CPU {
   }
 
   requestInterrupt(interruptId) {
-    let ifValue = this.mmu.readByte(this.if);
+    let ifValue = this.mmu.readByte(this.#if);
     ifValue = setBit(ifValue, interruptId);
-    this.mmu.writeByte(this.if, ifValue);
-    this.isHalted = 0;
+    this.mmu.writeByte(this.#if, ifValue);
+    this.isHalted = false;
   }
 
-  checkInterrupts() {
+  #checkInterrupts() {
     if (this.ime) {
-      let ifValue = this.mmu.readByte(this.if);
-      let ieValue = this.mmu.readByte(this.ie);
+      let ifValue = this.mmu.readByte(this.#if);
+      let ieValue = this.mmu.readByte(this.#ie);
 
       if (ifValue > 0) {
         for (let i = 0; i < 5; i++) {
@@ -310,7 +321,7 @@ export class CPU {
           let currentBitIe = (ieValue >> i) & 1;
 
           if (currentBitIf && currentBitIe) {
-            this.serviceInterrupt(i);
+            this.#serviceInterrupt(i);
             break;
           }
         }
@@ -318,15 +329,15 @@ export class CPU {
     }
   }
 
-  serviceInterrupt(interruptId) {
+  #serviceInterrupt(interruptId) {
     this.ime = false;
-    let ifValue = this.mmu.readByte(this.if);
+    let ifValue = this.mmu.readByte(this.#if);
     ifValue = resetBit(ifValue, interruptId); // Reset serviced interrupt bit
-    this.mmu.ioRegs[this.if & 0x7f] = ifValue;
-    this.isHalted = 0;
-    this.cycleCounter += 20;
+    this.mmu.ioRegs[this.#if & 0x7f] = ifValue;
+    this.isHalted = false;
+    this.#cycleCounter += 20;
 
-    this.opcodeTable.instruction.push(this.pc);
+    this.#opcodeTable.instruction.push(this.pc);
 
     switch (interruptId) {
       case 0:
@@ -351,7 +362,7 @@ export class CPU {
     }
   }
 
-  handleRequestIme() {
+  #handleRequestIme() {
     if (this.requestIme > 0) {
       if (this.requestIme == 1) this.ime = true;
       this.requestIme--;
@@ -402,8 +413,8 @@ export class CPU {
 
   setupStopButton() {
     stop.addEventListener("click", () => {
-      if (this.isStopped) this.isStopped = 0;
-      else this.isStopped = 1;
+      if (this.#isStopped) this.#isStopped = false;
+      else this.#isStopped = true;
     });
   }
 }

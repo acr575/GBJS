@@ -36,7 +36,7 @@ export class Instruction {
       // If source is an immediate, then load 8-bit value directly.
       this.cpu.mmu.writeByte(
         address,
-        this.isImmediate(srcReg) ? srcReg : this.cpu.getRegister(srcReg)
+        this.#isImmediate(srcReg) ? srcReg : this.cpu.getRegister(srcReg)
       );
     }
 
@@ -233,10 +233,10 @@ export class Instruction {
     this.cpu.setRegister("HL", result);
 
     // Calculate the Half Carry flag (H): Carry from bit 3 to bit 4
-    const halfCarry = this.isHalfCarry8bit(this.cpu.sp, unsignedValue, "add");
+    const halfCarry = this.#isHalfCarry8bit(this.cpu.sp, unsignedValue, "add");
 
     // Calculate the Carry flag (C): Carry from bit 7 to bit 8
-    const carry = this.isCarry8bit(this.cpu.sp, unsignedValue, "add");
+    const carry = this.#isCarry8bit(this.cpu.sp, unsignedValue, "add");
 
     // Update flags
     this.cpu.setFlags("00HC", { H: halfCarry, C: carry });
@@ -260,7 +260,7 @@ export class Instruction {
     let word = value;
 
     // Target is a combined register
-    if (!this.isImmediate(value)) {
+    if (!this.#isImmediate(value)) {
       word = this.cpu.getRegister(value);
     }
 
@@ -306,7 +306,7 @@ export class Instruction {
     // Determine the value to add
     if (value === "HL") {
       add = this.cpu.mmu.readByte(this.cpu.getRegister("HL")); // Memory address stored in HL
-    } else if (this.isImmediate(value)) add = value; // Immediate 8-bit value
+    } else if (this.#isImmediate(value)) add = value; // Immediate 8-bit value
     else add = this.cpu.getRegister(value); // Simple register value
 
     // Compute result & truncate to 8-bit
@@ -315,8 +315,8 @@ export class Instruction {
     // Calculate flags
     const flags = {
       Z: result === 0, // Zero flag: result
-      H: this.isHalfCarry8bit(registerA, add, "add"), // Half-carry
-      C: this.isCarry8bit(registerA, add, "add"), // Carry
+      H: this.#isHalfCarry8bit(registerA, add, "add"), // Half-carry
+      C: this.#isCarry8bit(registerA, add, "add"), // Carry
     };
 
     // Update the A register with the result
@@ -338,7 +338,7 @@ export class Instruction {
     // Determine the value to add
     if (value === "HL") {
       add = this.cpu.mmu.readByte(this.cpu.getRegister("HL")); // Memory address stored in HL
-    } else if (this.isImmediate(value)) add = value; // Immediate 8-bit value
+    } else if (this.#isImmediate(value)) add = value; // Immediate 8-bit value
     else add = this.cpu.getRegister(value); // Simple register value
 
     const result = registerA + add + carryBit;
@@ -347,11 +347,11 @@ export class Instruction {
     const flags = {
       Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
       H:
-        this.isHalfCarry8bit(registerA, add, "add") ||
-        this.isHalfCarry8bit(registerA + add, carryBit, "add"), // Half-carry with carry bit included
+        this.#isHalfCarry8bit(registerA, add, "add") ||
+        this.#isHalfCarry8bit(registerA + add, carryBit, "add"), // Half-carry with carry bit included
       C:
-        this.isCarry8bit(registerA, add, "add") ||
-        this.isCarry8bit(registerA + add, carryBit, "add"), // Carry with carry bit included
+        this.#isCarry8bit(registerA, add, "add") ||
+        this.#isCarry8bit(registerA + add, carryBit, "add"), // Carry with carry bit included
     };
 
     // Update the A register with the result (truncated to 8 bits)
@@ -372,15 +372,15 @@ export class Instruction {
     // Determine the value to sub
     if (value === "HL") {
       sub = this.cpu.mmu.readByte(this.cpu.getRegister("HL")); // Memory address stored in HL
-    } else if (this.isImmediate(value)) sub = value; // Immediate 8-bit value
+    } else if (this.#isImmediate(value)) sub = value; // Immediate 8-bit value
     else sub = this.cpu.getRegister(value); // Simple register value
 
     const result = registerA - sub;
 
     const flags = {
       Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
-      H: this.isHalfCarry8bit(registerA, sub, "sub"), // Half-carry with carry bit included
-      C: this.isCarry8bit(registerA, sub, "sub"), // Carry with carry bit included
+      H: this.#isHalfCarry8bit(registerA, sub, "sub"), // Half-carry with carry bit included
+      C: this.#isCarry8bit(registerA, sub, "sub"), // Carry with carry bit included
     };
 
     // Update the A register with the result (truncated to 8 bits)
@@ -402,7 +402,7 @@ export class Instruction {
     // Determine the value to sub
     if (value === "HL") {
       sub = this.cpu.mmu.readByte(this.cpu.getRegister("HL")); // Memory address stored in HL
-    } else if (this.isImmediate(value)) sub = value; // Immediate 8-bit value
+    } else if (this.#isImmediate(value)) sub = value; // Immediate 8-bit value
     else sub = this.cpu.getRegister(value); // Simple register value
 
     const result = registerA - (sub + carryBit);
@@ -410,11 +410,11 @@ export class Instruction {
     const flags = {
       Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
       H:
-        this.isHalfCarry8bit(registerA, sub, "sub") ||
-        this.isHalfCarry8bit(registerA - sub, carryBit, "sub"), // Half-carry with carry bit included
+        this.#isHalfCarry8bit(registerA, sub, "sub") ||
+        this.#isHalfCarry8bit(registerA - sub, carryBit, "sub"), // Half-carry with carry bit included
       C:
-        this.isCarry8bit(registerA, sub, "sub") ||
-        this.isCarry8bit(registerA - sub, carryBit, "sub"), // Carry with carry bit included
+        this.#isCarry8bit(registerA, sub, "sub") ||
+        this.#isCarry8bit(registerA - sub, carryBit, "sub"), // Carry with carry bit included
     };
 
     // Update the A register with the result (truncated to 8 bits)
@@ -435,7 +435,7 @@ export class Instruction {
     // Determine the value to and
     if (value === "HL") {
       and = this.cpu.mmu.readByte(this.cpu.getRegister("HL")); // Memory address stored in HL
-    } else if (this.isImmediate(value)) and = value; // Immediate 8-bit value
+    } else if (this.#isImmediate(value)) and = value; // Immediate 8-bit value
     else and = this.cpu.getRegister(value); // Simple register value
 
     const result = registerA & and;
@@ -462,7 +462,7 @@ export class Instruction {
     // Determine the value to or
     if (value === "HL") {
       or = this.cpu.mmu.readByte(this.cpu.getRegister("HL")); // Memory address stored in HL
-    } else if (this.isImmediate(value)) or = value; // Immediate 8-bit value
+    } else if (this.#isImmediate(value)) or = value; // Immediate 8-bit value
     else or = this.cpu.getRegister(value); // Simple register value
 
     const result = registerA | or;
@@ -489,7 +489,7 @@ export class Instruction {
     // Determine the value to xor
     if (value === "HL") {
       xor = this.cpu.mmu.readByte(this.cpu.getRegister("HL")); // Memory address stored in HL
-    } else if (this.isImmediate(value)) xor = value; // Immediate 8-bit value
+    } else if (this.#isImmediate(value)) xor = value; // Immediate 8-bit value
     else xor = this.cpu.getRegister(value); // Simple register value
 
     const result = registerA ^ xor;
@@ -516,15 +516,15 @@ export class Instruction {
     // Determine the value to compare
     if (value === "HL") {
       cp = this.cpu.mmu.readByte(this.cpu.getRegister("HL")); // Memory address stored in HL
-    } else if (this.isImmediate(value)) cp = value; // Immediate 8-bit value
+    } else if (this.#isImmediate(value)) cp = value; // Immediate 8-bit value
     else cp = this.cpu.getRegister(value); // Simple register value
 
     const result = registerA - cp;
 
     const flags = {
       Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
-      H: this.isHalfCarry8bit(registerA, cp, "sub"), // Half-carry
-      C: this.isCarry8bit(registerA, cp, "sub"), // Carry
+      H: this.#isHalfCarry8bit(registerA, cp, "sub"), // Half-carry
+      C: this.#isCarry8bit(registerA, cp, "sub"), // Carry
     };
 
     // Set flags Z1HC
@@ -552,7 +552,7 @@ export class Instruction {
 
     const flags = {
       Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
-      H: this.isHalfCarry8bit(result - 1, 1, "add"), // Half-carry
+      H: this.#isHalfCarry8bit(result - 1, 1, "add"), // Half-carry
     };
 
     // Set flags Z0H-
@@ -580,7 +580,7 @@ export class Instruction {
 
     const flags = {
       Z: (result & 0xff) === 0, // Zero flag: result truncated to 8-bit
-      H: this.isHalfCarry8bit(result + 1, 1, "sub"), // Half-carry
+      H: this.#isHalfCarry8bit(result + 1, 1, "sub"), // Half-carry
     };
 
     // Set flags Z1H-
@@ -603,8 +603,8 @@ export class Instruction {
 
     // Calculate flags
     const flags = {
-      H: this.isHalfCarry16bit(registerHL, add, "add"), // Half-carry
-      C: this.isCarry16bit(registerHL, add, "add"), // Carry
+      H: this.#isHalfCarry16bit(registerHL, add, "add"), // Half-carry
+      C: this.#isCarry16bit(registerHL, add, "add"), // Carry
     };
 
     // Update the A register with the result (truncated to 16 bits)
@@ -625,8 +625,8 @@ export class Instruction {
 
     // Calculate flags
     const flags = {
-      H: this.isHalfCarry8bit(sp, unsignedValue, "add"), // Half-carry
-      C: this.isCarry8bit(sp, unsignedValue, "add"), // Carry
+      H: this.#isHalfCarry8bit(sp, unsignedValue, "add"), // Half-carry
+      C: this.#isCarry8bit(sp, unsignedValue, "add"), // Carry
     };
 
     // Update the SP with the result (truncated to 16 bits)
@@ -732,7 +732,7 @@ export class Instruction {
   }
 
   HALT() {
-    this.cpu.isHalted = 1;
+    this.cpu.isHalted = true;
   }
 
   // TODO: STOP instrruction
@@ -764,12 +764,12 @@ export class Instruction {
    * @param {number} value - The 8-bit value to rotate.
    * @returns {number} - The result of the left rotation.
    */
-  leftRotate(value) {
+  #leftRotate(value) {
     const msb = value >> 7; // Most significant bit (bit 7)
     const result = ((value << 1) | msb) & 0xff; // Left rotate
 
     // Set Z & C flags. Old msb bit is stored in C flag
-    this.setRotationFlags(result, msb);
+    this.#setRotationFlags(result, msb);
 
     return result;
   }
@@ -782,13 +782,13 @@ export class Instruction {
    * @param {number} value - The 8-bit value to rotate.
    * @returns {number} - The result of the left rotation with carry.
    */
-  leftRotateCarry(value) {
+  #leftRotateCarry(value) {
     const msb = value >> 7; // Most significant bit (bit 7)
     const flagC = (this.cpu.getRegister("F") & 0b00010000) >> 4;
     const result = ((value << 1) | flagC) & 0xff; // Left rotate
 
     // Set Z & C flags. Old msb bit is stored in C flag
-    this.setRotationFlags(result, msb);
+    this.#setRotationFlags(result, msb);
 
     return result;
   }
@@ -801,12 +801,12 @@ export class Instruction {
    * @param {number} value - The 8-bit value to rotate.
    * @returns {number} - The result of the right rotation.
    */
-  rightRotate(value) {
+  #rightRotate(value) {
     const lsb = value & 0x01; // Least significant bit (bit 0)
     const result = ((value >> 1) | (lsb << 7)) & 0xff; // Right rotate
 
     // Set Z & C flags. Old lsb bit is stored in C flag
-    this.setRotationFlags(result, lsb);
+    this.#setRotationFlags(result, lsb);
 
     return result;
   }
@@ -819,13 +819,13 @@ export class Instruction {
    * @param {number} value - The 8-bit value to rotate.
    * @returns {number} - The result of the right rotation with carry.
    */
-  rightRotateCarry(value) {
+  #rightRotateCarry(value) {
     const lsb = value & 0x01; // Least significant bit (bit 0)
     const flagC = (this.cpu.getRegister("F") & 0b00010000) >> 4;
     const result = ((value >> 1) | (flagC << 7)) & 0xff; // Right rotate
 
     // Set Z & C flags. Old lsb bit is stored in C flag
-    this.setRotationFlags(result, lsb);
+    this.#setRotationFlags(result, lsb);
 
     return result;
   }
@@ -836,7 +836,7 @@ export class Instruction {
    * @param {number} result - The result of the rotation or shift.
    * @param {number} carryBit - The bit shifted out during the operation.
    */
-  setRotationFlags(result, carryBit) {
+  #setRotationFlags(result, carryBit) {
     // Set Z & C flags. Old lsb bit is stored in C flag
     const flags = {
       Z: result === 0,
@@ -852,7 +852,7 @@ export class Instruction {
    */
   RLCA() {
     let A = this.cpu.getRegister("A");
-    const leftRotation = this.leftRotate(A); // Sets Z & C flag
+    const leftRotation = this.#leftRotate(A); // Sets Z & C flag
 
     this.cpu.setRegister("A", leftRotation);
     this.cpu.setFlags("0---"); // Z flag is cleared in A rotations
@@ -864,7 +864,7 @@ export class Instruction {
    */
   RLA() {
     let A = this.cpu.getRegister("A");
-    const leftRotation = this.leftRotateCarry(A); // Sets Z & C flag
+    const leftRotation = this.#leftRotateCarry(A); // Sets Z & C flag
 
     this.cpu.setRegister("A", leftRotation);
     this.cpu.setFlags("0---"); // Z flag is cleared in A rotations
@@ -876,7 +876,7 @@ export class Instruction {
    */
   RRCA() {
     let A = this.cpu.getRegister("A");
-    const rightRotation = this.rightRotate(A); // Sets Z & C flag
+    const rightRotation = this.#rightRotate(A); // Sets Z & C flag
 
     this.cpu.setRegister("A", rightRotation);
     this.cpu.setFlags("0---"); // Z flag is cleared in A rotations
@@ -888,7 +888,7 @@ export class Instruction {
    */
   RRA() {
     let A = this.cpu.getRegister("A");
-    const rightRotation = this.rightRotateCarry(A); // Sets Z & C flag
+    const rightRotation = this.#rightRotateCarry(A); // Sets Z & C flag
 
     this.cpu.setRegister("A", rightRotation);
     this.cpu.setFlags("0---"); // Z flag is cleared in A rotations
@@ -907,14 +907,14 @@ export class Instruction {
     if (register === "HL") {
       const HL = this.cpu.getRegister("HL");
       value = this.cpu.mmu.readByte(HL);
-      leftRotation = this.leftRotate(value);
+      leftRotation = this.#leftRotate(value);
       this.cpu.mmu.writeByte(HL, leftRotation);
     }
 
     // Target is a simple register
     else {
       value = this.cpu.getRegister(register);
-      leftRotation = this.leftRotate(value);
+      leftRotation = this.#leftRotate(value);
       this.cpu.setRegister(register, leftRotation);
     }
   }
@@ -932,14 +932,14 @@ export class Instruction {
     if (register === "HL") {
       const HL = this.cpu.getRegister("HL");
       value = this.cpu.mmu.readByte(HL);
-      leftRotation = this.leftRotateCarry(value);
+      leftRotation = this.#leftRotateCarry(value);
       this.cpu.mmu.writeByte(HL, leftRotation);
     }
 
     // Target is a simple register
     else {
       value = this.cpu.getRegister(register);
-      leftRotation = this.leftRotateCarry(value);
+      leftRotation = this.#leftRotateCarry(value);
       this.cpu.setRegister(register, leftRotation);
     }
   }
@@ -957,14 +957,14 @@ export class Instruction {
     if (register === "HL") {
       const HL = this.cpu.getRegister("HL");
       value = this.cpu.mmu.readByte(HL);
-      leftRotation = this.rightRotate(value);
+      leftRotation = this.#rightRotate(value);
       this.cpu.mmu.writeByte(HL, leftRotation);
     }
 
     // Target is a simple register
     else {
       value = this.cpu.getRegister(register);
-      leftRotation = this.rightRotate(value);
+      leftRotation = this.#rightRotate(value);
       this.cpu.setRegister(register, leftRotation);
     }
   }
@@ -982,14 +982,14 @@ export class Instruction {
     if (register === "HL") {
       const HL = this.cpu.getRegister("HL");
       value = this.cpu.mmu.readByte(HL);
-      leftRotation = this.rightRotateCarry(value);
+      leftRotation = this.#rightRotateCarry(value);
       this.cpu.mmu.writeByte(HL, leftRotation);
     }
 
     // Target is a simple register
     else {
       value = this.cpu.getRegister(register);
-      leftRotation = this.rightRotateCarry(value);
+      leftRotation = this.#rightRotateCarry(value);
       this.cpu.setRegister(register, leftRotation);
     }
   }
@@ -1021,7 +1021,7 @@ export class Instruction {
 
     // Set Z & C flags (same as rotation instructions)
     msb = value >> 7;
-    this.setRotationFlags(leftShift, msb);
+    this.#setRotationFlags(leftShift, msb);
   }
 
   /**
@@ -1054,7 +1054,7 @@ export class Instruction {
 
     // Set Z & C flags (same as rotation instructions)
     lsb = value & 0x01;
-    this.setRotationFlags(rightShift, lsb);
+    this.#setRotationFlags(rightShift, lsb);
   }
 
   /**
@@ -1084,7 +1084,7 @@ export class Instruction {
 
     // Set Z & C flags (same as rotation instructions)
     lsb = value & 0x01;
-    this.setRotationFlags(rightShift, lsb);
+    this.#setRotationFlags(rightShift, lsb);
   }
 
   // --------------------- BIT functions ---------------------
@@ -1177,7 +1177,7 @@ export class Instruction {
    * @throws {Error} If the provided address is not valid or not immediate.
    */
   JP_nn(address) {
-    if (!this.isImmediate(address))
+    if (!this.#isImmediate(address))
       throw new Error(address + " is not an valid address");
 
     this.cpu.pc = address & 0xffff;
@@ -1192,7 +1192,7 @@ export class Instruction {
    * @returns {number} The number of clock cycles. 16 if jumped, 12 if not.
    */
   JP_cc_nn(condition, address) {
-    if (!this.isImmediate(address))
+    if (!this.#isImmediate(address))
       throw new Error(address + " is not a valid address");
 
     const flags = this.cpu.getRegister("F"); // ZNHC 0000
@@ -1233,7 +1233,7 @@ export class Instruction {
    * @throws {Error} If the value is not valid or not immediate.
    */
   JR_n(value) {
-    if (!this.isImmediate(value))
+    if (!this.#isImmediate(value))
       throw new Error(value + " is not an valid value");
 
     this.cpu.pc = (this.cpu.pc + value) & 0xffff;
@@ -1248,7 +1248,7 @@ export class Instruction {
    * @returns {number} The number of clock cycles. 12 if jumped, 8 if not.
    */
   JR_cc_nn(condition, value) {
-    if (!this.isImmediate(value))
+    if (!this.#isImmediate(value))
       throw new Error(value + " is not an valid value");
 
     const flags = this.cpu.getRegister("F"); // ZNHC 0000
@@ -1283,7 +1283,7 @@ export class Instruction {
    * @throws {Error} If the provided address is not valid.
    */
   CALL_nn(address) {
-    if (!this.isImmediate(address))
+    if (!this.#isImmediate(address))
       throw new Error(address + " is not an valid address");
 
     // Push address of next instruction onto stack. It's after 3 bytes
@@ -1303,7 +1303,7 @@ export class Instruction {
    * @returns {number} The number of clock cycles. 24 if called, 12 if not.
    */
   CALL_cc_nn(condition, address) {
-    if (!this.isImmediate(address))
+    if (!this.#isImmediate(address))
       throw new Error(address + " is not an valid address");
 
     const flags = this.cpu.getRegister("F"); // ZNHC 0000
@@ -1342,7 +1342,7 @@ export class Instruction {
     // Valid RST addresses (hexadecimal values)
     const validAddresses = [0x00, 0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38];
 
-    if (!this.isImmediate(address) || !validAddresses.includes(address))
+    if (!this.#isImmediate(address) || !validAddresses.includes(address))
       throw new Error(address + " is not an valid address");
 
     // Push next instruction's address onto stak
@@ -1407,7 +1407,7 @@ export class Instruction {
    * @param {string} operation - The operation type
    * @returns {boolean} - True if there is a half-carry, false otherwise.
    */
-  isHalfCarry8bit(a, b, operation) {
+  #isHalfCarry8bit(a, b, operation) {
     operation = operation.toLowerCase();
     let result;
 
@@ -1437,7 +1437,7 @@ export class Instruction {
    * @param {string} operation - The operation type.
    * @returns {boolean} - True if there is a half-carry, false otherwise.
    */
-  isHalfCarry16bit(a, b, operation) {
+  #isHalfCarry16bit(a, b, operation) {
     operation = operation.toLowerCase();
     let result;
 
@@ -1467,7 +1467,7 @@ export class Instruction {
    * @param {string} operation - The operation type.
    * @returns {boolean} - True if there is a carry, false otherwise.
    */
-  isCarry8bit(a, b, operation) {
+  #isCarry8bit(a, b, operation) {
     operation = operation.toLowerCase();
     let result;
 
@@ -1497,7 +1497,7 @@ export class Instruction {
    * @param {string} operation - The operation type.
    * @returns {boolean} - True if there is a carry, false otherwise.
    */
-  isCarry16bit(a, b, operation) {
+  #isCarry16bit(a, b, operation) {
     operation = operation.toLowerCase();
     let result;
 
@@ -1519,7 +1519,7 @@ export class Instruction {
     return result;
   }
 
-  isImmediate(value) {
+  #isImmediate(value) {
     return typeof value === "number";
   }
 }
