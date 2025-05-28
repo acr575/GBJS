@@ -69,7 +69,8 @@ export class MMU {
 
         // Set memory banking mode
         if (cartridgeType >= 1 && cartridgeType <= 3) this.MBC1 = true;
-        else if (cartridgeType == 5 || cartridgeType == 6) this.MBC2 = true;
+        // else if (cartridgeType == 5 || cartridgeType == 6) this.MBC2 = true;
+        else if (cartridgeType != 0) throw new Error("Unsupported MBC");
 
         // Initialize ram banks. 8KiB each bank
         this.eram = new Uint8Array(this.RAM_BANK_SIZE * ramBanks);
