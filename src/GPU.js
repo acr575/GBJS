@@ -37,6 +37,23 @@ export class PPU {
     this.obp1 = 0xff49;
     this.wy = 0xff4a;
     this.wx = 0xff4b;
+
+    this.palettes = {
+      classic: {
+        white: { r: 155, g: 188, b: 15 },
+        lightGray: { r: 139, g: 172, b: 15 },
+        darkGray: { r: 48, g: 98, b: 48 },
+        black: { r: 15, g: 56, b: 15 },
+      },
+
+      grays: {
+        white: { r: 255, g: 255, b: 255 },
+        lightGray: { r: 0xcc, g: 0xcc, b: 0xcc },
+        darkGray: { r: 0x77, g: 0x77, b: 0x77 },
+        black: { r: 0, g: 0, b: 0 },
+      },
+    };
+    this.selectedPalette = this.palettes.grays;
   }
 
   updateGraphics(cycles) {
@@ -211,25 +228,23 @@ export class PPU {
       colourNum |= (data1 >> colourBit) & 1;
 
       const col = this.getColour(colourNum, this.bgp);
-      let red = 0,
-        green = 0,
-        blue = 0;
+      let { red, green, blue } = this.selectedPalette.black;
 
       switch (col) {
         case WHITE:
-          red = 255;
-          green = 255;
-          blue = 255;
+          red = this.selectedPalette.white.r;
+          green = this.selectedPalette.white.g;
+          blue = this.selectedPalette.white.b;
           break;
         case LIGHT_GRAY:
-          red = 0xcc;
-          green = 0xcc;
-          blue = 0xcc;
+          red = this.selectedPalette.lightGray.r;
+          green = this.selectedPalette.lightGray.g;
+          blue = this.selectedPalette.lightGray.b;
           break;
         case DARK_GRAY:
-          red = 0x77;
-          green = 0x77;
-          blue = 0x77;
+          red = this.selectedPalette.darkGray.r;
+          green = this.selectedPalette.darkGray.g;
+          blue = this.selectedPalette.darkGray.b;
           break;
       }
 
@@ -297,25 +312,23 @@ export class PPU {
         let colourAddress = (attributes >> 4) & 1 ? this.obp1 : this.obp0;
         let col = this.getColour(colourNum, colourAddress);
 
-        let red = 0;
-        let green = 0;
-        let blue = 0;
+        let { red, green, blue } = this.selectedPalette.black;
 
         switch (col) {
           case WHITE:
-            red = 255;
-            green = 255;
-            blue = 255;
+            red = this.selectedPalette.white.r;
+            green = this.selectedPalette.white.g;
+            blue = this.selectedPalette.white.b;
             break;
           case LIGHT_GRAY:
-            red = 0xcc;
-            green = 0xcc;
-            blue = 0xcc;
+            red = this.selectedPalette.lightGray.r;
+            green = this.selectedPalette.lightGray.g;
+            blue = this.selectedPalette.lightGray.b;
             break;
           case DARK_GRAY:
-            red = 0x77;
-            green = 0x77;
-            blue = 0x77;
+            red = this.selectedPalette.darkGray.r;
+            green = this.selectedPalette.darkGray.g;
+            blue = this.selectedPalette.darkGray.b;
             break;
         }
 

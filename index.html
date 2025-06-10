@@ -40,7 +40,7 @@
     }
   </style>
   <body>
-    <input type="file" id="fileInput" accept=".gb,.bin" />
+    <input type="file" id="fileInput" accept=".gb,.gbc,.bin" />
     <canvas id="screen" width="160" height="144"></canvas>
     <label for="stepInstructions">Instructions to step</label>
     <input
@@ -50,6 +50,7 @@
       min="1"
       value="1"
     />
+    <button id="beep">beep</button>
     <select name="screen-scale" id="screen-scale">
       <option value="1">x1</option>
       <option value="2">x2</option>
@@ -97,6 +98,6 @@
     <span>Value: </span>
     <span id="memValue">0x</span>
 
-    <script src="./debug/debug.js" type="module"></script>
+    <script src="./src/GameBoy.js" type="module"></script>
   </body>
 </html>

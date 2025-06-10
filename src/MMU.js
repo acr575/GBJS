@@ -1,6 +1,24 @@
 import { testBit } from "./GameBoyUtils.js";
 
 export class MMU {
+  #eram = null;
+  #wram = null;
+  #hram = null;
+  #ie = 0;
+
+  // Memory banking mode. None by default
+  #MBC1 = false;
+  #MBC2 = false;
+  #MBC5 = false;
+
+  #currentRomBank = 1; // ROM bank loaded. 1 by default bc 0 is loaded always
+  #currentRamBank = 0; // RAM bank loaded
+  #isRamBankingEnabled = false;
+  #bankingAdvancedMode = false;
+  #CARTRIDGE_MAX_SIZE = 1572864; // 1.5 MiB
+  #RAM_BANK_SIZE = 0x2000; // 8 KiB
+  #ROM_BANK_SIZE = 0x4000; // 16 KiB
+
   constructor(cpu) {
     this.cpu = cpu;
 
@@ -9,23 +27,11 @@ export class MMU {
     // Memory regions
     // this.bios = new Uint8Array(256); //BIOS.            256    B.       Area 0000-00FF
     this.cartridge = new Uint8Array(); // Game cartridge   1.5  MiB. (max) Not mapped in GB memory
-    this.eram = new Uint8Array(); //      External RAM       8  KiB./bank  Not mapped in GB memory
-    this.wram = new Uint8Array(8192); //  Work RAM.          8  KiB.       Area C000-DFFF
+    this.#eram = new Uint8Array(); //      External RAM       8  KiB./bank  Not mapped in GB memory
+    this.#wram = new Uint8Array(8192); //  Work RAM.          8  KiB.       Area C000-DFFF
     this.ioRegs = new Uint8Array(128); // I/O Registers.   128    B.       Area FF00-FF7F
-    this.hram = new Uint8Array(127); //   High RAM.        127    B.       Area FF80-FFFE
-    this.ie = 0; //                       IE Flag            1    B.       Addr FFFF
-
-    // Memory banking mode. None by default
-    this.MBC1 = false;
-    this.MBC2 = false;
-
-    this.currentRomBank = 1; // ROM bank loaded. 1 by default bc 0 is loaded always
-    this.currentRamBank = 0; // RAM bank loaded
-    this.isRamBankingEnabled = false;
-    this.bankingAdvancedMode = false;
-    this.CARTRIDGE_MAX_SIZE = 1572864; // 1.5 MiB
-    this.RAM_BANK_SIZE = 0x2000; // 8 KiB
-    this.ROM_BANK_SIZE = 0x4000; // 16 KiB
+    this.#hram = new Uint8Array(127); //   High RAM.        127    B.       Area FF80-FFFE
+    this.#ie = 0; //                       IE Flag            1    B.       Addr FFFF
   }
 
   // Function to load a program into the memory
@@ -57,23 +63,25 @@ export class MMU {
         const size = byteArray.length;
 
         // Check if cartridge fits rom. Change later when MBC's are implemented
-        if (size > this.CARTRIDGE_MAX_SIZE)
-          throw new Error("Cartridge too big for memory");
+        // if (size > this.CARTRIDGE_MAX_SIZE)
+        //   throw new Error("Cartridge too big for memory");
 
         // Load bytes into cartridge memory
         this.cartridge = new Uint8Array(size);
         this.cartridge.set(byteArray.subarray(0, this.cartridge.length));
 
         const cartridgeType = this.cartridge[0x147];
-        const ramBanks = this.getRamBanksNumber(this.cartridge[0x149]);
+        const ramBanks = this.#getRamBanksNumber(this.cartridge[0x149]);
 
         // Set memory banking mode
-        if (cartridgeType >= 1 && cartridgeType <= 3) this.MBC1 = true;
+        if (cartridgeType >= 1 && cartridgeType <= 3) this.#MBC1 = true;
         // else if (cartridgeType == 5 || cartridgeType == 6) this.MBC2 = true;
-        else if (cartridgeType != 0) throw new Error("Unsupported MBC");
+        else if (cartridgeType >= 0x19 && cartridgeType <= 0x1e)
+          this.#MBC5 = true;
+        // else if (cartridgeType != 0) throw new Error("Unsupported MBC");
 
         // Initialize ram banks. 8KiB each bank
-        this.eram = new Uint8Array(this.RAM_BANK_SIZE * ramBanks);
+        this.#eram = new Uint8Array(this.#RAM_BANK_SIZE * ramBanks);
 
         console.log("Program loaded successfully.");
         resolve(size);
@@ -81,7 +89,7 @@ export class MMU {
     });
   }
 
-  getRamBanksNumber(ramSizeCode) {
+  #getRamBanksNumber(ramSizeCode) {
     switch (ramSizeCode) {
       case 0x2:
         return 1;
@@ -104,20 +112,21 @@ export class MMU {
     // ROM Bank 00
     if (addr >= 0 && addr < 0x4000) return this.cartridge[addr];
     // Read from current loaded bank
-    else if (addr >= 0x4000 && addr < 0x8000)
-      return this.cartridge[
-        (addr & 0x3fff) + this.currentRomBank * this.ROM_BANK_SIZE
-      ];
+    else if (addr >= 0x4000 && addr < 0x8000) {
+      const romAddr =
+        (addr & 0x3fff) + this.#currentRomBank * this.#ROM_BANK_SIZE;
+      return this.cartridge[romAddr % this.cartridge.length]; // Prevent out-of-bounds
+    }
     // VRAM
     else if (addr >= 0x8000 && addr < 0xa000)
       return this.cpu.gpu.vram[addr & 0x1fff];
     // ERAM
     else if (addr >= 0xa000 && addr < 0xc000)
-      return this.eram[
-        (addr & 0x1fff) + this.currentRamBank * this.RAM_BANK_SIZE
+      return this.#eram[
+        (addr & 0x1fff) + this.#currentRamBank * this.#RAM_BANK_SIZE
       ];
     // WRAM & ECHO RAM
-    else if (addr >= 0xc000 && addr < 0xfe00) return this.wram[addr & 0x1fff];
+    else if (addr >= 0xc000 && addr < 0xfe00) return this.#wram[addr & 0x1fff];
     // OAM
     else if (addr >= 0xfe00 && addr < 0xfea0)
       return this.cpu.gpu.oam[addr & 0xff];
@@ -127,10 +136,10 @@ export class MMU {
         ? this.cpu.joypad.readJoypad()
         : this.ioRegs[addr & 0x7f];
     // HRAM
-    else if (addr >= 0xff80 && addr < 0xffff) return this.hram[addr & 0x7f];
+    else if (addr >= 0xff80 && addr < 0xffff) return this.#hram[addr & 0x7f];
 
     // IE FLAG
-    return this.ie;
+    return this.#ie;
   }
 
   readWord(addr) {
@@ -139,25 +148,25 @@ export class MMU {
 
   writeByte(addr, val) {
     // ROM
-    if (addr >= 0 && addr < 0x8000) this.handleBankChange(addr, val);
+    if (addr >= 0 && addr < 0x8000) this.#handleBankChange(addr, val);
     // VRAM
     else if (addr >= 0x8000 && addr < 0xa000)
       this.cpu.gpu.vram[addr & 0x1fff] = val;
     // ERAM
-    else if (addr >= 0xa000 && addr < 0xc000 && this.isRamBankingEnabled)
-      this.eram[(addr & 0x1fff) + this.currentRamBank * this.RAM_BANK_SIZE] =
+    else if (addr >= 0xa000 && addr < 0xc000 && this.#isRamBankingEnabled)
+      this.#eram[(addr & 0x1fff) + this.#currentRamBank * this.#RAM_BANK_SIZE] =
         val;
     // WRAM & ECHO RAM
-    else if (addr >= 0xc000 && addr < 0xfe00) this.wram[addr & 0x1fff] = val;
+    else if (addr >= 0xc000 && addr < 0xfe00) this.#wram[addr & 0x1fff] = val;
     // OAM
     else if (addr >= 0xfe00 && addr < 0xfea0)
       this.cpu.gpu.oam[addr & 0xff] = val;
     // I/O Registers
-    else if (addr >= 0xff00 && addr < 0xff80) this.handleIOWrite(addr, val);
+    else if (addr >= 0xff00 && addr < 0xff80) this.#handleIOWrite(addr, val);
     // HRAM
-    else if (addr >= 0xff80 && addr < 0xffff) this.hram[addr & 0x7f] = val;
+    else if (addr >= 0xff80 && addr < 0xffff) this.#hram[addr & 0x7f] = val;
     // IE FLAG
-    else this.ie = val & 0xff;
+    else this.#ie = val & 0xff;
   }
 
   writeWord(addr, val) {
@@ -165,7 +174,7 @@ export class MMU {
     this.writeByte(addr + 1, val >> 8); // High byte
   }
 
-  handleIOWrite(addr, val) {
+  #handleIOWrite(addr, val) {
     if (addr >= 0xff40 && addr < 0xff80)
       this.cpu.gpu.writeByte(addr & 0x7f, val);
     else if (addr >= 0xff10 && addr < 0xff27) this.cpu.apu.writeByte(addr, val);
@@ -174,55 +183,62 @@ export class MMU {
     else this.ioRegs[addr & 0x7f] = val;
   }
 
-  handleBankChange(addr, val) {
+  #handleBankChange(addr, val) {
     // Enable RAM
-    if (addr < 0x2000 && (this.MBC1 || this.MBC2))
-      this.enableRamBanking(addr, val);
-    // ROM bank change
-    else if (addr >= 0x2000 && addr < 0x4000 && (this.MBC1 || this.MBC2))
-      this.changeLoRomBank(val);
-    // ROM or RAM bank change
-    else if (addr >= 0x4000 && addr < 0x6000 && this.MBC1) {
-      if (this.bankingAdvancedMode) this.changeHiRomBank(val);
-      else this.changeRamBank(val);
-    }
-    // Change ROM banking or RAM banking mode
-    else if (addr >= 0x6000 && addr < 0x8000 && this.MBC1) this.changeMode(val);
+    if (addr < 0x2000 && (this.#MBC1 || this.#MBC2 || this.#MBC5))
+      this.#enableRamBanking(addr, val);
+    // ROM Bank number (lower 8 bits) - MBC5: 0x2000–0x2FFF
+    else if (this.#MBC5 && addr >= 0x2000 && addr < 0x3000)
+      this.#currentRomBank = (this.#currentRomBank & 0x100) | val;
+    // ROM Bank number (9th bit) - MBC5: 0x3000–0x3FFF
+    else if (this.#MBC5 && addr >= 0x3000 && addr < 0x4000)
+      this.#currentRomBank = (this.#currentRomBank & 0xff) | ((val & 1) << 8);
+    // RAM Bank number - MBC5: 0x4000–0x5FFF
+    else if (this.#MBC5 && addr >= 0x4000 && addr < 0x6000)
+      this.#currentRamBank = val & 0x0f;
+    // MBC1 behavior
+    else if (addr >= 0x2000 && addr < 0x4000 && (this.#MBC1 || this.#MBC2))
+      this.#changeLoRomBank(val);
+    else if (addr >= 0x4000 && addr < 0x6000 && this.#MBC1) {
+      if (this.#bankingAdvancedMode) this.#changeHiRomBank(val);
+      else this.#changeRamBank(val);
+    } else if (addr >= 0x6000 && addr < 0x8000 && this.#MBC1)
+      this.#changeMode(val);
   }
 
-  enableRamBanking(addr, val) {
+  #enableRamBanking(addr, val) {
     // In MBC2, bit 4 of addr must be 0
-    if (this.MBC2 && testBit(addr, 4)) return;
+    if (this.#MBC2 && testBit(addr, 4)) return;
 
     let highByte = val & 0xf;
-    if (highByte == 0xa) this.isRamBankingEnabled = true;
-    else if (highByte == 0) this.isRamBankingEnabled = false;
+    if (highByte == 0xa) this.#isRamBankingEnabled = true;
+    else if (highByte == 0) this.#isRamBankingEnabled = false;
   }
 
-  changeLoRomBank(val) {
-    if (this.MBC2) {
-      this.currentRomBank = val & 0xf || 1;
+  #changeLoRomBank(val) {
+    if (this.#MBC2) {
+      this.#currentRomBank = val & 0xf || 1;
       return;
     }
 
     let lowerBits = val & 0b11111;
-    this.currentRomBank &= 0b11100000; // Reset lower 5 bits
-    this.currentRomBank = this.currentRomBank | lowerBits || 1;
+    this.#currentRomBank &= 0b11100000; // Reset lower 5 bits
+    this.#currentRomBank = this.#currentRomBank | lowerBits || 1;
   }
 
-  changeHiRomBank(val) {
+  #changeHiRomBank(val) {
     let upperBits = val & 0b01100000;
-    this.currentRomBank &= 0b00011111; // Reset upper 3 bits
-    this.currentRomBank = this.currentRomBank | upperBits || 1;
+    this.#currentRomBank &= 0b00011111; // Reset upper 3 bits
+    this.#currentRomBank = this.#currentRomBank | upperBits || 1;
   }
 
-  changeRamBank(val) {
-    this.currentRamBank = val & 0x3;
+  #changeRamBank(val) {
+    this.#currentRamBank = val & 0x3;
   }
 
-  changeMode(val) {
-    this.bankingAdvancedMode = testBit(val, 0);
-    if (this.bankingAdvancedMode) this.currentRamBank = 0;
+  #changeMode(val) {
+    this.#bankingAdvancedMode = testBit(val, 0);
+    if (this.#bankingAdvancedMode) this.#currentRamBank = 0;
   }
 
   setupAddressInput() {
