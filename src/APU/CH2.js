@@ -107,7 +107,7 @@ export class CH2 {
       this.#envelopeTimer++;
 
       // Update volume
-      if (this.#envelopeTimer >= this.#getEnvelopePace()) {
+      if (this.#envelopeTimer >= this.#getEnvelopePace() && this.globalGain) {
         const gainStep = (1 / 15) * this.apu.masterVolume;
 
         if (this.#getEnvelopeDir()) {

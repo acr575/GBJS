@@ -18,3 +18,14 @@ export const getSignedByte = (value) => {
 export const getSignedWord = (value) => {
   return (value << 16) >> 16;
 };
+
+export const createSelectOption = (options, select) => {
+  if (!select) return;
+
+  options.forEach((option) => {
+    const optionElement = document.createElement("option");
+    optionElement.text = option.text;
+    optionElement.value = option.value;
+    select.appendChild(optionElement);
+  });
+};
