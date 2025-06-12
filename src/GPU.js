@@ -437,4 +437,10 @@ export class PPU {
     for (let i = 0; i < 160; i++)
       this.mmu.writeByte(0xfe00 + i, this.mmu.readByte(address + i));
   }
+
+  updatePalette(palette) {
+    if (palette == "green") {
+      this.selectedPalette = this.palettes.classic;
+    } else this.selectedPalette = this.palettes.grays;
+  }
 }
