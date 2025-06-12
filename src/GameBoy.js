@@ -184,12 +184,16 @@ class GameBoy {
       selectSize
     );
 
-    selectSize.value = storedSize ?? sizeValue; // Set size option
-    const currentSize = storedSize.split("x");
-    const currentWidth = currentSize[0] + "px";
-    const currentHeight = currentSize[1] + "px";
-    this.cpu.gpu.screen.style.width = currentWidth;
-    this.cpu.gpu.screen.style.height = currentHeight;
+    selectSize.value = sizeValue; // Set size option
+
+    if (storedSize) {
+      selectSize.value = storedSize;
+      const currentSize = storedSize.split("x");
+      const currentWidth = currentSize[0] + "px";
+      const currentHeight = currentSize[1] + "px";
+      this.cpu.gpu.screen.style.width = currentWidth;
+      this.cpu.gpu.screen.style.height = currentHeight;
+    }
 
     // Handle size change
     selectSize.addEventListener("change", () => {
