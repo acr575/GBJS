@@ -13,7 +13,72 @@
   <body>
     <header><span>Game Boy Emulator</span></header>
     <div id="content">
-      <canvas id="screen" width="160" height="144"></canvas>
+      <div class="screen-buttons">
+        <div class="joypad" id="joypad-left">
+          <div class="dpad-bg">
+            <div class="dpad">
+              <!-- <div class="triangle triangle-up"></div> -->
+              <div class="direction" id="dpad-up">
+                <div class="cylinder"></div>
+                <div class="cylinder"></div>
+                <div class="cylinder"></div>
+              </div>
+
+              <!-- <div class="triangle triangle-left"></div> -->
+              <div class="direction" id="dpad-left">
+                <div class="cylinder"></div>
+                <div class="cylinder"></div>
+                <div class="cylinder"></div>
+              </div>
+
+              <div class="direction center">
+                <div class="center-circle"></div>
+              </div>
+
+              <!-- <div class="triangle triangle-right"></div> -->
+              <div class="direction" id="dpad-right">
+                <div class="cylinder"></div>
+                <div class="cylinder"></div>
+                <div class="cylinder"></div>
+              </div>
+
+              <!-- <div class="triangle triangle-down"></div> -->
+              <div class="direction" id="dpad-down">
+                <div class="cylinder"></div>
+                <div class="cylinder"></div>
+                <div class="cylinder"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <canvas id="screen" width="160" height="144"></canvas>
+        <div class="joypad" id="joypad-right">
+          <div class="select-start">
+            <div class="select-start-buttons">
+              <div class="a-b-bg">
+                <div class="select" id="dpad-select">
+                  <!-- <span class="joypad-letters" id="select-text">SELECT</span> -->
+                </div>
+              </div>
+              <div class="a-b-bg">
+                <div class="start" id="dpad-start">
+                  <!-- <span class="joypad-letters" id="start-text">START</span> -->
+                </div>
+              </div>
+            </div>
+            <div class="joypad-letters"><span>SELECT</span> <span>START</span></div>
+          </div>
+
+          <div class="a-b">
+            <div class="a-b-bg">
+              <div class="a" id="dpad-a"></div>
+              <div class="b" id="dpad-b"></div>
+            </div>
+            <div class="joypad-letters"><span>B</span> <span>A</span></div>
+          </div>
+        </div>
+      </div>
+
       <div id="main-buttons">
         <input type="file" id="fileInput" title=" " accept=".gb,.gbc,.bin" />
         <button id="customInput-btn">
