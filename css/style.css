@@ -360,6 +360,24 @@ label {
   transform: rotate(-20deg);
 }
 
+.dpad,
+.select-start-buttons,
+.a-b-bg {
+  touch-action: none;
+}
+
+.joypad-letters {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.touchable:active,
+.touched {
+  filter: brightness(0.8);
+}
+
 /* MODAL STYLES */
 
 /* The Modal (background) */
@@ -556,7 +574,7 @@ button:hover {
 }
 
 /* MOBILE LANDSCAPE */
-@media (orientation:landscape) and (max-width: 1024px) and (max-height: 540px) {
+@media (orientation: landscape) and (max-width: 1024px) and (max-height: 540px) {
   body {
     height: 100vh;
     overflow: hidden;
@@ -596,5 +614,4 @@ button:hover {
   .joypad-letters {
     font-size: 50%;
   }
-
 }

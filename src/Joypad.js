@@ -23,36 +23,69 @@ export class Joypad {
   }
 
   #handleInput() {
+    // Interface buttons
+    const buttons = document.querySelectorAll(".touchable");
+    const buttonsMap = new Map();
+    buttons.forEach((button) => buttonsMap.set(button.id, button));
+
+    const buttonsIds = this.#mobileButtons.reduce((acc, id) => {
+      if (buttonsMap.has(id)) {
+        acc[id] = buttonsMap.get(id);
+      }
+      return acc;
+    }, {});
+
     // Press key
     document.addEventListener("keydown", (event) => {
-      const key = event.key.toUpperCase();
-      this.#updateJoypad(this.#buttons.indexOf(key), 0);
+      const key = this.#buttons.indexOf(event.key.toUpperCase());
+      if (key == -1) return;
+
+      // Obscure button
+      buttonsIds[this.#mobileButtons[key]].classList.add("touched");
+
+      this.#updateJoypad(key, 0);
     });
 
     // Release key
     document.addEventListener("keyup", (event) => {
-      const key = event.key.toUpperCase();
+      const key = this.#buttons.indexOf(event.key.toUpperCase());
+      if (key == -1) return;
 
-      this.#updateJoypad(this.#buttons.indexOf(key), 1);
+      // Brighten button
+      buttonsIds[this.#mobileButtons[key]].classList.remove("touched");
+
+      this.#updateJoypad(key, 1);
     });
 
-    // Touch button
+    // Touch or click button
     this.#mobileButtons.forEach((button) => {
-      document.getElementById(button).addEventListener("touchstart", () => {
+      document.getElementById(button).addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        this.#updateJoypad(this.#mobileButtons.indexOf(button), 0);
+      });
+
+      document.getElementById(button).addEventListener("mousedown", (e) => {
+        console.log("pressed");
+        e.preventDefault();
         this.#updateJoypad(this.#mobileButtons.indexOf(button), 0);
       });
     });
 
-    // Release touch
+    // Release touch or click
     this.#mobileButtons.forEach((button) => {
-      document.getElementById(button).addEventListener("touchend", () => {
+      document.getElementById(button).addEventListener("touchend", (e) => {
+        e.preventDefault();
+        this.#updateJoypad(this.#mobileButtons.indexOf(button), 1);
+      });
+
+      document.getElementById(button).addEventListener("mouseup", (e) => {
+        e.preventDefault();
         this.#updateJoypad(this.#mobileButtons.indexOf(button), 1);
       });
     });
   }
 
   #updateJoypad(button, buttonState) {
-    if (button == -1) return;
     const currentState = this.#state;
     const updatedState = buttonState
       ? setBit(currentState, button)
