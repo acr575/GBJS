@@ -7,7 +7,9 @@ import { MMU } from "./MMU.js";
 import { Timer } from "./Timer.js";
 
 class GameBoy {
-  #frameRate = 0;
+  #defaultFrameRate = 0;
+  #customFrameRate = 0;
+  #gameLoaded = false;
 
   #settingsKeys = {
     interface: {
@@ -29,10 +31,12 @@ class GameBoy {
   constructor() {
     this.cpu = new CPU();
 
-    this.#frameRate = 1000 / (this.cpu.CLOCKSPEED / 70224); // ms
+    this.#defaultFrameRate = 1000 / (this.cpu.CLOCKSPEED / 70224); // ms
+    this.#customFrameRate = this.#defaultFrameRate;
 
     this.#handleInputFiles();
     this.#handleSettingsModal();
+    this.#handleResponsive();
     this.cpu.init();
     this.#setInitScreenText();
   }
@@ -56,6 +60,7 @@ class GameBoy {
       }
 
       // Game loaded
+      this.#gameLoaded = true;
       this.#start();
     });
   }
@@ -103,7 +108,7 @@ class GameBoy {
     // Emulate frames
     this.emulationInterval = setInterval(() => {
       this.cpu.emulateFrame();
-    }, this.#frameRate);
+    }, this.#customFrameRate);
   }
 
   #resetScreen() {
@@ -154,12 +159,16 @@ class GameBoy {
     const selectEmulationSpeed = document.getElementById("emulation-speed");
     selectEmulationSpeed.addEventListener("change", () => {
       const newFrameRate =
-        this.#frameRate / parseFloat(selectEmulationSpeed.value);
+        this.#defaultFrameRate / parseFloat(selectEmulationSpeed.value);
 
-      clearInterval(this.emulationInterval);
-      this.emulationInterval = setInterval(() => {
-        this.cpu.emulateFrame();
-      }, newFrameRate);
+      this.#customFrameRate = newFrameRate;
+      // Update speed if game running
+      if (this.#gameLoaded) {
+        clearInterval(this.emulationInterval);
+        this.emulationInterval = setInterval(() => {
+          this.cpu.emulateFrame();
+        }, newFrameRate);
+      }
     });
   }
 
@@ -226,6 +235,31 @@ class GameBoy {
       localStorage.setItem(this.#settingsKeys.graphics.palette, palette.value);
       this.#updateInitScreenColor(palette.value);
     });
+  }
+
+  #handleResponsive() {
+    const header = document.querySelector("header");
+    const joypadContainer = document.getElementById("joypad-left");
+    const mainButtons = document.getElementById("main-buttons");
+    const content = document.getElementById("content");
+
+    const mobileLandscape = window.matchMedia(
+      "(orientation:landscape) and (max-width: 1024px) and (max-height: 540px)"
+    );
+    const moveHeaderAndButtons = (e) => {
+      if (e.matches) {
+        // Move header & buttons to joypad div
+        joypadContainer.appendChild(header);
+        joypadContainer.appendChild(mainButtons);
+      } else {
+        // Move header & buttons back to its position
+        document.body.prepend(header);
+        content.appendChild(mainButtons);
+      }
+    };
+
+    mobileLandscape.addEventListener("change", moveHeaderAndButtons);
+    moveHeaderAndButtons(mobileLandscape);
   }
 }
 
