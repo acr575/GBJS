@@ -4,6 +4,16 @@ export class Joypad {
   #cpu = null;
   #p1 = 0xff00;
   #buttons = ["J", "K", "SHIFT", "ENTER", "D", "A", "W", "S"];
+  #mobileButtons = [
+    "joypad-a",
+    "joypad-b",
+    "joypad-select",
+    "joypad-start",
+    "dpad-right",
+    "dpad-left",
+    "dpad-up",
+    "dpad-down",
+  ];
   #state = 0xff;
 
   constructor(cpu) {
@@ -24,6 +34,20 @@ export class Joypad {
       const key = event.key.toUpperCase();
 
       this.#updateJoypad(this.#buttons.indexOf(key), 1);
+    });
+
+    // Touch button
+    this.#mobileButtons.forEach((button) => {
+      document.getElementById(button).addEventListener("touchstart", () => {
+        this.#updateJoypad(this.#mobileButtons.indexOf(button), 0);
+      });
+    });
+
+    // Release touch
+    this.#mobileButtons.forEach((button) => {
+      document.getElementById(button).addEventListener("touchend", () => {
+        this.#updateJoypad(this.#mobileButtons.indexOf(button), 1);
+      });
     });
   }
 
