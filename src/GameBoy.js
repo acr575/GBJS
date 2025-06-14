@@ -35,7 +35,7 @@ class GameBoy {
     this.#customFrameRate = this.#defaultFrameRate;
 
     this.#handleInputFiles();
-    this.#handleSettingsModal();
+    // this.#handleSettingsModal();
     this.#handleResponsive();
     this.cpu.init();
     this.#setInitScreenText();
