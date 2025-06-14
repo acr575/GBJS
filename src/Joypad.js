@@ -65,7 +65,6 @@ export class Joypad {
       });
 
       document.getElementById(button).addEventListener("mousedown", (e) => {
-        console.log("pressed");
         e.preventDefault();
         this.#updateJoypad(this.#mobileButtons.indexOf(button), 0);
       });

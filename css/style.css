@@ -577,7 +577,6 @@ button:hover {
 @media (orientation: landscape) and (max-width: 1024px) and (max-height: 540px) {
   body {
     height: 100vh;
-    overflow: hidden;
     gap: 0;
   }
 
