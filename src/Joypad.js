@@ -36,19 +36,19 @@ export class Joypad {
       this.#updateJoypad(this.#buttons.indexOf(key), 1);
     });
 
-    // Touch button
-    this.#mobileButtons.forEach((button) => {
-      document.getElementById(button).addEventListener("touchstart", () => {
-        this.#updateJoypad(this.#mobileButtons.indexOf(button), 0);
-      });
-    });
+    // // Touch button
+    // this.#mobileButtons.forEach((button) => {
+    //   document.getElementById(button).addEventListener("touchstart", () => {
+    //     this.#updateJoypad(this.#mobileButtons.indexOf(button), 0);
+    //   });
+    // });
 
-    // Release touch
-    this.#mobileButtons.forEach((button) => {
-      document.getElementById(button).addEventListener("touchend", () => {
-        this.#updateJoypad(this.#mobileButtons.indexOf(button), 1);
-      });
-    });
+    // // Release touch
+    // this.#mobileButtons.forEach((button) => {
+    //   document.getElementById(button).addEventListener("touchend", () => {
+    //     this.#updateJoypad(this.#mobileButtons.indexOf(button), 1);
+    //   });
+    // });
   }
 
   #updateJoypad(button, buttonState) {
