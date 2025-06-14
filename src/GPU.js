@@ -37,6 +37,23 @@ export class PPU {
     this.obp1 = 0xff49;
     this.wy = 0xff4a;
     this.wx = 0xff4b;
+
+    this.palettes = {
+      classic: {
+        white: { r: 155, g: 188, b: 15 },
+        lightGray: { r: 139, g: 172, b: 15 },
+        darkGray: { r: 48, g: 98, b: 48 },
+        black: { r: 15, g: 56, b: 15 },
+      },
+
+      grays: {
+        white: { r: 255, g: 255, b: 255 },
+        lightGray: { r: 0xcc, g: 0xcc, b: 0xcc },
+        darkGray: { r: 0x77, g: 0x77, b: 0x77 },
+        black: { r: 0, g: 0, b: 0 },
+      },
+    };
+    this.selectedPalette = this.palettes.grays;
   }
 
   updateGraphics(cycles) {
@@ -210,28 +227,7 @@ export class PPU {
       let colourNum = ((data2 >> colourBit) & 1) << 1;
       colourNum |= (data1 >> colourBit) & 1;
 
-      const col = this.getColour(colourNum, this.bgp);
-      let red = 0,
-        green = 0,
-        blue = 0;
-
-      switch (col) {
-        case WHITE:
-          red = 255;
-          green = 255;
-          blue = 255;
-          break;
-        case LIGHT_GRAY:
-          red = 0xcc;
-          green = 0xcc;
-          blue = 0xcc;
-          break;
-        case DARK_GRAY:
-          red = 0x77;
-          green = 0x77;
-          blue = 0x77;
-          break;
-      }
+      const { r: red, g: green, b: blue } = this.getColour(colourNum, this.bgp);
 
       if (ly < 0 || ly > 143 || pixel < 0 || pixel > 159) continue;
 
@@ -295,29 +291,11 @@ export class PPU {
         if (colourNum == WHITE) continue;
 
         let colourAddress = (attributes >> 4) & 1 ? this.obp1 : this.obp0;
-        let col = this.getColour(colourNum, colourAddress);
-
-        let red = 0;
-        let green = 0;
-        let blue = 0;
-
-        switch (col) {
-          case WHITE:
-            red = 255;
-            green = 255;
-            blue = 255;
-            break;
-          case LIGHT_GRAY:
-            red = 0xcc;
-            green = 0xcc;
-            blue = 0xcc;
-            break;
-          case DARK_GRAY:
-            red = 0x77;
-            green = 0x77;
-            blue = 0x77;
-            break;
-        }
+        const {
+          r: red,
+          g: green,
+          b: blue,
+        } = this.getColour(colourNum, colourAddress);
 
         let xPix = 0 - tilePixel;
         xPix += 7;
@@ -345,7 +323,7 @@ export class PPU {
   }
 
   getColour(colourNum, paletteAddr) {
-    let resultColour = WHITE;
+    let resultColour = this.selectedPalette.white;
     let palette = this.mmu.readByte(paletteAddr);
     let hi = 0;
     let lo = 0;
@@ -369,25 +347,25 @@ export class PPU {
         break;
     }
 
-    // use the palette to get the colour
+    // Use the palette to get the colour
     let colour = 0;
 
     colour = ((palette >> hi) & 1) << 1;
     colour |= (palette >> lo) & 1;
 
-    // convert the game colour to emulator colour
+    // Convert the game colour to emulator colour
     switch (colour) {
-      case 0:
-        resultColour = WHITE;
+      case WHITE:
+        resultColour = this.selectedPalette.white;
         break;
-      case 1:
-        resultColour = LIGHT_GRAY;
+      case LIGHT_GRAY:
+        resultColour = this.selectedPalette.lightGray;
         break;
-      case 2:
-        resultColour = DARK_GRAY;
+      case DARK_GRAY:
+        resultColour = this.selectedPalette.darkGray;
         break;
-      case 3:
-        resultColour = BLACK;
+      case BLACK:
+        resultColour = this.selectedPalette.black;
         break;
     }
 
@@ -423,5 +401,11 @@ export class PPU {
     const address = data << 8; // source address is data * 100
     for (let i = 0; i < 160; i++)
       this.mmu.writeByte(0xfe00 + i, this.mmu.readByte(address + i));
+  }
+
+  updatePalette(palette) {
+    if (palette == "green") {
+      this.selectedPalette = this.palettes.classic;
+    } else this.selectedPalette = this.palettes.grays;
   }
 }
