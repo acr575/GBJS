@@ -239,27 +239,53 @@ class GameBoy {
 
   #handleResponsive() {
     const header = document.querySelector("header");
-    const joypadContainer = document.getElementById("joypad-left");
+    const joypadLeftContainer = document.getElementById("joypad-left");
+    const joypadRightContainer = document.getElementById("joypad-right");
+    const portraitContainer = document.getElementById("portrait-container");
     const mainButtons = document.getElementById("main-buttons");
-    const content = document.getElementById("content");
+    const screenContainer =
+      document.getElementsByClassName("screen-buttons")[0];
+    const buttonsABContainer = document.getElementsByClassName("a-b")[0];
+    const joypadPortraitContainer = document.createElement("div");
+    joypadPortraitContainer.id = "joypad-portrait-container";
 
     const mobileLandscape = window.matchMedia(
       "(orientation:landscape) and (max-width: 1024px) and (max-height: 540px)"
     );
-    const moveHeaderAndButtons = (e) => {
+    const mobilePortrait = window.matchMedia("(orientation:portrait)");
+
+    const landscapeAction = (e) => {
       if (e.matches) {
         // Move header & buttons to joypad div
-        joypadContainer.appendChild(header);
-        joypadContainer.appendChild(mainButtons);
+        joypadLeftContainer.appendChild(header);
+        joypadLeftContainer.appendChild(mainButtons);
       } else {
         // Move header & buttons back to its position
         document.body.prepend(header);
-        content.appendChild(mainButtons);
+        portraitContainer.appendChild(mainButtons);
       }
     };
 
-    mobileLandscape.addEventListener("change", moveHeaderAndButtons);
-    moveHeaderAndButtons(mobileLandscape);
+    const portraitAction = (e) => {
+      if (e.matches) {
+        // Display element in portrait format
+        joypadLeftContainer.append(buttonsABContainer);
+        joypadPortraitContainer.appendChild(joypadLeftContainer);
+        joypadPortraitContainer.appendChild(joypadRightContainer);
+        portraitContainer.appendChild(joypadPortraitContainer);
+      } else {
+        // Move elements to its original position
+        joypadRightContainer.appendChild(buttonsABContainer);
+        screenContainer.prepend(joypadLeftContainer);
+        screenContainer.appendChild(joypadRightContainer);
+        joypadPortraitContainer.remove();
+      }
+    };
+
+    mobileLandscape.addEventListener("change", landscapeAction);
+    landscapeAction(mobileLandscape);
+    mobilePortrait.addEventListener("change", portraitAction);
+    portraitAction(mobilePortrait);
   }
 }
 
