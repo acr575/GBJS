@@ -94,14 +94,14 @@ label {
 #joypad-right {
   flex-direction: column;
   justify-content: space-between;
-  padding: 3%;
+  padding: 2%;
 }
 
 .dpad-bg {
   width: 10vw;
   height: 10vw;
   position: absolute;
-  bottom: 5%;
+  bottom: 10%;
   padding: 1%;
   background-color: rgb(0, 2, 5, 0.08);
   border-radius: 100%;
@@ -294,21 +294,8 @@ label {
 .a-b {
   transform: rotate(-40deg);
   width: 100%;
-  height: 23%;
+  height: 28%;
   margin-bottom: 25%;
-}
-
-.joypad-letters {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  margin-top: 0.6em;
-}
-
-.joypad-letters {
-  color: var(--joypad-letters-color);
-  font-size: 0.6vw;
 }
 
 .a,
@@ -323,12 +310,13 @@ label {
 
 .select-start {
   width: 100%;
-  height: 14%;
+  height: 17%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 16%;
+  margin-top: 18%;
 }
 
 .select-start-buttons {
@@ -336,11 +324,10 @@ label {
   height: 100%;
   display: flex;
   justify-content: space-around;
-  transform: translate(-5%, 48%);
 }
 
 .select-start .a-b-bg {
-  width: 40%;
+  width: 45%;
   padding: 2.5%;
   transform: rotate(-20deg);
 }
@@ -357,7 +344,11 @@ label {
 }
 
 .select-start span {
-  transform: rotate(-20deg);
+  transform: rotate(-20deg) translate(20%, -70%);
+}
+
+#start-text {
+  transform: rotate(-20deg) translate(25%, -70%);
 }
 
 .dpad,
@@ -367,6 +358,13 @@ label {
 }
 
 .joypad-letters {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  margin-top: 0.6em;
+  color: var(--joypad-letters-color);
+  font-size: 0.6vw;
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -457,6 +455,7 @@ button {
   align-items: center;
   justify-content: space-between;
   position: relative;
+  user-select: none;
 }
 
 button span {
@@ -573,8 +572,8 @@ button:hover {
   appearance: none;
 }
 
-/* MOBILE LANDSCAPE */
-@media (orientation: landscape) and (max-width: 1024px) and (max-height: 540px) {
+/* MOBILE */
+@media ((orientation: landscape) and (max-width: 1024px) and (max-height: 540px)) or (orientation: portrait) {
   body {
     height: 100vh;
     gap: 0;
@@ -585,9 +584,20 @@ button:hover {
     margin: 0;
   }
 
+  .joypad-letters {
+    font-size: 60%;
+  }
+}
+
+/* MOBILE LANDSCAPE */
+@media (orientation: landscape) and (max-width: 1024px) and (max-height: 540px) {
+  #content {
+    overflow: hidden;
+  }
+
   #screen {
-    width: auto;
     height: 100vh;
+    max-height: 100vh;
   }
 
   #joypad-left {
@@ -595,22 +605,109 @@ button:hover {
     justify-content: flex-start;
   }
 
-  header {
-    font-size: 65%;
-  }
-
   #main-buttons {
     width: 80%;
     font-size: 65%;
   }
 
-  .dpad-bg {
-    width: 14vw;
-    height: 14vw;
-    bottom: 13%;
+  header {
+    font-size: 65%;
   }
 
-  .joypad-letters {
-    font-size: 50%;
+  .dpad-bg {
+    width: 18vw;
+    height: 18vw;
+    bottom: 11%;
+  }
+}
+
+/* MOBILE PORTRAIT */
+#portrait-container {
+  overflow: hidden;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+@media (orientation: portrait) {
+  body {
+    overflow-x: hidden;
+  }
+
+  header {
+    font-size: 90%;
+    height: 8%;
+  }
+
+  #content {
+    height: 92%;
+    gap: 0;
+  }
+
+  #screen {
+    width: 100vw;
+    height: auto;
+  }
+
+  #portrait-container {
+    height: 100%;
+    padding-top: 5%;
+    flex-direction: column;
+    justify-content: normal;
+    align-items: center;
+    background-color: var(--primary-color);
+  }
+
+  #joypad-portrait-container {
+    width: 100%;
+    height: 100%;
+  }
+
+  #main-buttons {
+    width: 60%;
+  }
+
+  #settings-btn {
+    display: none;
+  }
+
+  .joypad {
+    width: 100%;
+  }
+
+  #joypad-left {
+    height: 55%;
+    padding-top: 20px;
+    justify-content: space-around;
+  }
+
+  #joypad-right {
+    height: 45%;
+  }
+
+  .dpad-bg {
+    width: 38vw;
+    height: 38vw;
+    position: static;
+    padding: 3%;
+  }
+
+  .a-b {
+    margin: 0;
+    width: 47%;
+    height: 55%;
+  }
+
+  .a, .b {
+    height: 85%;
+  }
+
+  .select-start {
+    height: 50%;
+    margin-top: 12%;
+  }
+
+  .select-start .a-b-bg {
+    width: 30%;
   }
 }

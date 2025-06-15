@@ -23,7 +23,6 @@ export class Joypad {
   }
 
   #handleInput() {
-    // Interface buttons
     const buttons = document.querySelectorAll(".touchable");
     const buttonsMap = new Map();
     buttons.forEach((button) => buttonsMap.set(button.id, button));
@@ -35,51 +34,57 @@ export class Joypad {
       return acc;
     }, {});
 
-    // Press key
+    // Key pressed
     document.addEventListener("keydown", (event) => {
       const key = this.#buttons.indexOf(event.key.toUpperCase());
       if (key == -1) return;
-
-      // Obscure button
-      buttonsIds[this.#mobileButtons[key]].classList.add("touched");
-
+      const id = this.#mobileButtons[key];
+      buttonsIds[id]?.classList.add("touched");
       this.#updateJoypad(key, 0);
     });
 
-    // Release key
     document.addEventListener("keyup", (event) => {
       const key = this.#buttons.indexOf(event.key.toUpperCase());
       if (key == -1) return;
-
-      // Brighten button
-      buttonsIds[this.#mobileButtons[key]].classList.remove("touched");
-
+      const id = this.#mobileButtons[key];
+      buttonsIds[id]?.classList.remove("touched");
       this.#updateJoypad(key, 1);
     });
 
-    // Touch or click button
-    this.#mobileButtons.forEach((button) => {
-      document.getElementById(button).addEventListener("touchstart", (e) => {
+    // Touch & mouse click
+    this.#mobileButtons.forEach((id, index) => {
+      const el = buttonsIds[id];
+      if (!el) return;
+
+      const press = () => {
+        el.classList.add("touched");
+        this.#updateJoypad(index, 0);
+      };
+      const release = () => {
+        el.classList.remove("touched");
+        this.#updateJoypad(index, 1);
+      };
+
+      el.addEventListener("touchstart", (e) => {
         e.preventDefault();
-        this.#updateJoypad(this.#mobileButtons.indexOf(button), 0);
+        press();
+      });
+      el.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        press();
       });
 
-      document.getElementById(button).addEventListener("mousedown", (e) => {
+      el.addEventListener("touchend", (e) => {
         e.preventDefault();
-        this.#updateJoypad(this.#mobileButtons.indexOf(button), 0);
+        release();
       });
-    });
-
-    // Release touch or click
-    this.#mobileButtons.forEach((button) => {
-      document.getElementById(button).addEventListener("touchend", (e) => {
+      el.addEventListener("touchcancel", (e) => {
         e.preventDefault();
-        this.#updateJoypad(this.#mobileButtons.indexOf(button), 1);
+        release();
       });
-
-      document.getElementById(button).addEventListener("mouseup", (e) => {
+      el.addEventListener("mouseup", (e) => {
         e.preventDefault();
-        this.#updateJoypad(this.#mobileButtons.indexOf(button), 1);
+        release();
       });
     });
   }
