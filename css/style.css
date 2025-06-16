@@ -9,9 +9,25 @@
   --secondary-color-hover: #01274b;
   --input-color: #ffffff;
   --focus-color: #cfcfcf;
-  --cylinder-color: #001d3d;
   --joypad-letters-color: #ffffff;
   --select-start-color: #737373;
+  --dpad-color: #003566;
+  --cylinder-color: #001d3d;
+}
+
+:root.light {
+  --bg-color: #c4c4b5;
+  --primary-color: #9ca08d;
+  --secondary-color: #8bac0f;
+  --elements-color: #0f380f;
+  --gb-buttons-color: #6f0119;
+  --secondary-color-hover: #7a990d;
+  --input-color: #ffffff;
+  --focus-color: #dcdccf;
+  --joypad-letters-color: #313696;
+  --select-start-color: #66685c;
+  --dpad-color: #080808;
+  --cylinder-color: #282828;
 }
 
 * {
@@ -37,6 +53,15 @@ header {
   text-align: center;
   padding: 20px;
   font-size: 1.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+#settings-header {
+  position: absolute;
+  left: 5%;
 }
 
 label {
@@ -64,6 +89,16 @@ label {
   display: flex;
   flex-direction: column;
   gap: 2vh;
+}
+
+.emulation-flow-btns {
+  width: 100%;
+  display: flex;
+  gap: 5%;
+}
+
+.emulation-flow-btns button {
+  width: 100%;
 }
 
 #fileInput {
@@ -122,7 +157,7 @@ label {
   width: 29%;
   height: 37%;
   padding: 2px;
-  background-color: var(--secondary-color);
+  background-color: var(--dpad-color);
   display: flex;
   flex-direction: column;
   justify-content: space-around;
@@ -395,10 +430,10 @@ label {
 /* Modal Content/Box */
 .modal-content {
   background-color: var(--secondary-color);
-  margin: 10% auto; /* 15% from the top and centered */
+  margin: 5% auto; /* 15% from the top and centered */
   padding: 30px;
   border-radius: 10px;
-  width: 35%; /* Could be more or less, depending on screen size */
+  width: 70%; /* Could be more or less, depending on screen size */
   max-height: 60%;
   overflow-y: auto;
 }
@@ -428,6 +463,10 @@ label {
 .setting-row {
   display: flex;
   justify-content: space-between;
+}
+
+#settings-header {
+  display: none;
 }
 
 /* The Close Button */
@@ -469,6 +508,10 @@ button:hover {
 
 .icon {
   width: 25px;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
 }
 
 /* NES.CSS OVERRIDE STYLES */
@@ -587,6 +630,27 @@ button:hover {
   .joypad-letters {
     font-size: 60%;
   }
+
+  .modal-content {
+    width: 90%;
+    max-height: 80%;
+  }
+
+  h2 {
+    font-size: 100%;
+  }
+
+  .close {
+    font-size: 1.3em;
+  }
+
+  .settings {
+    font-size: 60%;
+  }
+
+  .title {
+    font-size: 1.3em !important;
+  }
 }
 
 /* MOBILE LANDSCAPE */
@@ -644,6 +708,10 @@ button:hover {
     gap: 0;
   }
 
+  .modal-content {
+    margin: 15% auto;
+  }
+
   #screen {
     width: 100vw;
     height: auto;
@@ -698,7 +766,8 @@ button:hover {
     height: 55%;
   }
 
-  .a, .b {
+  .a,
+  .b {
     height: 85%;
   }
 
@@ -709,5 +778,35 @@ button:hover {
 
   .select-start .a-b-bg {
     width: 30%;
+  }
+
+  .nes-container.with-title {
+    position: relative;
+  }
+
+  table {
+    border-collapse: separate;
+    border-spacing: 0 20px;
+  }
+
+  .nes-select {
+    width: 100%;
+  }
+
+  .responsive-upper-label {
+    position: absolute;
+    transform: translateY(-72%);
+  }
+
+  .centered {
+    text-align: end;
+  }
+
+  .responsive-inline-label {
+    position: absolute;
+  }
+
+  #settings-header {
+    display: block;
   }
 }

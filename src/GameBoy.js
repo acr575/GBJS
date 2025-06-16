@@ -41,6 +41,14 @@ class GameBoy {
     this.#setInitScreenText();
   }
 
+  #stopEmulation() {
+
+  }
+
+  #resumeEmulation() {
+    
+  }
+  
   #handleInputFiles() {
     const fileInput = document.getElementById("fileInput");
     const customInput = document.getElementById("customInput-btn");
@@ -66,19 +74,17 @@ class GameBoy {
   }
 
   #handleSettingsModal() {
-    // Get the modal
-    var modal = document.getElementById("config-modal");
-
-    // Get the button that opens the modal
-    var btn = document.getElementById("settings-btn");
-
-    // Get the <span> element that closes the modal
-    var span = document.getElementsByClassName("close")[0];
+    const modal = document.getElementById("config-modal");
+    const btn = document.getElementById("settings-btn");
+    const headerBtn = document.getElementById("settings-header");
+    const span = document.getElementsByClassName("close")[0];
 
     // When the user clicks on the button, open the modal
-    btn.onclick = function () {
-      modal.style.display = "block";
-    };
+    [btn, headerBtn].forEach((btn) => {
+      btn.onclick = function () {
+        modal.style.display = "block";
+      };
+    });
 
     // When user press escape, close the modal
     document.addEventListener("keydown", (event) => {
@@ -100,6 +106,7 @@ class GameBoy {
     // Handle settings
     this.#handleGraphicsSettings();
     this.#handleGameSettings();
+    this.#handleInterfaceSettings();
   }
 
   #start() {
@@ -193,9 +200,9 @@ class GameBoy {
       selectSize
     );
 
-    selectSize.value = sizeValue; // Set size option
+    if (selectSize) selectSize.value = sizeValue; // Set size option
 
-    if (storedSize) {
+    if (storedSize && selectSize) {
       selectSize.value = storedSize;
       const currentSize = storedSize.split("x");
       const currentWidth = currentSize[0] + "px";
@@ -204,20 +211,22 @@ class GameBoy {
       this.cpu.gpu.screen.style.height = currentHeight;
     }
 
-    // Handle size change
-    selectSize.addEventListener("change", () => {
-      const newSize = selectSize.value.split("x");
-      const newWidth = newSize[0] + "px";
-      const newHeight = newSize[1] + "px";
-      this.cpu.gpu.screen.style.width = newWidth;
-      this.cpu.gpu.screen.style.height = newHeight;
+    if (selectSize) {
+      // Handle size change
+      selectSize.addEventListener("change", () => {
+        const newSize = selectSize.value.split("x");
+        const newWidth = newSize[0] + "px";
+        const newHeight = newSize[1] + "px";
+        this.cpu.gpu.screen.style.width = newWidth;
+        this.cpu.gpu.screen.style.height = newHeight;
 
-      // Store size
-      localStorage.setItem(
-        this.#settingsKeys.graphics.screenSize,
-        selectSize.value
-      );
-    });
+        // Store size
+        localStorage.setItem(
+          this.#settingsKeys.graphics.screenSize,
+          selectSize.value
+        );
+      });
+    }
 
     // Color palette
     const palette = document.getElementById("color-palette");
@@ -237,6 +246,54 @@ class GameBoy {
     });
   }
 
+  #handleInterfaceSettings() {
+    const selectColorTheme = document.getElementById("color-theme");
+    const selectShowButtons = document.getElementById("show-buttons");
+    const storedColorTheme = localStorage.getItem(
+      this.#settingsKeys.interface.colorTheme
+    );
+    const storedShowButtons = localStorage.getItem(
+      this.#settingsKeys.interface.showButtons
+    );
+    const root = document.documentElement;
+    const joypad = document.querySelectorAll(".joypad");
+
+    // Apply stored theme
+    if (storedColorTheme == "light") {
+      root.classList.add("light");
+      selectColorTheme.value = "light";
+    }
+    // Handle color theme change
+    selectColorTheme.addEventListener("change", () => {
+      localStorage.setItem(
+        this.#settingsKeys.interface.colorTheme,
+        selectColorTheme.value
+      );
+      root.classList.toggle("light", selectColorTheme.value == "light");
+    });
+
+    // Hide buttons if false stored
+    if (storedShowButtons != null && storedShowButtons == 'false') {
+      selectShowButtons.checked = false;
+      joypad.forEach((el) => {
+        el.style.display = "none";
+      });
+    }
+
+    // Handle show buttons
+    selectShowButtons.addEventListener("change", () => {
+      localStorage.setItem(
+        this.#settingsKeys.interface.showButtons,
+        selectShowButtons.checked
+      );
+
+      const display = selectShowButtons.checked ? "flex" : "none";
+      joypad.forEach((el) => {
+        el.style.display = display;
+      });
+    });
+  }
+
   #handleResponsive() {
     const header = document.querySelector("header");
     const joypadLeftContainer = document.getElementById("joypad-left");
@@ -249,10 +306,8 @@ class GameBoy {
     const joypadPortraitContainer = document.createElement("div");
     joypadPortraitContainer.id = "joypad-portrait-container";
 
-    const mobileLandscape = window.matchMedia(
-      "(orientation:landscape) and (max-width: 1024px) and (max-height: 540px)"
-    );
-    const mobilePortrait = window.matchMedia("(orientation:portrait)");
+    const mobileLandscape = this.#isUserMobileAndLandscape();
+    const mobilePortrait = this.#isUserScreenPortrait();
 
     const landscapeAction = (e) => {
       if (e.matches) {
@@ -286,6 +341,16 @@ class GameBoy {
     landscapeAction(mobileLandscape);
     mobilePortrait.addEventListener("change", portraitAction);
     portraitAction(mobilePortrait);
+  }
+
+  #isUserScreenPortrait() {
+    return window.matchMedia("(orientation:portrait)");
+  }
+
+  #isUserMobileAndLandscape() {
+    return window.matchMedia(
+      "(orientation:landscape) and (max-width: 1024px) and (max-height: 540px)"
+    );
   }
 }
 

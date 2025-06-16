@@ -8,10 +8,18 @@
       href="https://unpkg.com/nes.css@2.3.0/css/nes.min.css"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=settings"
+    />
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <header><span>Game Boy Emulator</span></header>
+    <header>
+      <span class="material-symbols-outlined icon" id="settings-header">
+        settings </span
+      ><span>Game Boy Emulator</span>
+    </header>
     <div id="content">
       <div class="screen-buttons">
         <div class="joypad" id="joypad-left">
@@ -86,20 +94,33 @@
       <div id="portrait-container">
         <div id="main-buttons">
           <input type="file" id="fileInput" title=" " accept=".gb,.gbc,.bin" />
-          <button id="customInput-btn">
-            <span>Load game</span>
-            <svg
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              class="icon"
-            >
-              <path
-                d="M11 5V3h2v2h2v2h2v2h-2V7h-2v10h-2V7H9v2H7V7h2V5h2zM3 15v6h18v-6h-2v4H5v-4H3z"
-                fill="currentColor"
-              />
-            </svg>
-          </button>
+          <div class="emulation-flow-btns">
+            <button id="customInput-btn">
+              <span>Load game</span>
+              <svg
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                class="icon"
+              >
+                <path
+                  d="M11 5V3h2v2h2v2h2v2h-2V7h-2v10h-2V7H9v2H7V7h2V5h2zM3 15v6h18v-6h-2v4H5v-4H3z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
+            <button id="customInput-btn">
+              <span>Pause</span>
+              <svg
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                class="icon"
+              >
+                <path d="M10 4H5v16h5V4zm9 0h-5v16h5V4z" fill="currentColor" />
+              </svg>
+            </button>
+          </div>
           <button id="settings-btn">
             <span>Settings</span>
             <svg
@@ -128,7 +149,9 @@
             <p class="title">Interface</p>
             <table class="settings-section">
               <tr>
-                <td><label>Color theme</label></td>
+                <td class="responsive-upper-label">
+                  <label>Color theme</label>
+                </td>
                 <td>
                   <div class="nes-select">
                     <select class="settings-select" id="color-theme">
@@ -140,11 +163,14 @@
               </tr>
 
               <tr>
-                <td><label>Show buttons</label></td>
+                <td class="responsive-inline-label">
+                  <label>Show buttons</label>
+                </td>
                 <td class="centered">
                   <label
                     ><input
                       type="checkbox"
+                      checked
                       class="nes-checkbox"
                       id="show-buttons" /><span></span
                   ></label>
@@ -157,7 +183,9 @@
             <p class="title">Game</p>
             <table class="settings-section">
               <tr>
-                <td><label for="emulation-speed">Emulation speed</label></td>
+                <td class="responsive-upper-label">
+                  <label for="emulation-speed">Emulation speed</label>
+                </td>
                 <td>
                   <div class="nes-select">
                     <select class="settings-select" id="emulation-speed">
@@ -175,7 +203,7 @@
           <div class="nes-container with-title">
             <p class="title">Graphics</p>
             <table class="settings-section">
-              <tr>
+              <!-- <tr>
                 <td><label for="screen-size">Screen size</label></td>
                 <td>
                   <div class="nes-select">
@@ -184,10 +212,12 @@
                     </select>
                   </div>
                 </td>
-              </tr>
+              </tr> -->
 
               <tr>
-                <td><label for="color-palette">Color palette</label></td>
+                <td class="responsive-upper-label">
+                  <label for="color-palette">Color palette</label>
+                </td>
                 <td>
                   <div class="nes-select">
                     <select class="settings-select" id="color-palette">
