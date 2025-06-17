@@ -6,6 +6,8 @@
   --secondary-color: #003566;
   --elements-color: #ffc300;
   --gb-buttons-color: #6f0119;
+  --quit-button-color: #6f0119;
+  --quit-button-color-hover: #660016;
   --secondary-color-hover: #01274b;
   --input-color: #ffffff;
   --focus-color: #cfcfcf;
@@ -21,13 +23,15 @@
   --secondary-color: #8bac0f;
   --elements-color: #0f380f;
   --gb-buttons-color: #6f0119;
+  --quit-button-color: #818375;
+  --quit-button-color-hover: #64665a;
   --secondary-color-hover: #7a990d;
   --input-color: #ffffff;
   --focus-color: #dcdccf;
   --joypad-letters-color: #313696;
   --select-start-color: #66685c;
   --dpad-color: #080808;
-  --cylinder-color: #282828;
+  --cylinder-color: #4f4f4f;
 }
 
 * {
@@ -99,6 +103,26 @@ label {
 
 .emulation-flow-btns button {
   width: 100%;
+}
+
+.load-state > *,
+.running-state > *,
+.paused-state > * {
+  display: none;
+}
+
+.load-state > .load,
+.running-state > .running,
+.paused-state > .paused {
+  display: flex;
+}
+
+#quit-btn {
+  background-color: var(--quit-button-color);
+}
+
+#quit-btn:hover {
+  background-color: var(--quit-button-color-hover);
 }
 
 #fileInput {
@@ -460,6 +484,16 @@ label {
   padding: 0.5em;
 }
 
+.flex-td {
+  display: flex;
+  align-items: center;
+  gap: 10%;
+}
+
+#volume-value {
+  width: 34px;
+}
+
 .setting-row {
   display: flex;
   justify-content: space-between;
@@ -512,6 +546,10 @@ button:hover {
 
 .material-symbols-outlined {
   font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+input[type="range"] {
+  accent-color: var(--elements-color);
 }
 
 /* NES.CSS OVERRIDE STYLES */
@@ -808,5 +846,9 @@ button:hover {
 
   #settings-header {
     display: block;
+  }
+
+  input[type="range"] {
+    width: 90%;
   }
 }

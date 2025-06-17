@@ -94,8 +94,8 @@
       <div id="portrait-container">
         <div id="main-buttons">
           <input type="file" id="fileInput" title=" " accept=".gb,.gbc,.bin" />
-          <div class="emulation-flow-btns">
-            <button id="customInput-btn">
+          <div class="emulation-flow-btns load-state">
+            <button class="load" id="customInput-btn">
               <span>Load game</span>
               <svg
                 fill="none"
@@ -109,7 +109,7 @@
                 />
               </svg>
             </button>
-            <button id="customInput-btn">
+            <button class="running" id="pause-btn">
               <span>Pause</span>
               <svg
                 fill="none"
@@ -118,6 +118,34 @@
                 class="icon"
               >
                 <path d="M10 4H5v16h5V4zm9 0h-5v16h5V4z" fill="currentColor" />
+              </svg>
+            </button>
+            <button class="paused" id="quit-btn">
+              <span>Quit</span>
+              <svg
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                class="icon"
+              >
+                <path
+                  d="M5 5h2v2H5V5zm4 4H7V7h2v2zm2 2H9V9h2v2zm2 0h-2v2H9v2H7v2H5v2h2v-2h2v-2h2v-2h2v2h2v2h2v2h2v-2h-2v-2h-2v-2h-2v-2zm2-2v2h-2V9h2zm2-2v2h-2V7h2zm0 0V5h2v2h-2z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
+            <button class="paused" id="resume-btn">
+              <span>Resume</span>
+              <svg
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                class="icon"
+              >
+                <path
+                  d="M10 20H8V4h2v2h2v3h2v2h2v2h-2v2h-2v3h-2v2z"
+                  fill="currentColor"
+                />
               </svg>
             </button>
           </div>
@@ -201,6 +229,59 @@
           </div>
 
           <div class="nes-container with-title">
+            <p class="title">Audio</p>
+            <table class="settings-section">
+              <tr>
+                <td class="responsive-upper-label">
+                  <label for="volume">Volume</label>
+                </td>
+                <td class="flex-td">
+                  <input
+                    id="volume-range"
+                    type="range"
+                    min="0"
+                    max="1"
+                    value="0.5"
+                    step="0.01"
+                  />
+                  <span id="volume-value">50</span>
+                </td>
+              </tr>
+              <tr>
+                <td class="responsive-upper-label">
+                  <label>Channels</label>
+                </td>
+                <td class="flex-td">
+                  <label class="centered">
+                    <span>CH1</span
+                    ><input
+                      type="checkbox"
+                      checked
+                      class="nes-checkbox"
+                      id="ch1" /><span></span
+                  ></label>
+                  <label class="centered">
+                    <span>CH2</span
+                    ><input
+                      type="checkbox"
+                      checked
+                      class="nes-checkbox"
+                      id="ch2" /><span></span
+                  ></label>
+                  <label class="centered"
+                    ><span>CH3</span
+                    ><input
+                      type="checkbox"
+                      checked
+                      class="nes-checkbox"
+                      id="ch3" /><span></span
+                  ></label>
+                </td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="nes-container with-title">
             <p class="title">Graphics</p>
             <table class="settings-section">
               <!-- <tr>
@@ -221,8 +302,8 @@
                 <td>
                   <div class="nes-select">
                     <select class="settings-select" id="color-palette">
-                      <option value="gray">Gray scale</option>
-                      <option value="green">Classic green</option>
+                      <option value="gray">Grays</option>
+                      <option value="green">Classic greens</option>
                     </select>
                   </div>
                 </td>

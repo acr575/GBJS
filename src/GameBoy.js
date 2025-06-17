@@ -10,21 +10,53 @@ class GameBoy {
   #defaultFrameRate = 0;
   #customFrameRate = 0;
   #gameLoaded = false;
+  #gamePaused = false;
 
-  #settingsKeys = {
+  #settings = {
     interface: {
-      colorTheme: "colorTheme",
-      showButtons: "showButtons",
+      colorTheme: {
+        key: "colorTheme",
+        value: document.getElementById("color-theme"),
+      },
+      showButtons: {
+        key: "showButtons",
+        value: document.getElementById("show-buttons"),
+      },
     },
+
     game: {
-      emulationSpeed: "emulationSpeed",
+      emulationSpeed: {
+        key: "emulationSpeed",
+        value: document.getElementById("emulation-speed"),
+      },
     },
+
+    audio: {
+      volume: {
+        key: "volume",
+        range: document.getElementById("volume-range"),
+        value: document.getElementById("volume-value"),
+      },
+      channels: {
+        ch1: { id: 1, key: "ch1", value: document.getElementById("ch1") },
+        ch2: { id: 2, key: "ch2", value: document.getElementById("ch2") },
+        ch3: { id: 3, key: "ch3", value: document.getElementById("ch3") },
+      },
+    },
+
     graphics: {
-      screenSize: "screenSize",
-      colorPalette: "colorPalette",
+      screenSize: {
+        key: "screenSize",
+        value: document.getElementById("screen-size"),
+      },
+      colorPalette: {
+        key: "colorPalette",
+        value: document.getElementById("color-palette"),
+      },
     },
+
     joypad: {
-      keys: "keys",
+      keys: { key: "keys", value: document.getElementById("keys") },
     },
   };
 
@@ -41,14 +73,6 @@ class GameBoy {
     this.#setInitScreenText();
   }
 
-  #stopEmulation() {
-
-  }
-
-  #resumeEmulation() {
-    
-  }
-  
   #handleInputFiles() {
     const fileInput = document.getElementById("fileInput");
     const customInput = document.getElementById("customInput-btn");
@@ -63,14 +87,82 @@ class GameBoy {
       try {
         await this.cpu.mmu.load(file);
       } catch (error) {
-        // TODO: Show errors
-        console.error(error);
+        this.#renderText(error.message, "#6f0119"); // Render error
+        throw new Error(error);
       }
 
       // Game loaded
-      this.#gameLoaded = true;
+      this.#switchState("running");
       this.#start();
     });
+  }
+
+  #handlePauseEmulation() {
+    document.getElementById("pause-btn").onclick = () => {
+      clearInterval(this.emulationInterval);
+      this.cpu.apu.mute();
+      this.#switchState("paused");
+    };
+  }
+
+  #handleResumeEmulation() {
+    document.getElementById("resume-btn").onclick = () => {
+      this.emulationInterval = setInterval(() => {
+        this.cpu.emulateFrame();
+      }, this.#customFrameRate);
+      this.cpu.apu.unmute();
+      this.#switchState("running");
+    };
+  }
+
+  #handleQuitGame() {
+    const fileInput = document.getElementById("fileInput");
+
+    document.getElementById("quit-btn").onclick = () => {
+      // Stop game
+      clearInterval(this.emulationInterval);
+
+      // Reset memory and registers
+      this.cpu = new CPU();
+      this.cpu.init();
+
+      // Reset screen
+      this.#setInitScreenText();
+
+      // Reset settings and clear file from input
+      this.#applySettings();
+      fileInput.value = null;
+
+      // Switch emulation state
+      this.#switchState("load");
+    };
+  }
+
+  #switchState(state) {
+    const emulationFlowButtons = document.querySelector(".emulation-flow-btns");
+
+    switch (state) {
+      case "running":
+        emulationFlowButtons.classList.remove("load-state");
+        emulationFlowButtons.classList.remove("paused-state");
+        emulationFlowButtons.classList.add("running-state");
+        this.#gameLoaded = true;
+        this.#gamePaused = false;
+        break;
+
+      case "paused":
+        emulationFlowButtons.classList.remove("running-state");
+        emulationFlowButtons.classList.add("paused-state");
+        this.#gamePaused = true;
+        break;
+
+      case "load":
+        emulationFlowButtons.classList.remove("paused-state");
+        emulationFlowButtons.classList.add("load-state");
+        this.#gameLoaded = true;
+        this.#gamePaused = false;
+        break;
+    }
   }
 
   #handleSettingsModal() {
@@ -107,6 +199,7 @@ class GameBoy {
     this.#handleGraphicsSettings();
     this.#handleGameSettings();
     this.#handleInterfaceSettings();
+    this.#handleAudioSettings();
   }
 
   #start() {
@@ -116,6 +209,10 @@ class GameBoy {
     this.emulationInterval = setInterval(() => {
       this.cpu.emulateFrame();
     }, this.#customFrameRate);
+
+    this.#handlePauseEmulation();
+    this.#handleResumeEmulation();
+    this.#handleQuitGame();
   }
 
   #resetScreen() {
@@ -127,8 +224,9 @@ class GameBoy {
 
   async #setInitScreenText() {
     const canvas = this.cpu.gpu.screen;
-    const ctx = this.cpu.gpu.context;
-    const color = localStorage.getItem(this.#settingsKeys.graphics.palette);
+    const color = localStorage.getItem(
+      this.#settings.graphics.colorPalette.key
+    );
     await document.fonts.ready;
 
     // Resize canvas to avoid blur
@@ -138,6 +236,46 @@ class GameBoy {
 
     // Render text
     this.#updateInitScreenColor(color);
+  }
+
+  #renderText(text, color = "#000") {
+    const ctx = this.cpu.gpu.context;
+    const canvas = ctx.canvas;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "25px 'Press Start 2P'";
+    ctx.fillStyle = color;
+
+    const maxWidth = canvas.width * 0.8;
+    const lineHeight = 30;
+
+    const words = text.split(" ");
+    const lines = [];
+    let currentLine = words[0];
+
+    for (let i = 1; i < words.length; i++) {
+      const word = words[i];
+      const testLine = currentLine + " " + word;
+      const testWidth = ctx.measureText(testLine).width;
+
+      if (testWidth < maxWidth) {
+        currentLine = testLine;
+      } else {
+        lines.push(currentLine);
+        currentLine = word;
+      }
+    }
+    lines.push(currentLine);
+
+    const totalHeight = lines.length * lineHeight;
+    const startY = (canvas.height - totalHeight) / 2;
+
+    lines.forEach((line, index) => {
+      ctx.fillText(line, canvas.width / 2, startY + index * lineHeight);
+    });
   }
 
   #updateInitScreenColor(color) {
@@ -162,34 +300,96 @@ class GameBoy {
   }
 
   #handleGameSettings() {
-    // Handle emulation speed change
-    const selectEmulationSpeed = document.getElementById("emulation-speed");
-    selectEmulationSpeed.addEventListener("change", () => {
-      const newFrameRate =
-        this.#defaultFrameRate / parseFloat(selectEmulationSpeed.value);
+    const emulationSpeed = this.#settings.game.emulationSpeed.value;
 
-      this.#customFrameRate = newFrameRate;
-      // Update speed if game running
-      if (this.#gameLoaded) {
-        clearInterval(this.emulationInterval);
-        this.emulationInterval = setInterval(() => {
-          this.cpu.emulateFrame();
-        }, newFrameRate);
-      }
+    // Handle emulation speed change
+    emulationSpeed.addEventListener("change", () => {
+      this.#updateGameSpeed();
     });
+  }
+
+  #updateGameSpeed() {
+    const emulationSpeed = this.#settings.game.emulationSpeed.value;
+    const newFrameRate =
+      this.#defaultFrameRate / parseFloat(emulationSpeed.value);
+
+    this.#customFrameRate = newFrameRate;
+    // Update speed if game running and not paused
+    if (this.#gameLoaded && !this.#gamePaused) {
+      clearInterval(this.emulationInterval);
+      this.emulationInterval = setInterval(() => {
+        this.cpu.emulateFrame();
+      }, newFrameRate);
+    }
+  }
+
+  #handleAudioSettings() {
+    const { range: volumeRange, key: key } = this.#settings.audio.volume;
+
+    const storedVolume = localStorage.getItem(key);
+
+    // Set stored volume
+    if (storedVolume) volumeRange.value = parseFloat(storedVolume);
+
+    // Handle update volume
+    volumeRange.addEventListener("input", () => {
+      this.#updateVolume();
+    });
+
+    Object.values(this.#settings.audio.channels).forEach((ch) => {
+      // Deactivate channels stored as false
+      const storedChValue = localStorage.getItem(ch.key);
+      if (storedChValue != null && storedChValue == "false") {
+        this.cpu.apu.mute(ch.id);
+        ch.value.checked = false;
+      }
+
+      // Handle channel activation
+      ch.value.addEventListener("change", () => {
+        this.#updateActiveChannels(ch);
+      });
+    });
+
+    this.#updateVolume();
+  }
+
+  #updateVolume() {
+    const {
+      range: volumeRange,
+      value: volumeValue,
+      key: key,
+    } = this.#settings.audio.volume;
+
+    volumeValue.innerText = Math.round(volumeRange.value * 100); // Update visual value
+    this.cpu.apu.masterVolume = volumeRange.value * this.cpu.apu.maxVolume; // Update APU volume
+    localStorage.setItem(key, volumeRange.value);
+  }
+
+  #updateActiveChannels(ch) {
+    if (!ch) {
+      // All channels
+    } else if (ch.value.checked) {
+      // Activate specific channel
+      this.cpu.apu.unmute(ch.id);
+      localStorage.setItem(ch.key, true);
+    } else {
+      // Deactivate specific channel
+      this.cpu.apu.mute(ch.id);
+      localStorage.setItem(ch.key, false);
+    }
   }
 
   #handleGraphicsSettings() {
     const canvas = this.cpu.gpu.screen;
 
     // Screen size. Default size determined by css or local storage
-    const selectSize = document.getElementById("screen-size");
+    const selectSize = this.#settings.graphics.screenSize.value;
     const width = canvas.offsetWidth;
     const height = canvas.offsetHeight;
     const sizeValue = `${width}x${height}`;
     const halfSizeValue = `${Math.round(width / 2)}x${Math.round(height / 2)}`;
     const storedSize = localStorage.getItem(
-      this.#settingsKeys.graphics.screenSize
+      this.#settings.graphics.screenSize.key
     );
 
     createSelectOption(
@@ -222,16 +422,16 @@ class GameBoy {
 
         // Store size
         localStorage.setItem(
-          this.#settingsKeys.graphics.screenSize,
+          this.#settings.graphics.screenSize.key,
           selectSize.value
         );
       });
     }
 
     // Color palette
-    const palette = document.getElementById("color-palette");
+    const palette = this.#settings.graphics.colorPalette.value;
     const storedPalette = localStorage.getItem(
-      this.#settingsKeys.graphics.palette
+      this.#settings.graphics.colorPalette.key
     );
 
     if (storedPalette) {
@@ -240,20 +440,29 @@ class GameBoy {
     }
 
     palette.addEventListener("change", () => {
-      this.cpu.gpu.updatePalette(palette.value);
-      localStorage.setItem(this.#settingsKeys.graphics.palette, palette.value);
-      this.#updateInitScreenColor(palette.value);
+      this.#updateColorPalette();
     });
   }
 
+  #updateColorPalette() {
+    const palette = this.#settings.graphics.colorPalette.value;
+
+    this.cpu.gpu.updatePalette(palette.value);
+    localStorage.setItem(
+      this.#settings.graphics.colorPalette.key,
+      palette.value
+    );
+    this.#updateInitScreenColor(palette.value);
+  }
+
   #handleInterfaceSettings() {
-    const selectColorTheme = document.getElementById("color-theme");
-    const selectShowButtons = document.getElementById("show-buttons");
+    const selectColorTheme = this.#settings.interface.colorTheme.value;
+    const selectShowButtons = this.#settings.interface.showButtons.value;
     const storedColorTheme = localStorage.getItem(
-      this.#settingsKeys.interface.colorTheme
+      this.#settings.interface.colorTheme.key
     );
     const storedShowButtons = localStorage.getItem(
-      this.#settingsKeys.interface.showButtons
+      this.#settings.interface.showButtons.key
     );
     const root = document.documentElement;
     const joypad = document.querySelectorAll(".joypad");
@@ -266,14 +475,14 @@ class GameBoy {
     // Handle color theme change
     selectColorTheme.addEventListener("change", () => {
       localStorage.setItem(
-        this.#settingsKeys.interface.colorTheme,
+        this.#settings.interface.colorTheme.key,
         selectColorTheme.value
       );
       root.classList.toggle("light", selectColorTheme.value == "light");
     });
 
     // Hide buttons if false stored
-    if (storedShowButtons != null && storedShowButtons == 'false') {
+    if (storedShowButtons != null && storedShowButtons == "false") {
       selectShowButtons.checked = false;
       joypad.forEach((el) => {
         el.style.display = "none";
@@ -283,7 +492,7 @@ class GameBoy {
     // Handle show buttons
     selectShowButtons.addEventListener("change", () => {
       localStorage.setItem(
-        this.#settingsKeys.interface.showButtons,
+        this.#settings.interface.showButtons.key,
         selectShowButtons.checked
       );
 
@@ -341,6 +550,14 @@ class GameBoy {
     landscapeAction(mobileLandscape);
     mobilePortrait.addEventListener("change", portraitAction);
     portraitAction(mobilePortrait);
+  }
+
+  #applySettings() {
+    this.#updateGameSpeed();
+    this.#updateColorPalette();
+    this.#updateActiveChannels();
+    this.#updateVolume();
+    this.#updateActiveChannels();
   }
 
   #isUserScreenPortrait() {

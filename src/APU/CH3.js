@@ -21,6 +21,7 @@ export class CH3 {
     };
 
     this.isTriggered = false;
+    this.triggerEnabled = true;
   }
 
   isDACOn() {
