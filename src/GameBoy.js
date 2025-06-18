@@ -1,10 +1,9 @@
-import { APU } from "./APU/APU.js";
 import { CPU } from "./CPU.js";
-import { PPU } from "./GPU.js";
-import { createSelectOption } from "./GameBoyUtils.js";
-import { Joypad } from "./Joypad.js";
-import { MMU } from "./MMU.js";
-import { Timer } from "./Timer.js";
+import {
+  closeActiveModals,
+  createSelectOption,
+  handleOpenModal,
+} from "./GameBoyUtils.js";
 
 class GameBoy {
   #defaultFrameRate = 0;
@@ -56,7 +55,10 @@ class GameBoy {
     },
 
     joypad: {
-      keys: { key: "keys", value: document.getElementById("keys") },
+      keyboard: {
+        key: "keyboard",
+        values: document.querySelectorAll(".joypad-row input"),
+      },
     },
   };
 
@@ -69,6 +71,10 @@ class GameBoy {
     this.#handleInputFiles();
     this.#handleSettingsModal();
     this.#handleResponsive();
+    this.#handlePauseEmulation();
+    this.#handleResumeEmulation();
+    this.#handleQuitGameModal();
+    this.#handleUserLeaveWindow();
     this.cpu.init();
     this.#setInitScreenText();
   }
@@ -99,43 +105,53 @@ class GameBoy {
 
   #handlePauseEmulation() {
     document.getElementById("pause-btn").onclick = () => {
-      clearInterval(this.emulationInterval);
-      this.cpu.apu.mute();
-      this.#switchState("paused");
+      this.#pauseEmulation();
     };
   }
 
   #handleResumeEmulation() {
     document.getElementById("resume-btn").onclick = () => {
-      this.emulationInterval = setInterval(() => {
-        this.cpu.emulateFrame();
-      }, this.#customFrameRate);
-      this.cpu.apu.unmute();
-      this.#switchState("running");
+      this.#resumeEmulation();
     };
   }
 
-  #handleQuitGame() {
+  #handleQuitGameModal() {
+    const modal = document.getElementById("confirm-modal");
+    const openBtn = document.getElementById("quit-btn");
+    const closeBtn = document.getElementById("close-confirm");
+    const noBtn = document.getElementById("confirm-no");
+    const yesBtn = document.getElementById("confirm-yes");
+
+    handleOpenModal(modal, [closeBtn, noBtn], [openBtn]);
+
+    yesBtn.onclick = () => {
+      this.#quitGame();
+      closeActiveModals();
+    };
+  }
+
+  #quitGame() {
     const fileInput = document.getElementById("fileInput");
 
-    document.getElementById("quit-btn").onclick = () => {
-      // Stop game
-      clearInterval(this.emulationInterval);
+    // Stop game
+    clearInterval(this.emulationInterval);
+    this.#gamePaused = false;
+    this.#gameLoaded = false;
+    this.windowPauseEnabled = false;
 
-      // Reset memory and registers
-      this.cpu = new CPU();
-      this.cpu.init();
+    // Reset memory and registers
+    this.cpu = new CPU();
+    this.cpu.init();
 
-      // Reset screen
-      this.#setInitScreenText();
+    // Reset screen
+    this.#setInitScreenText();
 
-      // Reset settings and clear file from input
-      this.#applySettings();
-      fileInput.value = null;
+    // Reset settings and clear file from input
+    this.#applySettings();
+    fileInput.value = null;
 
-      // Switch emulation state
-      this.#switchState("load");
-    };
+    // Switch emulation state
+    this.#switchState("load");
   }
 
   #switchState(state) {
@@ -169,37 +185,16 @@ class GameBoy {
     const modal = document.getElementById("config-modal");
     const btn = document.getElementById("settings-btn");
     const headerBtn = document.getElementById("settings-header");
-    const span = document.getElementsByClassName("close")[0];
+    const closeBtn = document.getElementById("close-settings");
 
-    // When the user clicks on the button, open the modal
-    [btn, headerBtn].forEach((btn) => {
-      btn.onclick = function () {
-        modal.style.display = "block";
-      };
-    });
-
-    // When user press escape, close the modal
-    document.addEventListener("keydown", (event) => {
-      if (event.key == "Escape") modal.style.display = "none";
-    });
-
-    // When the user clicks on <span> (x), close the modal
-    span.onclick = function () {
-      modal.style.display = "none";
-    };
-
-    // When the user clicks anywhere outside of the modal, close it
-    window.onclick = function (event) {
-      if (event.target == modal) {
-        modal.style.display = "none";
-      }
-    };
+    handleOpenModal(modal, [closeBtn], [btn, headerBtn]);
 
     // Handle settings
     this.#handleGraphicsSettings();
     this.#handleGameSettings();
     this.#handleInterfaceSettings();
     this.#handleAudioSettings();
+    this.#handleJoypadSettings();
   }
 
   #start() {
@@ -210,9 +205,23 @@ class GameBoy {
       this.cpu.emulateFrame();
     }, this.#customFrameRate);
 
-    this.#handlePauseEmulation();
-    this.#handleResumeEmulation();
-    this.#handleQuitGame();
+    this.windowPauseEnabled = true;
+  }
+
+  #pauseEmulation() {
+    if (this.#gamePaused) return;
+    clearInterval(this.emulationInterval);
+    this.cpu.apu.mute();
+    this.#switchState("paused");
+  }
+
+  #resumeEmulation() {
+    if (!this.#gamePaused) return;
+    this.emulationInterval = setInterval(() => {
+      this.cpu.emulateFrame();
+    }, this.#customFrameRate);
+    this.cpu.apu.unmute();
+    this.#switchState("running");
   }
 
   #resetScreen() {
@@ -368,6 +377,15 @@ class GameBoy {
   #updateActiveChannels(ch) {
     if (!ch) {
       // All channels
+      Object.values(this.#settings.audio.channels).forEach((ch) => {
+        if (ch.value.checked) {
+          this.cpu.apu.unmute(ch.id);
+          localStorage.setItem(ch.key, true);
+        } else {
+          this.cpu.apu.mute(ch.id);
+          localStorage.setItem(ch.key, false);
+        }
+      });
     } else if (ch.value.checked) {
       // Activate specific channel
       this.cpu.apu.unmute(ch.id);
@@ -503,6 +521,85 @@ class GameBoy {
     });
   }
 
+  #handleJoypadSettings() {
+    // Apply stored keys
+    for (let i = 0; i < 8; i++) {
+      const key = localStorage.getItem(i);
+      if (key) this.#updateKeyboard({ id: i, value: key }, true);
+    }
+
+    this.#settings.joypad.keyboard.values.forEach((key) => {
+      key.addEventListener("click", () => {
+        this.#updateKeyboard({ id: key.id, value: key.value });
+      });
+    });
+  }
+
+  #updateKeyboard(key, nonUserInput) {
+    const inputs = [...this.#settings.joypad.keyboard.values].sort((a, b) =>
+      a.id.localeCompare(b.id)
+    );
+    const input = inputs[key.id];
+
+    const getRepeatedKey = (key) => {
+      const repeatedKey = inputs.filter((input) => {
+        return input.value == key;
+      });
+
+      return repeatedKey.length > 0 ? repeatedKey[0] : null;
+    };
+
+    if (nonUserInput) {
+      const repeatedKey = getRepeatedKey(key.value);
+      if (repeatedKey) {
+        // Button asigned, clear it
+        this.cpu.joypad.buttons[repeatedKey.id] = null;
+        repeatedKey.value = "";
+      }
+      input.value = key.value;
+      this.cpu.joypad.buttons[key.id] = key.value;
+      return;
+    }
+
+    const pressKeyText = document.getElementById("press-key-text");
+
+    const currentValue = key.value;
+
+    pressKeyText.style.visibility = "visible";
+    input.value = "";
+    input.classList.add("listening");
+
+    window.addEventListener(
+      "keydown",
+      (e) => {
+        e.preventDefault();
+
+        // Set key if pressed
+        const pressedKey = e.key.toUpperCase();
+        if (pressedKey == "ESCAPE") input.value = currentValue;
+        else {
+          const repeatedKey = getRepeatedKey(pressedKey);
+
+          if (repeatedKey) {
+            // Button asigned, clear it
+            this.cpu.joypad.buttons[repeatedKey.id] = null;
+            repeatedKey.value = "";
+            localStorage.removeItem(repeatedKey.id);
+          }
+          input.value = pressedKey;
+          this.cpu.joypad.buttons[key.id] = pressedKey;
+
+          // Store value
+          localStorage.setItem(key.id, pressedKey);
+        }
+
+        pressKeyText.style.visibility = "hidden";
+        input.classList.remove("listening");
+      },
+      { once: true }
+    );
+  }
+
   #handleResponsive() {
     const header = document.querySelector("header");
     const joypadLeftContainer = document.getElementById("joypad-left");
@@ -550,6 +647,26 @@ class GameBoy {
     landscapeAction(mobileLandscape);
     mobilePortrait.addEventListener("change", portraitAction);
     portraitAction(mobilePortrait);
+  }
+
+  #handleUserLeaveWindow() {
+    let gamePausedByWindow = false;
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        if (!this.#gamePaused && this.windowPauseEnabled) {
+          this.#pauseEmulation();
+          gamePausedByWindow = true;
+        }
+      } else if (
+        this.#gamePaused &&
+        gamePausedByWindow &&
+        this.windowPauseEnabled
+      ) {
+        this.#resumeEmulation();
+        gamePausedByWindow = false;
+      }
+    });
   }
 
   #applySettings() {

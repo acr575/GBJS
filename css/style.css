@@ -458,8 +458,9 @@ label {
   padding: 30px;
   border-radius: 10px;
   width: 70%; /* Could be more or less, depending on screen size */
-  max-height: 60%;
+  max-height: 80%;
   overflow-y: auto;
+  font-size: 100%;
 }
 
 .modal-content h2 {
@@ -517,6 +518,38 @@ label {
   text-decoration: none;
 }
 
+#confirm-modal .modal-content {
+  margin: 13% auto;
+  width: 50%;
+}
+
+#confirm-modal h1 {
+  margin-left: 100%;
+}
+
+.modal-btns {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 35px;
+  margin-top: 10%;
+}
+
+.modal-btns button {
+  width: 35%;
+  text-align: center;
+}
+
+#confirm-yes {
+  background-color: var(--quit-button-color);
+  color: white;
+}
+
+#confirm-no {
+  color: white;
+  background-color: var(--elements-color);
+}
+
 button {
   background-color: var(--secondary-color);
   color: var(--elements-color);
@@ -550,6 +583,45 @@ button:hover {
 
 input[type="range"] {
   accent-color: var(--elements-color);
+}
+
+.joypad-settings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.joypad-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.joypad-row label {
+  font-weight: bold;
+}
+
+.joypad-row input {
+  text-align: center;
+  padding: 0.5rem;
+  font-size: 80%;
+  width: 70%;
+  height: 20%;
+}
+
+.joypad-row input.listening {
+  background-color: #ffeaa7;
+  border: 2px dashed #636e72;
+  outline: none;
+}
+
+#press-key-text {
+  width: 100%;
+  text-align: center;
+  padding-bottom: 10px;
+  color: #636e72;
+  visibility: hidden;
 }
 
 /* NES.CSS OVERRIDE STYLES */
@@ -670,8 +742,7 @@ input[type="range"] {
   }
 
   .modal-content {
-    width: 90%;
-    max-height: 80%;
+    width: 90% !important;
   }
 
   h2 {
@@ -712,6 +783,10 @@ input[type="range"] {
     font-size: 65%;
   }
 
+  .emulation-flow-btns {
+    flex-wrap: wrap;
+  }
+
   header {
     font-size: 65%;
   }
@@ -720,6 +795,10 @@ input[type="range"] {
     width: 18vw;
     height: 18vw;
     bottom: 11%;
+  }
+
+  #confirm-modal .modal-content {
+    margin: 7% auto;
   }
 }
 
@@ -770,7 +849,7 @@ input[type="range"] {
   }
 
   #main-buttons {
-    width: 60%;
+    width: 90%;
   }
 
   #settings-btn {
@@ -850,5 +929,9 @@ input[type="range"] {
 
   input[type="range"] {
     width: 90%;
+  }
+
+  #confirm-modal .modal-content {
+    margin: 50% auto;
   }
 }

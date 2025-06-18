@@ -3,7 +3,7 @@ import { resetBit, setBit, testBit } from "./GameBoyUtils.js";
 export class Joypad {
   #cpu = null;
   #p1 = 0xff00;
-  #buttons = ["J", "K", "SHIFT", "ENTER", "D", "A", "W", "S"];
+  buttons = ["J", "K", "SHIFT", "ENTER", "D", "A", "W", "S"];
   #mobileButtons = [
     "joypad-a",
     "joypad-b",
@@ -36,7 +36,7 @@ export class Joypad {
 
     // Key pressed
     document.addEventListener("keydown", (event) => {
-      const key = this.#buttons.indexOf(event.key.toUpperCase());
+      const key = this.buttons.indexOf(event.key.toUpperCase());
       if (key == -1) return;
       const id = this.#mobileButtons[key];
       buttonsIds[id]?.classList.add("touched");
@@ -44,7 +44,7 @@ export class Joypad {
     });
 
     document.addEventListener("keyup", (event) => {
-      const key = this.#buttons.indexOf(event.key.toUpperCase());
+      const key = this.buttons.indexOf(event.key.toUpperCase());
       if (key == -1) return;
       const id = this.#mobileButtons[key];
       buttonsIds[id]?.classList.remove("touched");

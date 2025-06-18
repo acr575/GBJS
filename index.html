@@ -169,7 +169,7 @@
 
     <div id="config-modal" class="modal">
       <div class="modal-content">
-        <h1 class="close nes-pointer">&times;</h1>
+        <h1 id="close-settings" class="close nes-pointer">&times;</h1>
         <h2>Settings</h2>
 
         <div class="settings">
@@ -315,17 +315,60 @@
             <p class="title">Joypad</p>
             <table class="settings-section">
               <tr>
-                <td><label for="gb-button-key">GB button - Key</label></td>
+                <td class="responsive-upper-label" style="width: 25%;">
+                  <label for="keyboard">Keyboard</label>
+                </td>
                 <td>
-                  <input
-                    type="text"
-                    id="gb-button-key"
-                    placeholder="Press a key..."
-                  />
+                  <div id="press-key-text">Press a key...</div>
+                  <div class="joypad-settings">
+                    <div class="joypad-row">
+                      <label for="0">A</label>
+                      <input type="text" id="0" class="nes-pointer" readonly value="J" />
+                    </div>
+                    <div class="joypad-row">
+                      <label for="1">B</label>
+                      <input type="text" id="1" class="nes-pointer" readonly value="K" />
+                    </div>
+                    <div class="joypad-row">
+                      <label for="2">Start</label>
+                      <input type="text" id="2" class="nes-pointer" readonly value="ENTER" />
+                    </div>
+                    <div class="joypad-row">
+                      <label for="3">Select</label>
+                      <input type="text" id="3" class="nes-pointer" readonly value="SHIFT" />
+                    </div>
+                    <div class="joypad-row">
+                      <label for="6">Up</label>
+                      <input type="text" id="6" class="nes-pointer" readonly value="W" />
+                    </div>
+                    <div class="joypad-row">
+                      <label for="7">Down</label>
+                      <input type="text" id="7" class="nes-pointer" readonly value="S" />
+                    </div>
+                    <div class="joypad-row">
+                      <label for="5">Left</label>
+                      <input type="text" id="5" class="nes-pointer" readonly value="A" />
+                    </div>
+                    <div class="joypad-row">
+                      <label for="4">Right</label>
+                      <input type="text" id="4" class="nes-pointer" readonly value="D" />
+                    </div>
+                  </div>
                 </td>
               </tr>
             </table>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="confirm-modal" class="modal">
+      <div class="modal-content">
+        <h1 id="close-confirm" class="close nes-pointer">&times;</h1>
+        <h2>Are you sure you want to quit game?</h2>
+        <div class="modal-btns">
+          <button id="confirm-yes"><span>Yes</span></button>
+          <button id="confirm-no"><span>No</span></button>
         </div>
       </div>
     </div>
