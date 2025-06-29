@@ -15,6 +15,7 @@ export class APU {
 
   #channelsTriggerAddrs = {};
   #channelsDACAddrs = {};
+  #channels = [];
 
   constructor(cpu) {
     this.cpu = cpu;
@@ -24,6 +25,7 @@ export class APU {
     this.#ch2 = new CH2(this);
     this.#ch3 = new CH3(this);
     // this.ch4 = new CH4(this);
+    this.#channels = [this.#ch1, this.#ch2, this.#ch3];
 
     this.#channelsTriggerAddrs = {
       0xff14: this.#ch1,
@@ -39,7 +41,8 @@ export class APU {
       // 0xff21: this.ch4,
     };
 
-    this.masterVolume = 0.05;
+    this.maxVolume = 0.1;
+    this.masterVolume = this.maxVolume;
   }
 
   getLeftVolume() {
@@ -67,6 +70,27 @@ export class APU {
     if (this.#ch2.isTriggered) this.#ch2.update(cycles);
     if (this.#ch3.isTriggered) this.#ch3.update(cycles);
     // this.ch4.update(cycles);
+  }
+
+  mute(...channels) {
+    if (channels.length == 0) this.audioCtx.suspend();
+    else {
+      channels.forEach((ch) => {
+        const channelObject = this.#channels[ch - 1];
+        channelObject.stop();
+        channelObject.triggerEnabled = false;
+      });
+    }
+  }
+
+  unmute(...channels) {
+    if (channels.length == 0) this.audioCtx.resume();
+    else {
+      channels.forEach((ch) => {
+        const channelObject = this.#channels[ch - 1];
+        channelObject.triggerEnabled = true;
+      });
+    }
   }
 
   writeByte(addr, val) {
@@ -117,7 +141,7 @@ export class APU {
       addr.toString()
     );
 
-    targetChannel.trigger();
+    if (targetChannel.triggerEnabled) targetChannel.trigger();
 
     // Set NR52 channel's bit
     const currentNR52 = this.cpu.mmu.ioRegs[this.#nr52 & 0x7f];

@@ -51,7 +51,7 @@ export class CPU {
   }
 
   init() {
-    // this.mmu = new MMU(this);
+    this.mmu.clearMemory();
 
     this.pc = 0x100;
     this.setRegister("AF", 0x01b0);

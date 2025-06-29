@@ -78,7 +78,10 @@ export class MMU {
         // else if (cartridgeType == 5 || cartridgeType == 6) this.MBC2 = true;
         else if (cartridgeType >= 0x19 && cartridgeType <= 0x1e)
           this.#MBC5 = true;
-        // else if (cartridgeType != 0) throw new Error("Unsupported MBC");
+        else if (cartridgeType != 0)
+          return reject(
+            new Error("Unsupported MBC. Only MBC1 and MBC5 games allowed.")
+          );
 
         // Initialize ram banks. 8KiB each bank
         this.#eram = new Uint8Array(this.#RAM_BANK_SIZE * ramBanks);
@@ -87,6 +90,20 @@ export class MMU {
         resolve(size);
       };
     });
+  }
+
+  clearMemory() {
+    [
+      this.cartridge,
+      this.#eram,
+      this.#wram,
+      this.ioRegs,
+      this.#hram,
+      this.cpu.gpu.oam,
+      this.cpu.gpu.vram,
+    ].map((arr) => arr.fill(0));
+
+    this.#ie = 0;
   }
 
   #getRamBanksNumber(ramSizeCode) {

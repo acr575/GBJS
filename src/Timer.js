@@ -1,28 +1,31 @@
 import { testBit } from "./GameBoyUtils.js";
 
 export class Timer {
+  /* TIMER REGISTERS */
+  #div = 0xff04; // Divider
+  #tima = 0xff05; // Timer counter
+  #tma = 0xff06; // Timer modulo
+  #tac = 0xff07; // Timer control
+
+  #timerCounter = 0;
+  #dividerCounter = 0;
+
   constructor(cpu) {
     this.cpu = cpu;
     this.mmu = this.cpu.mmu;
 
-    /* TIMER REGISTERS */
-    this.div = 0xff04; // Divider
-    this.tima = 0xff05; // Timer counter
-    this.tma = 0xff06; // Timer modulo
-    this.tac = 0xff07; // Timer control
-
-    this.timerCounter = this.getClockFreq();
-    this.dividerCounter = 0;
+    this.#timerCounter = this.#getClockFreq();
+    this.#dividerCounter = 0;
   }
 
   updateTimers(cycles) {
-    this.incDividerRegister(cycles);
+    this.#incDividerRegister(cycles);
 
     // TIMA (clock) must be enabled to update it
-    if (!this.isTimaEnabled()) return;
+    if (!this.#isTimaEnabled()) return;
 
-    this.timerCounter += cycles;
-    const clockFreq = this.getClockFreq();
+    this.#timerCounter += cycles;
+    const clockFreq = this.#getClockFreq();
 
     // Here, we need to increment the timer's internal counter relative to the tick size. The
     // counter may have to be incremented multiple times for a given tick. While this
@@ -34,30 +37,30 @@ export class Timer {
     // Notably, getting this wrong will cause blargg's instr_timing test ROM to fail with
     // the cryptic "Failure #255" message.
     // Source: https://github.com/feo-boy/feo-boy/blob/master/src/bus/timer.rs#L56-L66
-    while (this.timerCounter >= clockFreq) {
-      this.timerCounter -= clockFreq;
+    while (this.#timerCounter >= clockFreq) {
+      this.#timerCounter -= clockFreq;
 
       // Timer about to overflow
-      if (this.mmu.readByte(this.tima) >= 0xff) {
-        this.mmu.writeByte(this.tima, this.mmu.readByte(this.tma)); // Set TIMA to TMA
+      if (this.mmu.readByte(this.#tima) >= 0xff) {
+        this.mmu.writeByte(this.#tima, this.mmu.readByte(this.#tma)); // Set TIMA to TMA
         this.cpu.requestInterrupt(2);
       } else {
-        this.mmu.writeByte(this.tima, this.mmu.readByte(this.tima) + 1); // Increment TIMA
+        this.mmu.writeByte(this.#tima, this.mmu.readByte(this.#tima) + 1); // Increment TIMA
       }
     }
   }
 
-  isTimaEnabled() {
-    const tacValue = this.mmu.readByte(this.tac);
+  #isTimaEnabled() {
+    const tacValue = this.mmu.readByte(this.#tac);
     return testBit(tacValue, 2); // Bit 2 controls whether TIMA is incremented
   }
 
-  getClockSelect() {
-    return this.mmu.readByte(this.tac) & 0b11; // Freq. stored at TAC's last 2 bits
+  #getClockSelect() {
+    return this.mmu.readByte(this.#tac) & 0b11; // Freq. stored at TAC's last 2 bits
   }
 
-  getClockFreq() {
-    const freqIndex = this.getClockSelect();
+  #getClockFreq() {
+    const freqIndex = this.#getClockSelect();
     let freq;
 
     switch (freqIndex) {
@@ -81,11 +84,11 @@ export class Timer {
     return this.cpu.CLOCKSPEED / freq;
   }
 
-  incDividerRegister(cycles) {
-    this.dividerCounter += cycles;
-    if (this.dividerCounter >= 0xff) {
-      this.dividerCounter = 0;
-      this.mmu.ioRegs[this.div & 0x7f]++;
+  #incDividerRegister(cycles) {
+    this.#dividerCounter += cycles;
+    if (this.#dividerCounter >= 0xff) {
+      this.#dividerCounter = 0;
+      this.mmu.ioRegs[this.#div & 0x7f]++;
     }
   }
 }

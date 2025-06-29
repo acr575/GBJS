@@ -15,6 +15,7 @@ export class CH2 {
     this.nr24 = 0xff19;
 
     this.isTriggered = false;
+    this.triggerEnabled = true;
   }
 
   #getInitialLengthTimer() {

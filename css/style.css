@@ -6,12 +6,32 @@
   --secondary-color: #003566;
   --elements-color: #ffc300;
   --gb-buttons-color: #6f0119;
+  --quit-button-color: #6f0119;
+  --quit-button-color-hover: #660016;
   --secondary-color-hover: #01274b;
   --input-color: #ffffff;
   --focus-color: #cfcfcf;
-  --cylinder-color: #001d3d;
   --joypad-letters-color: #ffffff;
   --select-start-color: #737373;
+  --dpad-color: #003566;
+  --cylinder-color: #001d3d;
+}
+
+:root.light {
+  --bg-color: #c4c4b5;
+  --primary-color: #9ca08d;
+  --secondary-color: #8bac0f;
+  --elements-color: #0f380f;
+  --gb-buttons-color: #6f0119;
+  --quit-button-color: #818375;
+  --quit-button-color-hover: #64665a;
+  --secondary-color-hover: #7a990d;
+  --input-color: #ffffff;
+  --focus-color: #dcdccf;
+  --joypad-letters-color: #313696;
+  --select-start-color: #66685c;
+  --dpad-color: #080808;
+  --cylinder-color: #4f4f4f;
 }
 
 * {
@@ -37,6 +57,15 @@ header {
   text-align: center;
   padding: 20px;
   font-size: 1.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+#settings-header {
+  position: absolute;
+  left: 5%;
 }
 
 label {
@@ -64,6 +93,36 @@ label {
   display: flex;
   flex-direction: column;
   gap: 2vh;
+}
+
+.emulation-flow-btns {
+  width: 100%;
+  display: flex;
+  gap: 5%;
+}
+
+.emulation-flow-btns button {
+  width: 100%;
+}
+
+.load-state > *,
+.running-state > *,
+.paused-state > * {
+  display: none;
+}
+
+.load-state > .load,
+.running-state > .running,
+.paused-state > .paused {
+  display: flex;
+}
+
+#quit-btn {
+  background-color: var(--quit-button-color);
+}
+
+#quit-btn:hover {
+  background-color: var(--quit-button-color-hover);
 }
 
 #fileInput {
@@ -122,7 +181,7 @@ label {
   width: 29%;
   height: 37%;
   padding: 2px;
-  background-color: var(--secondary-color);
+  background-color: var(--dpad-color);
   display: flex;
   flex-direction: column;
   justify-content: space-around;
@@ -395,12 +454,13 @@ label {
 /* Modal Content/Box */
 .modal-content {
   background-color: var(--secondary-color);
-  margin: 10% auto; /* 15% from the top and centered */
+  margin: 5% auto; /* 15% from the top and centered */
   padding: 30px;
   border-radius: 10px;
-  width: 35%; /* Could be more or less, depending on screen size */
-  max-height: 60%;
+  width: 70%; /* Could be more or less, depending on screen size */
+  max-height: 80%;
   overflow-y: auto;
+  font-size: 100%;
 }
 
 .modal-content h2 {
@@ -425,9 +485,23 @@ label {
   padding: 0.5em;
 }
 
+.flex-td {
+  display: flex;
+  align-items: center;
+  gap: 10%;
+}
+
+#volume-value {
+  width: 34px;
+}
+
 .setting-row {
   display: flex;
   justify-content: space-between;
+}
+
+#settings-header {
+  display: none;
 }
 
 /* The Close Button */
@@ -442,6 +516,38 @@ label {
 .close:focus {
   color: black;
   text-decoration: none;
+}
+
+#confirm-modal .modal-content {
+  margin: 13% auto;
+  width: 50%;
+}
+
+#confirm-modal h1 {
+  margin-left: 100%;
+}
+
+.modal-btns {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 35px;
+  margin-top: 10%;
+}
+
+.modal-btns button {
+  width: 35%;
+  text-align: center;
+}
+
+#confirm-yes {
+  background-color: var(--quit-button-color);
+  color: white;
+}
+
+#confirm-no {
+  color: white;
+  background-color: var(--elements-color);
 }
 
 button {
@@ -469,6 +575,53 @@ button:hover {
 
 .icon {
   width: 25px;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+input[type="range"] {
+  accent-color: var(--elements-color);
+}
+
+.joypad-settings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.joypad-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.joypad-row label {
+  font-weight: bold;
+}
+
+.joypad-row input {
+  text-align: center;
+  padding: 0.5rem;
+  font-size: 80%;
+  width: 70%;
+  height: 20%;
+}
+
+.joypad-row input.listening {
+  background-color: #ffeaa7;
+  border: 2px dashed #636e72;
+  outline: none;
+}
+
+#press-key-text {
+  width: 100%;
+  text-align: center;
+  padding-bottom: 10px;
+  color: #636e72;
+  visibility: hidden;
 }
 
 /* NES.CSS OVERRIDE STYLES */
@@ -587,6 +740,26 @@ button:hover {
   .joypad-letters {
     font-size: 60%;
   }
+
+  .modal-content {
+    width: 90% !important;
+  }
+
+  h2 {
+    font-size: 100%;
+  }
+
+  .close {
+    font-size: 1.3em;
+  }
+
+  .settings {
+    font-size: 60%;
+  }
+
+  .title {
+    font-size: 1.3em !important;
+  }
 }
 
 /* MOBILE LANDSCAPE */
@@ -610,6 +783,10 @@ button:hover {
     font-size: 65%;
   }
 
+  .emulation-flow-btns {
+    flex-wrap: wrap;
+  }
+
   header {
     font-size: 65%;
   }
@@ -618,6 +795,10 @@ button:hover {
     width: 18vw;
     height: 18vw;
     bottom: 11%;
+  }
+
+  #confirm-modal .modal-content {
+    margin: 7% auto;
   }
 }
 
@@ -644,6 +825,10 @@ button:hover {
     gap: 0;
   }
 
+  .modal-content {
+    margin: 15% auto;
+  }
+
   #screen {
     width: 100vw;
     height: auto;
@@ -664,7 +849,7 @@ button:hover {
   }
 
   #main-buttons {
-    width: 60%;
+    width: 90%;
   }
 
   #settings-btn {
@@ -698,7 +883,8 @@ button:hover {
     height: 55%;
   }
 
-  .a, .b {
+  .a,
+  .b {
     height: 85%;
   }
 
@@ -709,5 +895,43 @@ button:hover {
 
   .select-start .a-b-bg {
     width: 30%;
+  }
+
+  .nes-container.with-title {
+    position: relative;
+  }
+
+  table {
+    border-collapse: separate;
+    border-spacing: 0 20px;
+  }
+
+  .nes-select {
+    width: 100%;
+  }
+
+  .responsive-upper-label {
+    position: absolute;
+    transform: translateY(-72%);
+  }
+
+  .centered {
+    text-align: end;
+  }
+
+  .responsive-inline-label {
+    position: absolute;
+  }
+
+  #settings-header {
+    display: block;
+  }
+
+  input[type="range"] {
+    width: 90%;
+  }
+
+  #confirm-modal .modal-content {
+    margin: 50% auto;
   }
 }

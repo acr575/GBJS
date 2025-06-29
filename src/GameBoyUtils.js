@@ -29,3 +29,36 @@ export const createSelectOption = (options, select) => {
     select.appendChild(optionElement);
   });
 };
+
+export const handleOpenModal = (modal, closeBtn, openBtns) => {
+  // When the user clicks on the button, open the modal
+  openBtns.forEach((btn) => {
+    btn.onclick = function () {
+      modal.style.display = "block";
+    };
+  });
+
+  // When user press escape, close the modal
+  document.addEventListener("keydown", (event) => {
+    if (event.key == "Escape") modal.style.display = "none";
+  });
+
+  // When the user clicks on <span> (x), close the modal
+  closeBtn.forEach((btn) => {
+    btn.onclick = function () {
+      modal.style.display = "none";
+    };
+  });
+
+  // When the user clicks anywhere outside of the modal, close it
+  window.onclick = function (event) {
+    if (event.target == modal) {
+      modal.style.display = "none";
+    }
+  };
+};
+
+export const closeActiveModals = () => {
+  const modals = document.querySelectorAll(".modal");
+  Array.from(modals).map((modal) => (modal.style.display = "none"));
+};
