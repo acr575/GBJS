@@ -1,4 +1,3 @@
-// Playwright config for loading the built app and running ROM-driven tests
 const { devices } = require('@playwright/test')
 module.exports = {
   testDir: './',
@@ -17,7 +16,6 @@ module.exports = {
   ],
   webServer: {
     command: 'npx http-server ./dist -p 8080',
-    url: 'http://localhost:8080',
     port: 8080,
     timeout: 120000,
     reuseExistingServer: false,
