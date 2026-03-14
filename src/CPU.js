@@ -3,7 +3,7 @@ import { MMU } from "./MMU.ts";
 import { Timer } from "./Timer.ts";
 import { PPU } from "./GPU.ts";
 import { Joypad } from "./Joypad.js";
-import { APU } from "./APU/APU.js";
+import { APU } from "./APU/APU.ts";
 import { getSignedByte, resetBit, setBit } from "./GameBoyUtils.ts";
 
 const nextButton = document.getElementById("next");
