@@ -1,0 +1,41 @@
+{
+  "name": "gbjs",
+  "version": "1.0.0",
+  "description": "A classic Game Boy (DMG-01) emulator written in vanilla JavaScript (ES modules). This project runs entirely in the browser and lets you load and play .gb/.gbc ROMs using an on-screen or keyboard-controlled joypad.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 5000",
+    "lint": "eslint . --ext .js,.ts",
+    "format": "prettier --write .",
+    "test": "vitest",
+    "test:unit": "vitest",
+    "test:e2e": "playwright test --project=chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^20.19.37",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-prettier": "^5.5.5",
+    "http-server": "^14.1.1",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21",
+    "vitest": "^0.34.6"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/acr575/GBJS.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/acr575/GBJS/issues"
+  },
+  "homepage": "https://github.com/acr575/GBJS#readme"
+}
