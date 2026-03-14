@@ -3,7 +3,7 @@ import {
   closeActiveModals,
   createSelectOption,
   handleOpenModal,
-} from "./GameBoyUtils.js";
+} from "./GameBoyUtils.ts";
 
 class GameBoy {
   #defaultFrameRate = 0;

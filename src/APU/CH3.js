@@ -1,4 +1,4 @@
-import { testBit } from "../GameBoyUtils.js";
+import { testBit } from "../GameBoyUtils.ts";
 
 export class CH3 {
   #nr30 = 0xff1a;

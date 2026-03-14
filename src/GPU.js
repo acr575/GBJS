@@ -1,4 +1,4 @@
-import { getSignedByte, resetBit, setBit, testBit } from "./GameBoyUtils.js";
+import { getSignedByte, resetBit, setBit, testBit } from "./GameBoyUtils.ts";
 
 const WHITE = 0;
 const LIGHT_GRAY = 1;

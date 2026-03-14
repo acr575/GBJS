@@ -1,4 +1,4 @@
-import { testBit } from "../GameBoyUtils.js";
+import { testBit } from "../GameBoyUtils.ts";
 
 export class CH2 {
   #lengthTimerCycles = 16384; // Remaining cycles to tick up length timer (16384 cycles, 256 Hz)

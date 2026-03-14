@@ -1,4 +1,4 @@
-import { testBit } from "../GameBoyUtils.js";
+import { testBit } from "../GameBoyUtils.ts";
 import { CH2 } from "./CH2.js";
 
 export class CH1 extends CH2 {

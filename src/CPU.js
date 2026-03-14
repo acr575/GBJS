@@ -1,10 +1,10 @@
 import { OpcodeTable } from "./OpcodeTable.js";
-import { MMU } from "./MMU.js";
-import { Timer } from "./Timer.js";
+import { MMU } from "./MMU.ts";
+import { Timer } from "./Timer.ts";
 import { PPU } from "./GPU.js";
 import { Joypad } from "./Joypad.js";
 import { APU } from "./APU/APU.js";
-import { getSignedByte, resetBit, setBit } from "./GameBoyUtils.js";
+import { getSignedByte, resetBit, setBit } from "./GameBoyUtils.ts";
 
 const nextButton = document.getElementById("next");
 const debugPC = document.getElementById("pc");

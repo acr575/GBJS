@@ -1,4 +1,4 @@
-import { resetBit, setBit, testBit } from "../GameBoyUtils.js";
+import { resetBit, setBit, testBit } from "../GameBoyUtils.ts";
 
 export class CH4 {
   constructor(apu) {

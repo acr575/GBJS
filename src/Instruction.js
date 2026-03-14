@@ -1,4 +1,4 @@
-import { getSignedByte } from "./GameBoyUtils.js";
+import { getSignedByte } from "./GameBoyUtils.ts";
 
 export class Instruction {
   constructor(cpu) {

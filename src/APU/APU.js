@@ -1,4 +1,4 @@
-import { setBit, testBit } from "../GameBoyUtils.js";
+import { setBit, testBit } from "../GameBoyUtils.ts";
 import { CH1 } from "./CH1.js";
 import { CH2 } from "./CH2.js";
 import { CH3 } from "./CH3.js";
