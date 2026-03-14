@@ -1,0 +1,9 @@
+[
+  {
+    "name": "blargg-instrs",
+    "file": "blargg-instrs.gb",
+    "durationMs": 10000,
+    "compare": "screenshot",
+    "tolerance": 0
+  }
+]
