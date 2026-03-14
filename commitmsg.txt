@@ -1,0 +1,3 @@
+migrate: convert Instruction/OpcodeTable/Disassembler to TypeScript
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
