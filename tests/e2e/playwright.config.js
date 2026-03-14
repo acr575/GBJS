@@ -15,4 +15,11 @@ module.exports = {
       use: { ...devices['Desktop Chrome'] },
     },
   ],
+  webServer: {
+    command: 'npx http-server ./dist -p 8080',
+    url: 'http://localhost:8080',
+    port: 8080,
+    timeout: 120000,
+    reuseExistingServer: false,
+  },
 }
