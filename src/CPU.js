@@ -2,7 +2,7 @@ import { OpcodeTable } from "./OpcodeTable.js";
 import { MMU } from "./MMU.ts";
 import { Timer } from "./Timer.ts";
 import { PPU } from "./GPU.ts";
-import { Joypad } from "./Joypad.js";
+import { Joypad } from "./Joypad.ts";
 import { APU } from "./APU/APU.ts";
 import { getSignedByte, resetBit, setBit } from "./GameBoyUtils.ts";
 
