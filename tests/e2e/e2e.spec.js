@@ -7,6 +7,8 @@ const fs = require('fs')
 test('load ROM file and render screen', async ({ page }) => {
   // The CI will serve ./dist at http://localhost:8080
   await page.goto('http://localhost:8080', { waitUntil: 'networkidle' })
+  // Dump page html to help debugging when element isn't found
+  console.log('PAGE HTML:\n', await page.content())
   await page.waitForSelector('#fileInput', { timeout: 5000 })
 
   // Ensure file input exists
