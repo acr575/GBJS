@@ -20,6 +20,7 @@ class GameBoy {
   #maxFramesPerTick = 3;
   #gameLoaded = false;
   #gamePaused = false;
+  #savStatusTimer = 0;
 
   #settings = {
     interface: {
@@ -80,6 +81,7 @@ class GameBoy {
     this.#frameMs = 1000 / (this.cpu.CLOCKSPEED / CPU.T_CYCLES_PER_FRAME);
 
     this.#handleInputFiles();
+    this.#handleSavFiles();
     this.#handleSettingsModal();
     this.#handleResponsive();
     this.#handlePauseEmulation();
@@ -101,17 +103,86 @@ class GameBoy {
 
       if (!file) return;
 
+      // Stop the CPU before the file replaces external RAM, so a write from
+      // the cart that is leaving cannot land in the new buffer.
+      this.#stopLoop();
+      this.windowPauseEnabled = false;
+
       try {
         await this.cpu.mmu.load(file);
       } catch (error) {
+        if (error && error.cancelled) return;
+        this.#setSavVisible(false);
         this.#renderText(error.message, "#6f0119"); // Render error
         throw new Error(error);
       }
 
       // Game loaded
+      this.#setSavVisible(this.cpu.mmu.hasBattery());
       this.#switchState("running");
       this.#start();
     });
+  }
+
+  #handleSavFiles() {
+    const exportBtn = document.getElementById("export-sav-btn");
+    const importBtn = document.getElementById("import-sav-btn");
+    const input = document.getElementById("savInput");
+
+    exportBtn.addEventListener("click", () => {
+      this.#exportSav();
+    });
+
+    importBtn.addEventListener("click", () => input.click());
+
+    input.addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      event.target.value = null;
+      if (!file) return;
+
+      try {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        await this.cpu.mmu.importSav(bytes);
+        this.#showSavStatus("Save imported.");
+      } catch (error) {
+        this.#showSavStatus(error.message || "Could not import the save.");
+      }
+    });
+  }
+
+  #exportSav() {
+    const bytes = this.cpu.mmu.exportSav();
+    if (!bytes) {
+      this.#showSavStatus("This cartridge has no battery RAM.");
+      return;
+    }
+
+    this.cpu.mmu.flushBattery();
+    const blob = new Blob([bytes], { type: "application/octet-stream" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = this.cpu.mmu.saveFileName();
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    this.#showSavStatus("Save exported.");
+  }
+
+  #setSavVisible(on) {
+    document.getElementById("sav-buttons").hidden = !on;
+    if (!on) this.#showSavStatus("");
+  }
+
+  #showSavStatus(text) {
+    const el = document.getElementById("sav-status");
+    clearTimeout(this.#savStatusTimer);
+    el.textContent = text || "";
+    el.hidden = !text;
+    if (!text) return;
+    this.#savStatusTimer = setTimeout(() => {
+      el.hidden = true;
+      el.textContent = "";
+    }, 4000);
   }
 
   #handlePauseEmulation() {
@@ -144,8 +215,10 @@ class GameBoy {
   #quitGame() {
     const fileInput = document.getElementById("fileInput");
 
-    // Stop game
+    // Stop game. Snapshot the battery RAM before this CPU is dropped.
     this.#stopLoop();
+    this.cpu.mmu.flushBattery();
+    this.#setSavVisible(false);
     this.#gamePaused = false;
     this.#gameLoaded = false;
     this.windowPauseEnabled = false;
@@ -704,6 +777,8 @@ class GameBoy {
 
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
+        // Start the IndexedDB write before the tab is frozen.
+        this.cpu.mmu.flushBattery();
         if (!this.#gamePaused && this.windowPauseEnabled) {
           this.#pauseEmulation();
           gamePausedByWindow = true;
@@ -716,6 +791,10 @@ class GameBoy {
         this.#resumeEmulation();
         gamePausedByWindow = false;
       }
+    });
+
+    window.addEventListener("pagehide", () => {
+      this.cpu.mmu.flushBattery();
     });
   }
 
@@ -740,4 +819,6 @@ class GameBoy {
 
 /* MAIN SCRIPT */
 
-new GameBoy();
+const gameBoy = new GameBoy();
+
+export { gameBoy };

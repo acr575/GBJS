@@ -732,18 +732,18 @@ export class Instruction {
   }
 
   HALT() {
-    this.cpu.isHalted = true;
+    this.cpu.enterHalt();
   }
 
   // TODO: STOP instrruction
   STOP() {}
 
   DI() {
-    this.cpu.ime = false;
+    this.cpu.cancelIme();
   }
 
   EI() {
-    this.cpu.requestIme = 2;
+    this.cpu.scheduleIme();
   }
 
   PREFIX_CB(opcode) {
