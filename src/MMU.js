@@ -162,10 +162,12 @@ export class MMU {
     else if (addr >= 0xfe00 && addr < 0xfea0)
       return this.cpu.gpu.oam[addr & 0xff];
     // I/O Registers
-    else if (addr >= 0xff00 && addr < 0xff80)
-      return addr == 0xff00
-        ? this.cpu.joypad.readJoypad()
-        : this.ioRegs[addr & 0x7f];
+    else if (addr >= 0xff00 && addr < 0xff80) {
+      if (addr == 0xff00) return this.cpu.joypad.readJoypad();
+      // Bits 5-7 of IF are unused and read as 1.
+      if (addr == 0xff0f) return this.ioRegs[0x0f] | 0xe0;
+      return this.ioRegs[addr & 0x7f];
+    }
     // HRAM
     else if (addr >= 0xff80 && addr < 0xffff) return this.#hram[addr & 0x7f];
 

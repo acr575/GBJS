@@ -31,13 +31,20 @@ export class CPU {
   #cycleCounter = 0;
   #opcodeTable = null;
   #instructionTable = null;
+  // EI enables IME after the following instruction. The instruction sets
+  // #imeQueue; once it has finished, that moves to #imeArm and IME rises
+  // before the next interrupt check. DI clears both, so EI / DI never enables.
+  #imeQueue = false;
+  #imeArm = false;
+  // Set when HALT runs with IME clear and an interrupt already pending.
+  // The next opcode fetch does not advance PC.
+  #haltBug = false;
 
   constructor() {
     this.#registersValues = new Uint8Array(8); // a-l 8 bit registers
     this.pc = 0x100; // Program Counter. Initialized at 0x100
     this.sp = 0xfffe; // Stack Pointer.  Initialized at 0xfffe
-    this.ime = false; // Interrup master enable flag. Starts unset
-    this.requestIme = 0; // Flag that sets IME flag after next instruccion. Used by EI instruction
+    this.ime = false; // Interrupt master enable flag. Starts unset
     this.isHalted = false;
     this.#isStopped = false;
     this.#cycleCounter = 0;
@@ -58,6 +65,11 @@ export class CPU {
     this.mmu.clearMemory();
 
     this.pc = 0x100;
+    this.ime = false;
+    this.isHalted = false;
+    this.#imeQueue = false;
+    this.#imeArm = false;
+    this.#haltBug = false;
     this.setRegister("AF", 0x01b0);
     this.setRegister("BC", 0x0013);
     this.setRegister("DE", 0x00d8);
@@ -262,10 +274,22 @@ export class CPU {
           this.pc.toString(16)
       );
 
+    // Halt bug: the opcode was fetched, but PC did not advance. Operand
+    // reads use PC+1, so backing PC up by one makes them reread that byte.
+    // A one-byte instruction therefore runs twice.
+    let bugged = false;
+    if (this.#haltBug) {
+      this.#haltBug = false;
+      bugged = true;
+      this.pc = (this.pc - 1) & 0xffff;
+    }
+
     const oldPC = this.pc;
     fetch.instruction(); // Execute opcode
-    if (oldPC === this.pc || fetch.mnemonic[0] === "JR")
+    if (oldPC === this.pc || fetch.mnemonic[0] === "JR") {
       this.pc += fetch.length; // Update PC if it wasn't modified by a jump or subroutine instruction, except JR
+      if (bugged) this.pc &= 0xffff;
+    }
 
     // Return instruction cycles
     return typeof fetch.cycles === "function" ? fetch.cycles() : fetch.cycles;
@@ -286,17 +310,22 @@ export class CPU {
       //   for (let i = 0; i < instructionCount; i++) {
       let cycles = 4;
       if (!this.isHalted) cycles = this.#execInstruction();
-      this.#cycleCounter += cycles;
       frameCycles += cycles;
+      vBlank = this.#advance(cycles);
 
-      this.timer.updateTimers(cycles);
-      vBlank = this.gpu.updateGraphics(cycles);
-      this.apu.updateAudio(cycles);
+      // HALT wakes when IE & IF is nonzero, even if IME is clear. Servicing
+      // still requires IME. A pending interrupt that was already there when
+      // HALT executed never enters this state: that is the halt bug.
+      if (this.isHalted && this.#interruptPending()) this.isHalted = false;
 
-      // console.log("Scanline: " + this.mmu.readByte(this.gpu.ly));
-      this.#checkInterrupts();
-      // Enable IME requested by EI. EI sets requestIme to 2.
-      this.#handleRequestIme();
+      // EI's enable lands after the instruction that followed EI, and before
+      // the interrupt check, so that instruction is not interrupted.
+      this.#promoteIme();
+
+      if (this.ime && this.#interruptPending()) {
+        frameCycles += 20;
+        vBlank = this.#dispatchInterrupt() || vBlank;
+      }
 
       // The LCD-on path leaves on vblank, which is one frame (~70224, or
       // 65664 the first time, before vblank has started). LCD off never
@@ -326,66 +355,111 @@ export class CPU {
     let ifValue = this.mmu.readByte(this.#if);
     ifValue = setBit(ifValue, interruptId);
     this.mmu.writeByte(this.#if, ifValue);
-    this.isHalted = false;
   }
 
-  #checkInterrupts() {
-    if (this.ime) {
-      let ifValue = this.mmu.readByte(this.#if);
-      let ieValue = this.mmu.readByte(this.#ie);
-
-      if (ifValue > 0) {
-        for (let i = 0; i < 5; i++) {
-          let currentBitIf = (ifValue >> i) & 1;
-          let currentBitIe = (ieValue >> i) & 1;
-
-          if (currentBitIf && currentBitIe) {
-            this.#serviceInterrupt(i);
-            break;
-          }
-        }
-      }
-    }
+  /** EI: IME rises after the next instruction. DI before then cancels it. */
+  scheduleIme() {
+    this.#imeQueue = true;
   }
 
-  #serviceInterrupt(interruptId) {
+  /** DI takes effect immediately and drops an EI that has not landed yet. */
+  cancelIme() {
     this.ime = false;
-    let ifValue = this.mmu.readByte(this.#if);
-    ifValue = resetBit(ifValue, interruptId); // Reset serviced interrupt bit
-    this.mmu.ioRegs[this.#if & 0x7f] = ifValue;
-    this.isHalted = false;
-    this.#cycleCounter += 20;
-
-    this.#opcodeTable.instruction.push(this.pc);
-
-    switch (interruptId) {
-      case 0:
-        this.pc = 0x40;
-        break;
-
-      case 1:
-        this.pc = 0x48;
-        break;
-
-      case 2:
-        this.pc = 0x50;
-        break;
-
-      case 3:
-        this.pc = 0x58;
-        break;
-
-      case 4:
-        this.pc = 0x60;
-        break;
-    }
+    this.#imeArm = false;
+    this.#imeQueue = false;
   }
 
-  #handleRequestIme() {
-    if (this.requestIme > 0) {
-      if (this.requestIme == 1) this.ime = true;
-      this.requestIme--;
+  /**
+   * HALT. With nothing pending the CPU waits until IE & IF is nonzero.
+   * If something is already pending and IME is clear, the halt bug arms
+   * and execution continues. If IME is set, the interrupt is serviced
+   * after this instruction's 4 T-cycles.
+   */
+  enterHalt() {
+    if (!this.#interruptPending()) {
+      this.isHalted = true;
+      return;
     }
+    if (!this.ime) this.#haltBug = true;
+  }
+
+  #promoteIme() {
+    if (this.#imeArm) this.ime = true;
+    this.#imeArm = this.#imeQueue;
+    this.#imeQueue = false;
+  }
+
+  #interruptPending() {
+    const pending = this.mmu.readByte(this.#ie) & this.mmu.readByte(this.#if);
+    return (pending & 0x1f) !== 0;
+  }
+
+  /**
+   * Advance the timer, PPU and APU by `cycles` T-cycles.
+   * The interrupt prologue steps one M-cycle at a time so the push that
+   * overwrites IE (ie_push) is sampled between the two stack writes.
+   * @param {number} cycles
+   * @returns {boolean} True when the PPU entered vblank on this step.
+   */
+  #advance(cycles) {
+    this.#cycleCounter += cycles;
+    this.timer.updateTimers(cycles);
+    const vBlank = this.gpu.updateGraphics(cycles);
+    this.apu.updateAudio(cycles);
+    return vBlank === true;
+  }
+
+  /**
+   * Interrupt dispatch: 5 M-cycles (20 T-cycles).
+   * Two idle cycles, push PC high, push PC low, then load the vector.
+   * IE is sampled after the high byte, so a push that overwrites IE can
+   * change the vector or, if nothing remains enabled, send PC to 0.
+   * Cancelling still clears IME and still spends the 20 T-cycles. The
+   * accepted interrupt's IF bit is cleared only when a vector is taken.
+   * @returns {boolean} True if the PPU entered vblank during the prologue.
+   */
+  #dispatchInterrupt() {
+    let vBlank = false;
+    const step = () => {
+      vBlank = this.#advance(4) || vBlank;
+    };
+
+    step();
+    step();
+
+    this.ime = false;
+    this.#imeArm = false;
+    this.#imeQueue = false;
+    this.#haltBug = false;
+    this.isHalted = false;
+
+    const pc = this.pc & 0xffff;
+
+    step();
+    this.sp = (this.sp - 1) & 0xffff;
+    this.mmu.writeByte(this.sp, pc >> 8);
+
+    const mask = this.mmu.readByte(this.#ie) & this.mmu.readByte(this.#if) & 0x1f;
+
+    step();
+    this.sp = (this.sp - 1) & 0xffff;
+    this.mmu.writeByte(this.sp, pc & 0xff);
+
+    step();
+    if (mask === 0) {
+      this.pc = 0;
+      return vBlank;
+    }
+
+    let interruptId = 0;
+    while (((mask >> interruptId) & 1) === 0) interruptId++;
+
+    this.mmu.ioRegs[this.#if & 0x7f] = resetBit(
+      this.mmu.ioRegs[this.#if & 0x7f],
+      interruptId
+    );
+    this.pc = 0x40 + interruptId * 8;
+    return vBlank;
   }
 
   updateDebugBox() {
