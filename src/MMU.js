@@ -14,7 +14,14 @@ export class MMU {
   #currentRomBank = 1; // ROM bank loaded. 1 by default bc 0 is loaded always
   #currentRamBank = 0; // RAM bank loaded
   #isRamBankingEnabled = false;
-  #bankingAdvancedMode = false;
+  // MBC1 registers. The 5-bit ROM bank stores 0 as 1. The 2-bit secondary
+  // register is ROM bits 5-6, and in mode 1 it also selects the RAM bank
+  // and the bank seen at 0000-3FFF. Counts come from the loaded cart.
+  #mbc1RomBank = 1;
+  #mbc1Secondary = 0;
+  #mbc1Mode = 0;
+  #romBankCount = 0;
+  #ramBankCount = 0;
   #CARTRIDGE_MAX_SIZE = 1572864; // 1.5 MiB
   #RAM_BANK_SIZE = 0x2000; // 8 KiB
   #ROM_BANK_SIZE = 0x4000; // 16 KiB
@@ -72,6 +79,9 @@ export class MMU {
 
         const cartridgeType = this.cartridge[0x147];
         const ramBanks = this.#getRamBanksNumber(this.cartridge[0x149]);
+        this.#resetMbc();
+        this.#romBankCount = size >> 14;
+        this.#ramBankCount = ramBanks;
 
         // Set memory banking mode
         if (cartridgeType >= 1 && cartridgeType <= 3) this.#MBC1 = true;
@@ -126,10 +136,12 @@ export class MMU {
   }
 
   readByte(addr) {
-    // ROM Bank 00
-    if (addr >= 0 && addr < 0x4000) return this.cartridge[addr];
+    // ROM Bank 00. MBC1 mode 1 can map this with the secondary register.
+    if (addr >= 0 && addr < 0x4000)
+      return this.#MBC1 ? this.#readMbc1Rom(addr, false) : this.cartridge[addr];
     // Read from current loaded bank
     else if (addr >= 0x4000 && addr < 0x8000) {
+      if (this.#MBC1) return this.#readMbc1Rom(addr, true);
       const romAddr =
         (addr & 0x3fff) + this.#currentRomBank * this.#ROM_BANK_SIZE;
       return this.cartridge[romAddr % this.cartridge.length]; // Prevent out-of-bounds
@@ -137,11 +149,13 @@ export class MMU {
     // VRAM
     else if (addr >= 0x8000 && addr < 0xa000)
       return this.cpu.gpu.vram[addr & 0x1fff];
-    // ERAM
-    else if (addr >= 0xa000 && addr < 0xc000)
+    // ERAM. MBC1 returns 0xFF while the RAM is disabled.
+    else if (addr >= 0xa000 && addr < 0xc000) {
+      if (this.#MBC1) return this.#readMbc1Ram(addr);
       return this.#eram[
         (addr & 0x1fff) + this.#currentRamBank * this.#RAM_BANK_SIZE
       ];
+    }
     // WRAM & ECHO RAM
     else if (addr >= 0xc000 && addr < 0xfe00) return this.#wram[addr & 0x1fff];
     // OAM
@@ -170,9 +184,13 @@ export class MMU {
     else if (addr >= 0x8000 && addr < 0xa000)
       this.cpu.gpu.vram[addr & 0x1fff] = val;
     // ERAM
-    else if (addr >= 0xa000 && addr < 0xc000 && this.#isRamBankingEnabled)
-      this.#eram[(addr & 0x1fff) + this.#currentRamBank * this.#RAM_BANK_SIZE] =
-        val;
+    else if (addr >= 0xa000 && addr < 0xc000 && this.#isRamBankingEnabled) {
+      if (this.#MBC1) this.#writeMbc1Ram(addr, val);
+      else
+        this.#eram[
+          (addr & 0x1fff) + this.#currentRamBank * this.#RAM_BANK_SIZE
+        ] = val;
+    }
     // WRAM & ECHO RAM
     else if (addr >= 0xc000 && addr < 0xfe00) this.#wram[addr & 0x1fff] = val;
     // OAM
@@ -200,6 +218,18 @@ export class MMU {
     else this.ioRegs[addr & 0x7f] = val;
   }
 
+  #resetMbc() {
+    this.#MBC1 = false;
+    this.#MBC2 = false;
+    this.#MBC5 = false;
+    this.#currentRomBank = 1;
+    this.#currentRamBank = 0;
+    this.#isRamBankingEnabled = false;
+    this.#mbc1RomBank = 1;
+    this.#mbc1Secondary = 0;
+    this.#mbc1Mode = 0;
+  }
+
   #handleBankChange(addr, val) {
     // Enable RAM
     if (addr < 0x2000 && (this.#MBC1 || this.#MBC2 || this.#MBC5))
@@ -213,49 +243,68 @@ export class MMU {
     // RAM Bank number - MBC5: 0x4000–0x5FFF
     else if (this.#MBC5 && addr >= 0x4000 && addr < 0x6000)
       this.#currentRamBank = val & 0x0f;
-    // MBC1 behavior
-    else if (addr >= 0x2000 && addr < 0x4000 && (this.#MBC1 || this.#MBC2))
-      this.#changeLoRomBank(val);
-    else if (addr >= 0x4000 && addr < 0x6000 && this.#MBC1) {
-      if (this.#bankingAdvancedMode) this.#changeHiRomBank(val);
-      else this.#changeRamBank(val);
-    } else if (addr >= 0x6000 && addr < 0x8000 && this.#MBC1)
-      this.#changeMode(val);
+    // MBC1: 5-bit ROM bank. 0 in this register is treated as 1.
+    else if (this.#MBC1 && addr >= 0x2000 && addr < 0x4000) {
+      const bank = val & 0x1f;
+      this.#mbc1RomBank = bank == 0 ? 1 : bank;
+    }
+    // MBC1: 2-bit secondary register (ROM bits 5-6, or the RAM bank).
+    else if (this.#MBC1 && addr >= 0x4000 && addr < 0x6000)
+      this.#mbc1Secondary = val & 0x03;
+    // MBC1: banking mode. 0 locks RAM and 0000-3FFF to bank 0.
+    else if (this.#MBC1 && addr >= 0x6000 && addr < 0x8000)
+      this.#mbc1Mode = val & 0x01;
+    // MBC2 ROM bank is the low nibble, and 0 is treated as 1.
+    else if (this.#MBC2 && addr >= 0x2000 && addr < 0x4000)
+      this.#currentRomBank = val & 0x0f || 1;
   }
 
   #enableRamBanking(addr, val) {
     // In MBC2, bit 4 of addr must be 0
     if (this.#MBC2 && testBit(addr, 4)) return;
 
-    let highByte = val & 0xf;
-    if (highByte == 0xa) this.#isRamBankingEnabled = true;
-    else if (highByte == 0) this.#isRamBankingEnabled = false;
+    // Low nibble 0xA enables external RAM. Any other value disables it.
+    this.#isRamBankingEnabled = (val & 0xf) == 0xa;
   }
 
-  #changeLoRomBank(val) {
-    if (this.#MBC2) {
-      this.#currentRomBank = val & 0xf || 1;
-      return;
-    }
-
-    let lowerBits = val & 0b11111;
-    this.#currentRomBank &= 0b11100000; // Reset lower 5 bits
-    this.#currentRomBank = this.#currentRomBank | lowerBits || 1;
+  // Drop address lines the installed ROM or RAM does not have.
+  #selectBank(bank, count) {
+    if (count <= 1) return 0;
+    if ((count & (count - 1)) == 0) return bank & (count - 1);
+    return bank % count;
   }
 
-  #changeHiRomBank(val) {
-    let upperBits = val & 0b01100000;
-    this.#currentRomBank &= 0b00011111; // Reset upper 3 bits
-    this.#currentRomBank = this.#currentRomBank | upperBits || 1;
+  #mbc1LowRomBank() {
+    if (this.#mbc1Mode == 0) return 0;
+    return this.#selectBank(this.#mbc1Secondary << 5, this.#romBankCount);
   }
 
-  #changeRamBank(val) {
-    this.#currentRamBank = val & 0x3;
+  #mbc1HighRomBank() {
+    const bank = (this.#mbc1Secondary << 5) | this.#mbc1RomBank;
+    return this.#selectBank(bank, this.#romBankCount);
   }
 
-  #changeMode(val) {
-    this.#bankingAdvancedMode = testBit(val, 0);
-    if (this.#bankingAdvancedMode) this.#currentRamBank = 0;
+  #mbc1RamBank() {
+    if (this.#mbc1Mode == 0) return 0;
+    return this.#selectBank(this.#mbc1Secondary, this.#ramBankCount);
+  }
+
+  #readMbc1Rom(addr, high) {
+    const bank = high ? this.#mbc1HighRomBank() : this.#mbc1LowRomBank();
+    return this.cartridge[bank * this.#ROM_BANK_SIZE + (addr & 0x3fff)];
+  }
+
+  #readMbc1Ram(addr) {
+    if (!this.#isRamBankingEnabled || this.#ramBankCount == 0) return 0xff;
+    return this.#eram[
+      (addr & 0x1fff) + this.#mbc1RamBank() * this.#RAM_BANK_SIZE
+    ];
+  }
+
+  #writeMbc1Ram(addr, val) {
+    if (this.#ramBankCount == 0) return;
+    this.#eram[(addr & 0x1fff) + this.#mbc1RamBank() * this.#RAM_BANK_SIZE] =
+      val;
   }
 
   setupAddressInput() {
