@@ -11,6 +11,7 @@ export class PPU {
   #windowLine;
   #clock;
   #mode;
+  #needsPresent = false;
 
   
   #lcdc = 0xff40; // LCD Control
@@ -73,7 +74,7 @@ export class PPU {
       this.#windowLine = 0;
       this.#clock = 0;
       this.#setLY(0);
-      return;
+      return false;
     }
 
     switch (this.#mode) {
@@ -125,6 +126,13 @@ export class PPU {
     return vBlank;
   }
 
+  // Scanlines paint the off-screen buffer. Upload it once per frame.
+  present() {
+    if (!this.#needsPresent) return;
+    this.context.putImageData(this.#frameBuffer, 0, 0);
+    this.#needsPresent = false;
+  }
+
   #updateLY() {
     this.#setLY(this.#line);
     let statVal = this.mmu.readByte(this.#stat);
@@ -160,7 +168,7 @@ export class PPU {
     if (renderBGWin || renderSprites) {
       if (renderBGWin) this.#renderBGWin();
       if (renderSprites) this.#renderSprites();
-      this.context.putImageData(this.#frameBuffer, 0, 0);
+      this.#needsPresent = true;
     }
   }
 

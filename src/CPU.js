@@ -20,6 +20,10 @@ const debugL = document.getElementById("l");
 const stop = document.getElementById("stop");
 
 export class CPU {
+  // One DMG frame: 154 lines × 456 T-cycles. The PPU raises vblank on this
+  // boundary while the LCD is on. With the LCD off it never does.
+  static T_CYCLES_PER_FRAME = 70224;
+
   #registersValues = null;
   #ie = 0xffff; // Interrupt enable flag
   #if = 0xff0f; // Interrupt request flag
@@ -269,6 +273,7 @@ export class CPU {
 
   emulateFrame() {
     let vBlank = false;
+    let frameCycles = 0;
 
     while (!vBlank) {
       // nextButton.addEventListener("click", () => {
@@ -282,6 +287,7 @@ export class CPU {
       let cycles = 4;
       if (!this.isHalted) cycles = this.#execInstruction();
       this.#cycleCounter += cycles;
+      frameCycles += cycles;
 
       this.timer.updateTimers(cycles);
       vBlank = this.gpu.updateGraphics(cycles);
@@ -292,6 +298,17 @@ export class CPU {
       // Enable IME requested by EI. EI sets requestIme to 2.
       this.#handleRequestIme();
 
+      // The LCD-on path leaves on vblank, which is one frame (~70224, or
+      // 65664 the first time, before vblank has started). LCD off never
+      // signals vblank; stop after one frame so the page can paint.
+      if (
+        !vBlank &&
+        frameCycles >= CPU.T_CYCLES_PER_FRAME &&
+        (this.mmu.readByte(0xff40) & 0x80) === 0
+      ) {
+        break;
+      }
+
       //     if (vBlank) {
       //       // Reset the cycle counter to 0 after reaching max cycles
       //       this.cycleCounter = 0;
@@ -301,6 +318,8 @@ export class CPU {
       //   this.updateDebugBox();
       // });
     }
+
+    this.gpu.present();
   }
 
   requestInterrupt(interruptId) {
