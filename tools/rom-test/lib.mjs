@@ -238,8 +238,24 @@ export function mapText(cpu) {
   return out;
 }
 
+// dmg_sound (y el resto del shell de Blargg) deja el texto en RAM de cartucho:
+// firma DE B0 61 en $A001 y la cadena en $A004. El código de salida queda en $A000.
+export function soundRamText(cpu) {
+  if (!cpu) return "";
+  if (cpu.mmu.readByte(0xa001) !== 0xde) return "";
+  if (cpu.mmu.readByte(0xa002) !== 0xb0) return "";
+  if (cpu.mmu.readByte(0xa003) !== 0x61) return "";
+  let out = "";
+  for (let i = 0; i < 0x1ffc; i++) {
+    const b = cpu.mmu.readByte(0xa004 + i);
+    if (b === 0) break;
+    if (b === 10 || b === 13 || (b >= 32 && b < 127)) out += String.fromCharCode(b);
+  }
+  return out;
+}
+
 export function blarggVerdict(bytes, cpu) {
-  const text = `${serialText(bytes)}\n${cpu ? mapText(cpu) : ""}`;
+  const text = `${serialText(bytes)}\n${cpu ? mapText(cpu) : ""}\n${soundRamText(cpu)}`;
   if (/Failed/i.test(text)) return { status: "fail", text };
   if (/Passed/i.test(text)) return { status: "pass", text };
   return null;

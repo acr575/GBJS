@@ -30,6 +30,11 @@ export class Timer {
     this.mmu = cpu.mmu;
   }
 
+  /** The 16-bit counter DIV is the high byte of. The APU frame sequencer watches bit 12. */
+  get systemCounter() {
+    return this.#counter;
+  }
+
   /**
    * Advance the system counter by `cycles` T-cycles.
    * A long instruction can cross several falling edges; each one increments
@@ -70,6 +75,8 @@ export class Timer {
     regs[DIV] = 0;
     if (this.#fallingEdge(previous, 0, regs[TAC], regs[TAC]))
       this.#incrementTima();
+    // Bit 12 falling through the reset also steps the APU frame sequencer.
+    this.cpu.apu.onDivReset(previous);
   }
 
   /**
