@@ -11,6 +11,7 @@ A cycle-accurate Game Boy (DMG) emulator that runs entirely in the browser, buil
 - **Full CPU emulation** — Complete LR35902 instruction set (500+ opcodes including the `0xCB`-prefixed table), accurate flag handling, interrupt system (IME, EI/DI), and HALT/STOP behaviour.
 - **PPU / Graphics** — Pixel-accurate rendering of backgrounds, window layer, and sprites via an HTML5 `<canvas>`. Supports all four PPU modes (OAM Search, Pixel Transfer, H-Blank, V-Blank) with correct timing.
 - **Memory Banking** — Support for ROM-only cartridges, MBC1, and MBC5, enabling games beyond the base 32 KiB ROM limit. External RAM banking also implemented.
+- **Battery saves** — Cartridges whose header type includes a battery keep external RAM in IndexedDB (title + global checksum). The RAM can also be exported and imported as a `.sav` file.
 - **Audio (APU)** — Three of the four Game Boy sound channels implemented using the Web Audio API: CH1 (square wave with sweep), CH2 (square wave), and CH3 (wave channel). Per-channel mute and master volume control.
 - **Timer** — Full DIV, TIMA, TMA, and TAC register emulation with correct overflow and interrupt behaviour.
 - **Joypad** — Keyboard and on-screen touch controls. Fully remappable key bindings persisted via localStorage.
@@ -41,6 +42,7 @@ src/
 ├── OpcodeTable.js    # Full opcode dispatch table (~500 instructions + CB-prefixed set)
 ├── GPU.js            # PPU: scanline renderer, OAM, VRAM, DMA, STAT interrupts
 ├── MMU.js            # Memory bus: ROM loading, MBC1/MBC5, WRAM, HRAM, I/O registers
+├── Battery.js        # Battery SRAM in IndexedDB (RTC field reserved for MBC3)
 ├── Timer.js          # DIV/TIMA/TMA/TAC registers and timer interrupt
 ├── Joypad.js         # Button state, keyboard mapping, joypad register
 ├── GameBoyUtils.js   # Shared bit-manipulation helpers
@@ -152,7 +154,7 @@ All settings are persisted in `localStorage`.
 - Game Boy Color (GBC) extended features are not emulated (CGBP palettes, double-speed mode, HDMA).
 - CH4 (noise channel) not yet active.
 - MBC2 and MBC3 (RTC) not implemented; only MBC1 and MBC5 are supported.
-- Save states / battery-backed SRAM not yet persisted to disk.
+- Save states are not implemented. MBC3 (and its RTC) is not implemented; the battery image already has a field for that clock.
 
 ---
 
