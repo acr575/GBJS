@@ -213,7 +213,10 @@ export class MMU {
     if (addr >= 0xff40 && addr < 0xff80)
       this.cpu.gpu.writeByte(addr & 0x7f, val);
     else if (addr >= 0xff10 && addr < 0xff27) this.cpu.apu.writeByte(addr, val);
-    else if (addr == 0xff04) this.ioRegs[addr & 0x7f] = 0; // Reset DIV register
+    else if (addr == 0xff04) this.cpu.timer.resetOnDivWrite();
+    else if (addr == 0xff05) this.cpu.timer.writeTima(val);
+    else if (addr == 0xff06) this.cpu.timer.writeTma(val);
+    else if (addr == 0xff07) this.cpu.timer.writeTac(val);
     else if (addr == 0xff00) this.cpu.joypad.writeByte(addr & 0x7f, val);
     else this.ioRegs[addr & 0x7f] = val;
   }
