@@ -130,25 +130,41 @@ label {
   display: none;
 }
 
-#sav-buttons {
-  width: 100%;
-  display: flex;
-  gap: 5%;
+#sav-label {
+  display: block;
+  margin: 0.2em 0 0.55em;
 }
 
-#sav-buttons[hidden] {
-  display: none;
+#sav-buttons {
+  display: flex;
+  gap: 0.6em;
 }
 
 #sav-buttons button {
-  width: 100%;
+  flex: 1;
+  width: auto;
+  justify-content: center;
+  background-color: var(--primary-color);
+  padding: 0.45em 0.8em;
+}
+
+#sav-buttons button span {
+  white-space: nowrap;
+}
+
+#sav-buttons button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+#sav-buttons button:disabled:hover {
+  background-color: var(--primary-color);
 }
 
 #sav-status {
-  margin: 0;
-  font-size: 0.55em;
-  line-height: 1.5;
-  text-align: center;
+  margin: 0.45em 0 0;
+  font-size: 0.7em;
+  line-height: 1.45;
 }
 
 #sav-status[hidden] {
