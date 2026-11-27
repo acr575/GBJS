@@ -249,83 +249,93 @@ export class PPU {
   }
 
   #renderSprites() {
-    let use8x16 = false;
-    if ((this.mmu.readByte(this.#lcdc) >> 2) & 1) use8x16 = true;
-
+    const use8x16 = ((this.mmu.readByte(this.#lcdc) >> 2) & 1) == 1;
+    const ly = this.mmu.readByte(this.#ly);
     const imageData = this.#frameBuffer.data;
-    let spritesRendered = 0;
+    const ysize = use8x16 ? 16 : 8;
 
+    // BGP colour 0, sampled before any sprite. Both built-in palettes map
+    // that shade to white (255 gray, 155 green). A sprite with the
+    // BG-priority bit only shows through this colour.
+    const bgIsColor0 = [];
+    for (let pixel = 0; pixel < 160; pixel++) {
+      const red = imageData[(ly * this.screen.width + pixel) * 4];
+      bgIsColor0[pixel] = red == 255 || red == 155;
+    }
+
+    // First 10 sprites that intersect this line, in OAM order.
+    const sprites = [];
     for (let sprite = 0; sprite < 40; sprite++) {
-      if (spritesRendered == 10) break; // 10 sprites per line
+      if (sprites.length == 10) break;
 
-      let index = (sprite * 4) & 0xff;
-      let yPos = (this.mmu.readByte(0xfe00 + index) - 16) & 0xff;
-      let xPos = (this.mmu.readByte(0xfe00 + ((index + 1) & 0xff)) - 8) & 0xff;
+      const index = (sprite * 4) & 0xff;
+      const yPos = (this.mmu.readByte(0xfe00 + index) - 16) & 0xff;
+      const xPos = (this.mmu.readByte(0xfe00 + ((index + 1) & 0xff)) - 8) & 0xff;
       let tileLocation = this.mmu.readByte(0xfe00 + ((index + 2) & 0xff));
-      let attributes = this.mmu.readByte(0xfe00 + ((index + 3) & 0xff));
-
-      let yFlip = (attributes >> 6) & 1;
-      let xFlip = (attributes >> 5) & 1;
-
-      let ly = this.mmu.readByte(this.#ly);
-
-      let ysize = 8;
-      if (use8x16) ysize = 16;
+      const attributes = this.mmu.readByte(0xfe00 + ((index + 3) & 0xff));
 
       if (ly < yPos || ly >= yPos + ysize) continue;
 
+      // 8x16: bit 0 of the tile index is ignored. The top tile is N & 0xFE
+      // and the bottom tile is the next one, including when the sprite is flipped.
+      if (use8x16) tileLocation &= 0xfe;
+
       let line = ly - yPos;
-
-      if (yFlip) line = ysize - 1 - line;
-
+      if ((attributes >> 6) & 1) line = ysize - 1 - line;
       line *= 2;
-      let dataAddress = (0x8000 + tileLocation * 16 + line) & 0xffff;
-      let data1 = this.mmu.readByte(dataAddress);
-      let data2 = this.mmu.readByte((dataAddress + 1) & 0xffff);
 
-      for (let tilePixel = 7; tilePixel >= 0; tilePixel--) {
-        let colourbit = tilePixel;
+      const dataAddress = (0x8000 + tileLocation * 16 + line) & 0xffff;
+      sprites.push({
+        xPos: xPos,
+        attributes: attributes,
+        xFlip: (attributes >> 5) & 1,
+        data1: this.mmu.readByte(dataAddress),
+        data2: this.mmu.readByte((dataAddress + 1) & 0xffff),
+      });
+    }
 
-        if (xFlip) {
-          colourbit -= 7;
-          colourbit *= -1;
-        }
+    for (let pixel = 0; pixel < 160; pixel++) {
+      // Lowest X wins. The same X keeps the earliest OAM entry, because
+      // sprites are visited in OAM order and a tie does not replace it.
+      let chosen = null;
 
-        let colourNum = (data2 >> colourbit) & 1;
+      for (let i = 0; i < sprites.length; i++) {
+        const sprite = sprites[i];
+        const offset = pixel - sprite.xPos;
+        if (offset < 0 || offset > 7) continue;
+        if (chosen && sprite.xPos >= chosen.sprite.xPos) continue;
+
+        let colourbit = 7 - offset;
+        if (sprite.xFlip) colourbit = offset;
+
+        let colourNum = (sprite.data2 >> colourbit) & 1;
         colourNum <<= 1;
-        colourNum |= (data1 >> colourbit) & 1;
-
+        colourNum |= (sprite.data1 >> colourbit) & 1;
+        // Sprite colour 0 is transparent, before the palette is applied.
         if (colourNum == WHITE) continue;
 
-        let colourAddress = (attributes >> 4) & 1 ? this.#obp1 : this.#obp0;
-        const {
-          r: red,
-          g: green,
-          b: blue,
-        } = this.#getColour(colourNum, colourAddress);
-
-        let xPix = 0 - tilePixel;
-        xPix += 7;
-
-        let pixel = xPos + xPix;
-
-        if (ly < 0 || ly > 143 || pixel < 0 || pixel > 159) {
-          continue;
-        }
-
-        const pixelIndex = (ly * this.screen.width + pixel) * 4;
-        const isBgWhite = imageData[pixelIndex] == 255 || imageData[pixelIndex] == 155;
-        const spritePriority = !testBit(attributes, 7);
-
-        // Render sprite over BG if sprite priority enabled & BG not white
-        if (spritePriority || isBgWhite) {
-          imageData[pixelIndex] = red; // R
-          imageData[pixelIndex + 1] = green; // G
-          imageData[pixelIndex + 2] = blue;
-          imageData[pixelIndex + 3] = 255; // Opacity
-        }
+        chosen = { sprite: sprite, colourNum: colourNum };
       }
-      spritesRendered++;
+
+      if (!chosen || ly < 0 || ly > 143) continue;
+
+      // Bit 7 hides the sprite where the background colour is not 0.
+      // A sprite that loses this test still covers the ones behind it.
+      if ((chosen.sprite.attributes >> 7) & 1 && !bgIsColor0[pixel]) continue;
+
+      const colourAddress =
+        (chosen.sprite.attributes >> 4) & 1 ? this.#obp1 : this.#obp0;
+      const {
+        r: red,
+        g: green,
+        b: blue,
+      } = this.#getColour(chosen.colourNum, colourAddress);
+
+      const pixelIndex = (ly * this.screen.width + pixel) * 4;
+      imageData[pixelIndex] = red;
+      imageData[pixelIndex + 1] = green;
+      imageData[pixelIndex + 2] = blue;
+      imageData[pixelIndex + 3] = 255;
     }
   }
 
