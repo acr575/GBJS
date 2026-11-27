@@ -112,13 +112,13 @@ class GameBoy {
         await this.cpu.mmu.load(file);
       } catch (error) {
         if (error && error.cancelled) return;
-        this.#setSavVisible(false);
+        this.#setSavEnabled(false);
         this.#renderText(error.message, "#6f0119"); // Render error
         throw new Error(error);
       }
 
       // Game loaded
-      this.#setSavVisible(this.cpu.mmu.hasBattery());
+      this.#setSavEnabled(this.cpu.mmu.hasBattery());
       this.#switchState("running");
       this.#start();
     });
@@ -168,21 +168,37 @@ class GameBoy {
     this.#showSavStatus("Save exported.");
   }
 
-  #setSavVisible(on) {
-    document.getElementById("sav-buttons").hidden = !on;
-    if (!on) this.#showSavStatus("");
+  // The save actions live in Settings. Without a battery they stay
+  // disabled and the note under them explains why.
+  #setSavEnabled(on) {
+    document.getElementById("export-sav-btn").disabled = !on;
+    document.getElementById("import-sav-btn").disabled = !on;
+    if (on) this.#showSavStatus("");
+    else this.#showSavHint();
+  }
+
+  #showSavHint() {
+    const el = document.getElementById("sav-status");
+    clearTimeout(this.#savStatusTimer);
+    el.hidden = false;
+    el.textContent = "No battery cartridge loaded.";
   }
 
   #showSavStatus(text) {
     const el = document.getElementById("sav-status");
     clearTimeout(this.#savStatusTimer);
-    el.textContent = text || "";
-    el.hidden = !text;
-    if (!text) return;
-    this.#savStatusTimer = setTimeout(() => {
-      el.hidden = true;
-      el.textContent = "";
-    }, 4000);
+    if (!text) {
+      if (document.getElementById("export-sav-btn").disabled)
+        this.#showSavHint();
+      else {
+        el.hidden = true;
+        el.textContent = "";
+      }
+      return;
+    }
+    el.hidden = false;
+    el.textContent = text;
+    this.#savStatusTimer = setTimeout(() => this.#showSavStatus(""), 4000);
   }
 
   #handlePauseEmulation() {
@@ -218,7 +234,7 @@ class GameBoy {
     // Stop game. Snapshot the battery RAM before this CPU is dropped.
     this.#stopLoop();
     this.cpu.mmu.flushBattery();
-    this.#setSavVisible(false);
+    this.#setSavEnabled(false);
     this.#gamePaused = false;
     this.#gameLoaded = false;
     this.windowPauseEnabled = false;
