@@ -1,169 +1,154 @@
-import { testBit } from "../GameBoyUtils.js";
+// First sample is this many T-cycles later than the period latched at trigger.
+const TRIGGER_DELAY = 6;
+// After the timer reloads, the CPU sees the latched byte for this many T-cycles.
+const CPU_WINDOW = 1;
+// A retrigger corrupts wave RAM two T-cycles after that reload, using the next byte.
+const CORRUPT_AT = 2;
 
+/**
+ * Programmable wave. The sample position advances by one nibble each period.
+ * Trigger does not refill the sample buffer and skips nibble 0, so the first
+ * read is the low nibble of byte 0. On DMG the CPU only sees the byte just
+ * latched, and only for a couple of T-cycles after the timer reloads; any
+ * other access reads 0xFF and writes are ignored. A retrigger two T-cycles
+ * after the reload corrupts the first bytes of wave RAM with the next byte.
+ */
 export class CH3 {
-  #nr30 = 0xff1a;
-  #nr31 = 0xff1b;
-  #nr32 = 0xff1c;
-  #nr33 = 0xff1d;
-  #nr34 = 0xff1e;
-
-  #waveRam = {};
-
-  #lengthTimerCycles = 16384; // Remaining cycles to tick up length timer (16384 cycles, 256 Hz)
-  #lengthTimer = 0; // Increments when lengthTimerCycles reaches 0
-
-  constructor(apu) {
+  constructor(apu, wave) {
     this.apu = apu;
-
-    this.#waveRam = {
-      start: 0xff30,
-      end: 0xff3f,
-    };
-
-    this.isTriggered = false;
-    this.triggerEnabled = true;
+    this.wave = wave;
+    this.maxLength = 256;
+    this.enabled = false;
+    this.length = 0;
+    this.timer = 4096;
+    this.position = 0;
+    this.sample = 0;
+    this.byteIndex = 0;
+    this.since = CPU_WINDOW + 1;
   }
 
-  isDACOn() {
-    return testBit(this.apu.cpu.mmu.readByte(this.#nr30), 7);
+  dacOn() {
+    return (this.apu.reg(0xff1a) & 0x80) !== 0;
   }
 
-  #getInitialLengthTimer() {
-    return this.apu.cpu.mmu.readByte(this.#nr31);
+  frequency() {
+    return ((this.apu.reg(0xff1e) & 7) << 8) | this.apu.reg(0xff1d);
   }
 
-  #getOutputLevel() {
-    const outputLevel = (this.apu.cpu.mmu.readByte(this.#nr32) >> 5) & 0b11; // Bits 5-6
+  period() {
+    return (2048 - this.frequency()) * 2;
+  }
 
-    switch (outputLevel) {
-      case 0b00:
-        return 0;
-      case 0b01:
-        return 1;
-      case 0b10:
-        return 0.5;
-      case 0b11:
-        return 0.25;
+  loadLength(value) {
+    const stored = value & 0xff;
+    this.apu.setReg(0xff1b, stored);
+    this.length = this.maxLength - stored;
+  }
+
+  resetOnPower() {
+    this.enabled = false;
+    this.sample = 0;
+    this.position = 0;
+    this.byteIndex = 0;
+    this.since = CPU_WINDOW + 1;
+    this.timer = 4096;
+  }
+
+  write(addr, value, extraLength) {
+    if (addr === 0xff1a) {
+      this.apu.setReg(addr, value);
+      if (!this.dacOn()) this.enabled = false;
+      return;
+    }
+    if (addr === 0xff1b) {
+      this.loadLength(value);
+      return;
+    }
+    if (addr === 0xff1c || addr === 0xff1d) {
+      this.apu.setReg(addr, value);
+      return;
+    }
+    if (addr === 0xff1e) this.#writeControl(value, extraLength);
+  }
+
+  #writeControl(value, extraLength) {
+    const wasEnabled = (this.apu.reg(0xff1e) & 0x40) !== 0;
+    this.apu.setReg(0xff1e, value);
+    const nowEnabled = (value & 0x40) !== 0;
+
+    if (extraLength && !wasEnabled && nowEnabled && this.length > 0) {
+      this.length--;
+      if (this.length === 0) this.enabled = false;
+    }
+
+    if ((value & 0x80) === 0) return;
+
+    if (this.enabled && this.since === CORRUPT_AT) this.#corrupt();
+
+    const wasZero = this.length === 0;
+    this.enabled = true;
+    if (wasZero) this.length = this.maxLength;
+    this.timer = this.period() + TRIGGER_DELAY;
+    this.position = 0;
+    this.since = CPU_WINDOW + 1;
+    if (extraLength && nowEnabled && wasZero && this.length > 0) this.length--;
+    if (!this.dacOn()) this.enabled = false;
+  }
+
+  #corrupt() {
+    const index = ((this.position + 1) >> 1) & 0x0f;
+    if (index < 4) {
+      this.wave[0] = this.wave[index];
+      return;
+    }
+    const base = index & ~3;
+    this.wave[0] = this.wave[base];
+    this.wave[1] = this.wave[base + 1];
+    this.wave[2] = this.wave[base + 2];
+    this.wave[3] = this.wave[base + 3];
+  }
+
+  clockLength() {
+    if ((this.apu.reg(0xff1e) & 0x40) === 0 || this.length === 0) return;
+    this.length--;
+    if (this.length === 0) this.enabled = false;
+  }
+
+  tick(cycles) {
+    if (!this.enabled) return;
+
+    this.timer -= cycles;
+    if (this.timer > 0) {
+      this.since += cycles;
+      return;
+    }
+
+    let guard = 0;
+    while (this.timer <= 0 && guard++ < 64) {
+      this.#readSample();
+      const period = this.period();
+      this.timer += period > 0 ? period : 2;
+      this.since = (period > 0 ? period : 2) - this.timer;
     }
   }
 
-  #getPeriod() {
-    const periodHigh = this.apu.cpu.mmu.readByte(this.#nr34) & 0b111; // Bits 0-2
-    const periodLow = this.apu.cpu.mmu.readByte(this.#nr33);
-
-    return (periodHigh << 8) | periodLow;
+  #readSample() {
+    this.position = (this.position + 1) & 31;
+    this.byteIndex = this.position >> 1;
+    const raw = this.wave[this.byteIndex];
+    this.sample = (this.position & 1) === 0 ? raw >> 4 : raw & 0x0f;
   }
 
-  #getPeriodFreq() {
-    const period = this.#getPeriod();
-
-    return 65536 / (2048 - period);
+  /** Byte the channel just latched, or null when a CPU access must see 0xFF. */
+  accessibleByte() {
+    if (!this.enabled || this.since > CPU_WINDOW) return null;
+    return this.byteIndex & 0x0f;
   }
 
-  #isLengthEnabled() {
-    return testBit(this.apu.cpu.mmu.readByte(this.#nr34), 6);
-  }
-
-  trigger() {
-    if (!this.isDACOn()) return; // DAC off
-
-    // Length timer reset
-    this.#lengthTimer = this.#getInitialLengthTimer();
-    this.#lengthTimerCycles = 16384;
-
-    this.stop();
-
-    // Play at frequency & volume
-    this.#playWave(
-      this.#getPeriodFreq(),
-      this.#getOutputLevel(),
-      this.apu.getPanning(3)
-    );
-    this.isTriggered = true;
-  }
-
-  update(cycles) {
-    this.#lengthTimerCycles -= cycles;
-
-    // Length
-    if (this.#isLengthEnabled() && this.#lengthTimerCycles <= 0) {
-      this.#lengthTimerCycles += 16384;
-      this.#lengthTimer++;
-
-      // Shut down channel
-      if (this.#lengthTimer >= 256) this.stop();
-    }
-  }
-
-  updatePanning() {
-    const panning = this.apu.getPanning(3);
-    if (this.left)
-      this.leftGain.gain.value = panning.left ? this.apu.getLeftVolume() : 0;
-    if (this.rightGain)
-      this.rightGain.gain.value = panning.right ? this.apu.getRightVolume() : 0;
-  }
-
-  #getWaveRamSamples() {
-    const samples = 32; // 32 samples, 4 bits each one
-    const buffer = this.apu.audioCtx.createBuffer(
-      1,
-      samples,
-      this.apu.audioCtx.sampleRate
-    );
-    const data = buffer.getChannelData(0);
-
-    let sampleIndex = 0;
-    for (let i = this.#waveRam.start; i <= this.#waveRam.end; i++) {
-      const byte = this.apu.cpu.mmu.ioRegs[i & 0x7f];
-
-      // Get 2 samples from the byte. Upper nibble first
-      const upper = byte >> 4;
-      const lower = byte & 0x0f;
-
-      // Normalize to [-1.0, 1.0]
-      data[sampleIndex++] = (upper / 15) * 2 - 1;
-      data[sampleIndex++] = (lower / 15) * 2 - 1;
-    }
-
-    return buffer;
-  }
-
-  #playWave(frequency, volume, panning) {
-    if (!panning.left && !panning.right) return; // No sound
-
-    const buffer = this.#getWaveRamSamples();
-    this.source = this.apu.audioCtx.createBufferSource();
-    this.source.buffer = buffer;
-    this.source.loop = true;
-
-    // Frequency
-    this.source.playbackRate.value =
-      (frequency * buffer.length) / this.apu.audioCtx.sampleRate;
-
-    // Volume
-    this.globalGain = this.apu.audioCtx.createGain();
-    this.leftGain = this.apu.audioCtx.createGain();
-    this.rightGain = this.apu.audioCtx.createGain();
-    this.globalGain.gain.value = volume * this.apu.masterVolume;
-
-    this.source.connect(this.globalGain);
-    this.globalGain.connect(this.leftGain);
-    this.globalGain.connect(this.rightGain);
-
-    // Connect gains to each channel
-    const merger = this.apu.audioCtx.createChannelMerger(2);
-    this.leftGain.connect(merger, 0, 0);
-    this.rightGain.connect(merger, 0, 1);
-    merger.connect(this.apu.audioCtx.destination);
-
-    // Panning
-    this.leftGain.gain.value = panning.left ? this.apu.getLeftVolume() : 0;
-    this.rightGain.gain.value = panning.right ? this.apu.getRightVolume() : 0;
-    this.source.start();
-  }
-
-  stop() {
-    this.source?.stop();
-    this.isTriggered = false;
+  digital() {
+    if (!this.enabled) return 0;
+    const code = (this.apu.reg(0xff1c) >> 5) & 3;
+    const shift = [4, 0, 1, 2][code];
+    return this.sample >> shift;
   }
 }

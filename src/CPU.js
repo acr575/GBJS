@@ -263,6 +263,7 @@ export class CPU {
   }
 
   #execInstruction() {
+    this.apu.beginInstruction();
     const opcode = this.mmu.readByte(this.pc); // Fetch opcode
     const fetch = this.#instructionTable[opcode]; // Decode opcode
 

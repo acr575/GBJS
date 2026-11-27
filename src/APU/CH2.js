@@ -1,205 +1,167 @@
-import { testBit } from "../GameBoyUtils.js";
+const DUTY = [0b00000001, 0b10000001, 0b10000111, 0b01111110];
 
+/**
+ * Pulse channel without sweep (CH2). CH1 extends this and adds the sweep unit.
+ * Length counts down at 256 Hz; the envelope at 64 Hz. The duty sequencer is a
+ * free-running 8-step counter. Trigger reloads its period but keeps the low
+ * two bits, which is what the DMG does.
+ */
 export class CH2 {
-  #lengthTimerCycles = 16384; // Remaining cycles to tick up length timer (16384 cycles, 256 Hz)
-  #lengthTimer = 0; // Increments when lengthTimerCycles reaches 0
-  #envelopeTimerCycles = 65536; // Remaining cycles to tick up envelop timer (65536 cycles, 64 Hz)
-  #envelopeTimer = 0; // Increments when envelopeTimerCycles reaches 0
-
-  constructor(apu) {
+  constructor(apu, base = 0xff15) {
     this.apu = apu;
-
-    this.nr21 = 0xff16;
-    this.nr22 = 0xff17;
-    this.nr23 = 0xff18;
-    this.nr24 = 0xff19;
-
-    this.isTriggered = false;
-    this.triggerEnabled = true;
+    this.base = base;
+    this.maxLength = 64;
+    this.enabled = false;
+    this.length = 0;
+    this.volume = 0;
+    this.envTimer = 8;
+    this.envRunning = false;
+    this.dutyStep = 0;
+    this.timer = 2048;
   }
 
-  #getInitialLengthTimer() {
-    return this.apu.cpu.mmu.readByte(this.nr21) & 0b111111; // Bits 0-5
+  get nrx1() {
+    return this.base + 1;
   }
 
-  #getWaveDuty() {
-    const duty = (this.apu.cpu.mmu.readByte(this.nr21) >> 6) & 0b11; // Bits 6-7
+  get nrx2() {
+    return this.base + 2;
+  }
 
-    switch (duty) {
-      case 0b00:
-        return 0.125;
+  get nrx3() {
+    return this.base + 3;
+  }
 
-      case 0b01:
-        return 0.25;
+  get nrx4() {
+    return this.base + 4;
+  }
 
-      case 0b10:
-        return 0.5;
+  dacOn() {
+    return (this.apu.reg(this.nrx2) & 0xf8) !== 0;
+  }
 
-      case 0b11:
-        return 0.75;
+  frequency() {
+    return ((this.apu.reg(this.nrx4) & 7) << 8) | this.apu.reg(this.nrx3);
+  }
+
+  period() {
+    return (2048 - this.frequency()) * 4;
+  }
+
+  /** DMG allows NRx1 writes while the APU is off. Only the length bits stick. */
+  loadLength(value) {
+    const stored = value & 0x3f;
+    this.apu.setReg(this.nrx1, stored);
+    this.length = this.maxLength - stored;
+  }
+
+  resetOnPower() {
+    this.enabled = false;
+    this.dutyStep = 0;
+    this.timer = 2048;
+    this.volume = 0;
+    this.envRunning = false;
+  }
+
+  /**
+   * @param {number} addr
+   * @param {number} value
+   * @param {boolean} extraLength true when enabling length should clock immediately
+   * @param {boolean} envelopeNext true when the next sequencer step clocks the envelope
+   */
+  write(addr, value, extraLength, envelopeNext) {
+    if (addr === this.nrx1) {
+      this.apu.setReg(addr, value);
+      this.length = this.maxLength - (value & 0x3f);
+      return;
+    }
+    if (addr === this.nrx2) {
+      this.apu.setReg(addr, value);
+      if (!this.dacOn()) this.enabled = false;
+      return;
+    }
+    if (addr === this.nrx3) {
+      this.apu.setReg(addr, value);
+      return;
+    }
+    if (addr === this.nrx4) this.#writeControl(value, extraLength, envelopeNext);
+  }
+
+  #writeControl(value, extraLength, envelopeNext) {
+    const wasEnabled = (this.apu.reg(this.nrx4) & 0x40) !== 0;
+    this.apu.setReg(this.nrx4, value);
+    const nowEnabled = (value & 0x40) !== 0;
+
+    if (extraLength && !wasEnabled && nowEnabled && this.length > 0) {
+      this.length--;
+      if (this.length === 0) this.enabled = false;
+    }
+
+    if ((value & 0x80) === 0) return;
+
+    const wasZero = this.length === 0;
+    this.enabled = true;
+    if (wasZero) this.length = this.maxLength;
+    this.#reloadTimer();
+    this.#reloadEnvelope(envelopeNext);
+    this.onTrigger();
+    if (extraLength && nowEnabled && wasZero && this.length > 0) this.length--;
+    if (!this.dacOn()) this.enabled = false;
+  }
+
+  /** CH1 hooks the sweep reload here. */
+  onTrigger() {}
+
+  #reloadTimer() {
+    const period = this.period();
+    this.timer = (period & ~3) | (this.timer & 3);
+  }
+
+  #reloadEnvelope(envelopeNext) {
+    const nr2 = this.apu.reg(this.nrx2);
+    const pace = nr2 & 7;
+    this.envTimer = (pace === 0 ? 8 : pace) + (envelopeNext ? 1 : 0);
+    this.volume = nr2 >> 4;
+    this.envRunning = true;
+  }
+
+  clockLength() {
+    if ((this.apu.reg(this.nrx4) & 0x40) === 0 || this.length === 0) return;
+    this.length--;
+    if (this.length === 0) this.enabled = false;
+  }
+
+  clockEnvelope() {
+    if (this.envTimer > 0) this.envTimer--;
+    if (this.envTimer > 0) return;
+
+    const nr2 = this.apu.reg(this.nrx2);
+    const pace = nr2 & 7;
+    this.envTimer = pace === 0 ? 8 : pace;
+    if (pace === 0 || !this.envRunning) return;
+
+    if ((nr2 & 0x08) !== 0) {
+      if (this.volume < 15) this.volume++;
+      else this.envRunning = false;
+    } else if (this.volume > 0) this.volume--;
+    else this.envRunning = false;
+  }
+
+  tick(cycles) {
+    this.timer -= cycles;
+    let guard = 0;
+    while (this.timer <= 0 && guard++ < 32) {
+      this.dutyStep = (this.dutyStep + 1) & 7;
+      const period = this.period();
+      this.timer += period > 0 ? period : 4;
     }
   }
 
-  #getInitialVolume() {
-    return (this.apu.cpu.mmu.readByte(this.nr22) >> 4) / 15; // Bits 4-7
-  }
-
-  #getEnvelopeDir() {
-    return testBit(this.apu.cpu.mmu.readByte(this.nr22), 3); // Bit 3
-  }
-
-  #getEnvelopePace() {
-    return this.apu.cpu.mmu.readByte(this.nr22) & 0b111; // Bits 0-2
-  }
-
-  getPeriod() {
-    const periodHigh = this.apu.cpu.mmu.readByte(this.nr24) & 0b111; // Bits 0-2
-    const periodLow = this.apu.cpu.mmu.readByte(this.nr23);
-
-    return (periodHigh << 8) | periodLow;
-  }
-
-  #getPeriodFreq() {
-    const period = this.getPeriod();
-
-    return 131072 / (2048 - period);
-  }
-
-  #isLengthEnabled() {
-    return testBit(this.apu.cpu.mmu.readByte(this.nr24), 6);
-  }
-
-  isDACOn() {
-    return (this.apu.cpu.mmu.readByte(this.nr22) & 0b11111000) != 0;
-  }
-
-  getPanning() {
-    return this.apu.getPanning(2);
-  }
-
-  trigger() {
-    if (!this.isDACOn()) return; // DAC off
-
-    this.resetTimers();
-    this.stop();
-
-    this.#playSquareWave(
-      this.#getPeriodFreq(),
-      this.#getInitialVolume(),
-      this.getPanning()
-    );
-    this.isTriggered = true;
-  }
-
-  resetTimers() {
-    this.#lengthTimer = this.#getInitialLengthTimer();
-    this.#lengthTimerCycles = 16384;
-    this.#envelopeTimer = 0;
-    this.#envelopeTimerCycles = 65536;
-  }
-
-  update(cycles) {
-    this.#envelopeTimerCycles -= cycles;
-    this.#lengthTimerCycles -= cycles;
-
-    // Envelope. A 0 Sweep Pace disables the funcionality
-    if (this.#getEnvelopePace() != 0 && this.#envelopeTimerCycles <= 0) {
-      this.#envelopeTimerCycles += 65536;
-      this.#envelopeTimer++;
-
-      // Update volume
-      if (this.#envelopeTimer >= this.#getEnvelopePace() && this.globalGain) {
-        const gainStep = (1 / 15) * this.apu.masterVolume;
-
-        if (this.#getEnvelopeDir()) {
-          this.globalGain.gain.value = Math.min(
-            this.apu.masterVolume,
-            this.globalGain.gain.value + gainStep
-          );
-        } else {
-          this.globalGain.gain.value = Math.max(
-            0,
-            this.globalGain.gain.value - gainStep
-          );
-        }
-        this.#envelopeTimer = 0;
-      }
-    }
-
-    // Length
-    if (this.#isLengthEnabled() && this.#lengthTimerCycles <= 0) {
-      this.#lengthTimerCycles += 16384;
-      this.#lengthTimer++;
-
-      // Shut down channel
-      if (this.#lengthTimer >= 64) this.stop();
-    }
-  }
-
-  updatePanning() {
-    const panning = this.getPanning();
-    if (this.left)
-      this.leftGain.gain.value = panning.left ? this.apu.getLeftVolume() : 0;
-    if (this.rightGain)
-      this.rightGain.gain.value = panning.right ? this.apu.getRightVolume() : 0;
-  }
-
-  #generateWaveWithDutyCycles(dutyCycle) {
-    const samples = 8;
-    const buffer = this.apu.audioCtx.createBuffer(
-      1,
-      samples,
-      this.apu.audioCtx.sampleRate
-    );
-
-    const data = buffer.getChannelData(0);
-
-    const highSamples = Math.floor(samples * dutyCycle);
-
-    for (let i = 0; i < samples; i++) {
-      data[i] = i < highSamples ? 1.0 : -1.0;
-    }
-
-    return buffer;
-  }
-
-  #playSquareWave(frequency, volume, panning) {
-    if (!panning.left && !panning.right) return; // No sound
-
-    const buffer = this.#generateWaveWithDutyCycles(this.#getWaveDuty());
-    this.source = this.apu.audioCtx.createBufferSource();
-    this.source.buffer = buffer;
-    this.source.loop = true;
-
-    // Frequency
-    this.source.playbackRate.value =
-      (frequency * buffer.length) / this.apu.audioCtx.sampleRate;
-
-    // Volume
-    this.globalGain = this.apu.audioCtx.createGain();
-    this.leftGain = this.apu.audioCtx.createGain();
-    this.rightGain = this.apu.audioCtx.createGain();
-    this.globalGain.gain.value = volume * this.apu.masterVolume;
-
-    this.source.connect(this.globalGain);
-    this.globalGain.connect(this.leftGain);
-    this.globalGain.connect(this.rightGain);
-
-    // Connect gains to each channel
-    const merger = this.apu.audioCtx.createChannelMerger(2);
-    this.leftGain.connect(merger, 0, 0);
-    this.rightGain.connect(merger, 0, 1);
-    merger.connect(this.apu.audioCtx.destination);
-
-    // Panning
-    this.leftGain.gain.value = panning.left ? this.apu.getLeftVolume() : 0;
-    this.rightGain.gain.value = panning.right ? this.apu.getRightVolume() : 0;
-
-    this.source.start();
-  }
-
-  stop() {
-    this.source?.stop();
-    this.isTriggered = false;
+  /** Digital 0..15. A disabled channel contributes 0; the DAC still biases it. */
+  digital() {
+    if (!this.enabled) return 0;
+    const duty = (this.apu.reg(this.nrx1) >> 6) & 3;
+    const high = (DUTY[duty] >> this.dutyStep) & 1;
+    return high ? this.volume : 0;
   }
 }

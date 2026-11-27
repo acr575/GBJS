@@ -51,6 +51,7 @@ class GameBoy {
         ch1: { id: 1, key: "ch1", value: document.getElementById("ch1") },
         ch2: { id: 2, key: "ch2", value: document.getElementById("ch2") },
         ch3: { id: 3, key: "ch3", value: document.getElementById("ch3") },
+        ch4: { id: 4, key: "ch4", value: document.getElementById("ch4") },
       },
     },
 

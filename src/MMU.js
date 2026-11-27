@@ -212,6 +212,8 @@ export class MMU {
       if (addr == 0xff00) return this.cpu.joypad.readJoypad();
       // Bits 5-7 of IF are unused and read as 1.
       if (addr == 0xff0f) return this.ioRegs[0x0f] | 0xe0;
+      // NR10–NR52, unused FF27–FF2F, and wave RAM. Reads apply the unused-bit masks.
+      if (addr >= 0xff10 && addr < 0xff40) return this.cpu.apu.readByte(addr);
       return this.ioRegs[addr & 0x7f];
     }
     // HRAM
@@ -261,7 +263,7 @@ export class MMU {
   #handleIOWrite(addr, val) {
     if (addr >= 0xff40 && addr < 0xff80)
       this.cpu.gpu.writeByte(addr & 0x7f, val);
-    else if (addr >= 0xff10 && addr < 0xff27) this.cpu.apu.writeByte(addr, val);
+    else if (addr >= 0xff10 && addr < 0xff40) this.cpu.apu.writeByte(addr, val);
     else if (addr == 0xff04) this.cpu.timer.resetOnDivWrite();
     else if (addr == 0xff05) this.cpu.timer.writeTima(val);
     else if (addr == 0xff06) this.cpu.timer.writeTma(val);

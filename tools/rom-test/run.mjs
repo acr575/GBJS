@@ -145,7 +145,17 @@ function classify(files) {
       continue;
     }
     if (norm.includes("/dmg_sound/")) {
-      tests.push({ suite: "blargg-audio", kind: "blargg", file, budget: 12, wall: 30, extra: true });
+      // 03-trigger and the combined ROM walk every channel with length delays.
+      // 12s of emulated time stops them while they are still counting.
+      const long = base.startsWith("03-") || base === "dmg_sound.gb";
+      tests.push({
+        suite: "blargg-audio",
+        kind: "blargg",
+        file,
+        budget: long ? 40 : 15,
+        wall: long ? 90 : 40,
+        extra: true,
+      });
     }
   }
   tests.sort((a, b) => a.suite.localeCompare(b.suite) || a.file.localeCompare(b.file));
