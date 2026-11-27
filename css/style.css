@@ -125,7 +125,33 @@ label {
   background-color: var(--quit-button-color-hover);
 }
 
-#fileInput {
+#fileInput,
+#savInput {
+  display: none;
+}
+
+#sav-buttons {
+  width: 100%;
+  display: flex;
+  gap: 5%;
+}
+
+#sav-buttons[hidden] {
+  display: none;
+}
+
+#sav-buttons button {
+  width: 100%;
+}
+
+#sav-status {
+  margin: 0;
+  font-size: 0.55em;
+  line-height: 1.5;
+  text-align: center;
+}
+
+#sav-status[hidden] {
   display: none;
 }
 

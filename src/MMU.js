@@ -1,10 +1,24 @@
 import { testBit } from "./GameBoyUtils.js";
+import {
+  BatteryStore,
+  cartridgeGameKey,
+  cartridgeHasBattery,
+  cartridgeTitle,
+} from "./Battery.js";
 
 export class MMU {
   #eram = null;
   #wram = null;
   #hram = null;
   #ie = 0;
+  // Battery image. The key is null unless this cart's type has a cell.
+  // `#rtcSnapshot` stays null; MBC3 will store its clock there.
+  #battery = null;
+  #batteryKey = null;
+  #batteryTitle = "";
+  #rtcSnapshot = null;
+  #readBatteryImage = null;
+  #loadGeneration = 0;
 
   // Memory banking mode. None by default
   #MBC1 = false;
@@ -39,14 +53,30 @@ export class MMU {
     this.ioRegs = new Uint8Array(128); // I/O Registers.   128    B.       Area FF00-FF7F
     this.#hram = new Uint8Array(127); //   High RAM.        127    B.       Area FF80-FFFE
     this.#ie = 0; //                       IE Flag            1    B.       Addr FFFF
+
+    this.#battery = new BatteryStore();
+    this.#readBatteryImage = () => ({
+      sram: new Uint8Array(this.#eram),
+      rtc: this.#rtcSnapshot,
+    });
   }
 
   // Function to load a program into the memory
   async load(file) {
     console.log("Loading program: " + file.name);
 
+    // Keep the previous cart's RAM before this file replaces it.
+    await this.flushBattery();
+    const generation = ++this.#loadGeneration;
+    this.#clearBattery();
+
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
+      const cancelled = () => {
+        const error = new Error("Load cancelled.");
+        error.cancelled = true;
+        return error;
+      };
 
       reader.onerror = () => {
         console.error("Error reading file.");
@@ -55,49 +85,65 @@ export class MMU {
 
       reader.readAsArrayBuffer(file);
 
-      reader.onload = () => {
-        const arrayBuffer = reader.result;
-        const byteArray = new Uint8Array(arrayBuffer);
+      reader.onload = async () => {
+        try {
+          if (generation != this.#loadGeneration) {
+            reject(cancelled());
+            return;
+          }
 
-        if (!byteArray) {
-          console.error(
-            "Error loading program. The byte array loaded is null."
-          );
-          reject("Error: Loaded byte array is null");
-          return;
+          const arrayBuffer = reader.result;
+          const byteArray = new Uint8Array(arrayBuffer);
+
+          if (!byteArray) {
+            console.error(
+              "Error loading program. The byte array loaded is null."
+            );
+            reject("Error: Loaded byte array is null");
+            return;
+          }
+
+          const size = byteArray.length;
+
+          // Check if cartridge fits rom. Change later when MBC's are implemented
+          // if (size > this.CARTRIDGE_MAX_SIZE)
+          //   throw new Error("Cartridge too big for memory");
+
+          // Load bytes into cartridge memory
+          this.cartridge = new Uint8Array(size);
+          this.cartridge.set(byteArray.subarray(0, this.cartridge.length));
+
+          const cartridgeType = this.cartridge[0x147];
+          const ramBanks = this.#getRamBanksNumber(this.cartridge[0x149]);
+          this.#resetMbc();
+          this.#romBankCount = size >> 14;
+          this.#ramBankCount = ramBanks;
+
+          // Set memory banking mode
+          if (cartridgeType >= 1 && cartridgeType <= 3) this.#MBC1 = true;
+          // else if (cartridgeType == 5 || cartridgeType == 6) this.MBC2 = true;
+          else if (cartridgeType >= 0x19 && cartridgeType <= 0x1e)
+            this.#MBC5 = true;
+          else if (cartridgeType != 0)
+            return reject(
+              new Error("Unsupported MBC. Only MBC1 and MBC5 games allowed.")
+            );
+
+          // Initialize ram banks. 8KiB each bank. A battery image may replace
+          // these bytes before the CPU runs.
+          this.#eram = new Uint8Array(this.#RAM_BANK_SIZE * ramBanks);
+          await this.#attachBattery(cartridgeType, generation);
+
+          if (generation != this.#loadGeneration) {
+            reject(cancelled());
+            return;
+          }
+
+          console.log("Program loaded successfully.");
+          resolve(size);
+        } catch (err) {
+          reject(err);
         }
-
-        const size = byteArray.length;
-
-        // Check if cartridge fits rom. Change later when MBC's are implemented
-        // if (size > this.CARTRIDGE_MAX_SIZE)
-        //   throw new Error("Cartridge too big for memory");
-
-        // Load bytes into cartridge memory
-        this.cartridge = new Uint8Array(size);
-        this.cartridge.set(byteArray.subarray(0, this.cartridge.length));
-
-        const cartridgeType = this.cartridge[0x147];
-        const ramBanks = this.#getRamBanksNumber(this.cartridge[0x149]);
-        this.#resetMbc();
-        this.#romBankCount = size >> 14;
-        this.#ramBankCount = ramBanks;
-
-        // Set memory banking mode
-        if (cartridgeType >= 1 && cartridgeType <= 3) this.#MBC1 = true;
-        // else if (cartridgeType == 5 || cartridgeType == 6) this.MBC2 = true;
-        else if (cartridgeType >= 0x19 && cartridgeType <= 0x1e)
-          this.#MBC5 = true;
-        else if (cartridgeType != 0)
-          return reject(
-            new Error("Unsupported MBC. Only MBC1 and MBC5 games allowed.")
-          );
-
-        // Initialize ram banks. 8KiB each bank
-        this.#eram = new Uint8Array(this.#RAM_BANK_SIZE * ramBanks);
-
-        console.log("Program loaded successfully.");
-        resolve(size);
       };
     });
   }
@@ -192,6 +238,7 @@ export class MMU {
         this.#eram[
           (addr & 0x1fff) + this.#currentRamBank * this.#RAM_BANK_SIZE
         ] = val;
+      this.#noteBatteryWrite();
     }
     // WRAM & ECHO RAM
     else if (addr >= 0xc000 && addr < 0xfe00) this.#wram[addr & 0x1fff] = val;
@@ -310,6 +357,123 @@ export class MMU {
     if (this.#ramBankCount == 0) return;
     this.#eram[(addr & 0x1fff) + this.#mbc1RamBank() * this.#RAM_BANK_SIZE] =
       val;
+  }
+
+  /**
+   * True when this cart has a battery and external RAM to keep.
+   * @returns {boolean}
+   */
+  hasBattery() {
+    return this.#batteryKey != null && this.#eram.length > 0;
+  }
+
+  /**
+   * Clock snapshot stored next to the SRAM. Always null until MBC3 writes
+   * one. The mapper owns the shape; callers get a clone.
+   * @returns {*}
+   */
+  getRtcSnapshot() {
+    if (this.#rtcSnapshot == null) return null;
+    return structuredClone(this.#rtcSnapshot);
+  }
+
+  /**
+   * Replace the RTC snapshot and schedule a battery write. MBC3 calls this
+   * when the clock is latched, halted or saved. Pass null to clear it. The
+   * value must be structured-cloneable. No-op without a battery cart.
+   * @param {*} snapshot
+   */
+  setRtcSnapshot(snapshot) {
+    if (!this.#batteryKey) return;
+    this.#rtcSnapshot = snapshot == null ? null : structuredClone(snapshot);
+    this.#noteBatteryWrite();
+  }
+
+  /**
+   * Store a pending battery image now (quit, hide, page close, .sav export).
+   * @returns {Promise<void>}
+   */
+  flushBattery() {
+    return this.#battery.flush();
+  }
+
+  /**
+   * Raw external RAM for a .sav file. RTC is not appended.
+   * @returns {Uint8Array|null}
+   */
+  exportSav() {
+    if (!this.hasBattery()) return null;
+    return new Uint8Array(this.#eram);
+  }
+
+  /**
+   * @returns {string}
+   */
+  saveFileName() {
+    const title = this.#batteryTitle || "game";
+    const safe = title.replace(/[\\/:*?"<>|]/g, "").trim() || "game";
+    return safe + ".sav";
+  }
+
+  /**
+   * Replace external RAM with a .sav of the same length and store it.
+   * @param {Uint8Array} bytes
+   * @returns {Promise<void>}
+   */
+  importSav(bytes) {
+    if (!this.hasBattery())
+      throw new Error("This cartridge has no battery RAM.");
+    const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+    if (data.length != this.#eram.length)
+      throw new Error(
+        "Save file size does not match this cartridge (" +
+          this.#eram.length +
+          " bytes)."
+      );
+    this.#eram.set(data);
+    this.#noteBatteryWrite();
+    return this.flushBattery();
+  }
+
+  #clearBattery() {
+    this.#battery.detach();
+    this.#batteryKey = null;
+    this.#batteryTitle = "";
+    this.#rtcSnapshot = null;
+  }
+
+  async #attachBattery(cartridgeType, generation) {
+    if (!cartridgeHasBattery(cartridgeType)) return;
+    const key = cartridgeGameKey(this.cartridge);
+    if (!key) return;
+    const title = cartridgeTitle(this.cartridge);
+    const image =
+      this.#eram.length > 0 ? await this.#battery.load(key) : null;
+    // A newer load() owns the bus. Don't write this cart's RAM over it.
+    if (generation != this.#loadGeneration) return;
+    this.#batteryKey = key;
+    this.#batteryTitle = title;
+    if (!image) return;
+    if (image.sram.length != this.#eram.length) {
+      console.error(
+        "Battery SRAM size does not match this cartridge (" +
+          image.sram.length +
+          " stored, " +
+          this.#eram.length +
+          " on the cart)."
+      );
+      return;
+    }
+    this.#eram.set(image.sram);
+    // Kept for the next save. MBC3 is what will read it.
+    this.#rtcSnapshot = image.rtc ?? null;
+    console.log("Battery RAM restored.");
+  }
+
+  #noteBatteryWrite() {
+    if (!this.#batteryKey) return;
+    if (this.#eram.length == 0 && this.#rtcSnapshot == null) return;
+    this.#battery.markDirty(this.#batteryKey, this.#readBatteryImage);
   }
 
   setupAddressInput() {
