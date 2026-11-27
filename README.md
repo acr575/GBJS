@@ -54,7 +54,9 @@ src/
 
 ### Emulation loop
 
-Each frame, the CPU drives the system clock at **4,194,304 Hz**. The main loop runs synchronously until the PPU signals a V-Blank, at which point the completed frame is flushed to the canvas:
+Each frame, the CPU drives the system clock at **4,194,304 Hz**. `emulateFrame()` runs until the PPU enters V-Blank (one frame, 70224 T-cycles; the first frame is shorter because V-Blank has not started). With the LCD off the PPU never reaches V-Blank, so the call returns after 70224 T-cycles instead of blocking the page.
+
+Scanlines are drawn into an off-screen buffer and uploaded once per frame with a single `putImageData`.
 
 ```
 while (!vBlank) {
@@ -62,10 +64,12 @@ while (!vBlank) {
     timer.update(cycles);
     vBlank = ppu.updateGraphics(cycles);
     apu.updateAudio(cycles);
+    // LCD off: return after 70224 T-cycles
 }
+ppu.present(); // one putImageData
 ```
 
-The loop is called via `setInterval` at the native Game Boy frame rate (~59.7 fps), with an adjustable multiplier for speed control.
+The browser drives that with `requestAnimationFrame` and a time accumulator, so the Game Boy stays at ~59.7 fps on any refresh rate. The speed setting (0.5×–2×) scales the accumulator.
 
 ---
 

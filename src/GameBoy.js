@@ -6,8 +6,18 @@ import {
 } from "./GameBoyUtils.js";
 
 class GameBoy {
-  #defaultFrameRate = 0;
-  #customFrameRate = 0;
+  #frameMs = 0;
+  #speed = 1;
+  #rafId = 0;
+  #lastTs = 0;
+  #hasTimebase = false;
+  #accumulator = 0;
+  // Ignore gaps longer than this (a breakpoint, a stalled frame). The
+  // visibility handler already pauses in the background.
+  #maxDeltaMs = 250;
+  // Frames of catch-up in one animation callback. A 50 Hz display needs two;
+  // past this, drop the debt so a hitch cannot freeze the tab.
+  #maxFramesPerTick = 3;
   #gameLoaded = false;
   #gamePaused = false;
 
@@ -65,8 +75,8 @@ class GameBoy {
   constructor() {
     this.cpu = new CPU();
 
-    this.#defaultFrameRate = 1000 / (this.cpu.CLOCKSPEED / 70224); // ms
-    this.#customFrameRate = this.#defaultFrameRate;
+    // 70224 T-cycles at 4.194304 MHz ≈ 16.74 ms (59.73 fps).
+    this.#frameMs = 1000 / (this.cpu.CLOCKSPEED / CPU.T_CYCLES_PER_FRAME);
 
     this.#handleInputFiles();
     this.#handleSettingsModal();
@@ -134,7 +144,7 @@ class GameBoy {
     const fileInput = document.getElementById("fileInput");
 
     // Stop game
-    clearInterval(this.emulationInterval);
+    this.#stopLoop();
     this.#gamePaused = false;
     this.#gameLoaded = false;
     this.windowPauseEnabled = false;
@@ -198,28 +208,75 @@ class GameBoy {
   }
 
   #start() {
+    this.#stopLoop();
     this.#resetScreen();
-
-    // Emulate frames
-    this.emulationInterval = setInterval(() => {
-      this.cpu.emulateFrame();
-    }, this.#customFrameRate);
-
+    this.#resetClock();
+    this.#scheduleFrame();
     this.windowPauseEnabled = true;
+  }
+
+  #stopLoop() {
+    if (this.#rafId) {
+      cancelAnimationFrame(this.#rafId);
+      this.#rafId = 0;
+    }
+  }
+
+  #resetClock() {
+    this.#hasTimebase = false;
+    this.#lastTs = 0;
+    this.#accumulator = 0;
+  }
+
+  #scheduleFrame() {
+    this.#rafId = requestAnimationFrame((timestamp) => {
+      this.#onAnimationFrame(timestamp);
+    });
+  }
+
+  // The callback follows the monitor. Real time is spent at the Game Boy
+  // frame rate times the speed setting: 59.7 fps on a 144 Hz display, and
+  // more than one frame per callback when the display is slower.
+  #onAnimationFrame(timestamp) {
+    this.#scheduleFrame();
+
+    if (!this.#hasTimebase) {
+      this.#hasTimebase = true;
+      this.#lastTs = timestamp;
+      this.#accumulator = this.#frameMs;
+    } else {
+      let delta = timestamp - this.#lastTs;
+      this.#lastTs = timestamp;
+      if (delta < 0) delta = 0;
+      if (delta > this.#maxDeltaMs) delta = this.#maxDeltaMs;
+      this.#accumulator += delta * this.#speed;
+    }
+
+    let frames = 0;
+    while (
+      this.#accumulator >= this.#frameMs &&
+      frames < this.#maxFramesPerTick
+    ) {
+      this.cpu.emulateFrame();
+      this.#accumulator -= this.#frameMs;
+      frames++;
+    }
+
+    if (frames == this.#maxFramesPerTick && this.#accumulator >= this.#frameMs)
+      this.#accumulator = 0;
   }
 
   #pauseEmulation() {
     if (this.#gamePaused) return;
-    clearInterval(this.emulationInterval);
+    this.#stopLoop();
     this.cpu.apu.mute();
     this.#switchState("paused");
   }
 
   #resumeEmulation() {
     if (!this.#gamePaused) return;
-    this.emulationInterval = setInterval(() => {
-      this.cpu.emulateFrame();
-    }, this.#customFrameRate);
+    this.#resetClock();
+    this.#scheduleFrame();
     this.cpu.apu.unmute();
     this.#switchState("running");
   }
@@ -319,17 +376,9 @@ class GameBoy {
 
   #updateGameSpeed() {
     const emulationSpeed = this.#settings.game.emulationSpeed.value;
-    const newFrameRate =
-      this.#defaultFrameRate / parseFloat(emulationSpeed.value);
-
-    this.#customFrameRate = newFrameRate;
-    // Update speed if game running and not paused
-    if (this.#gameLoaded && !this.#gamePaused) {
-      clearInterval(this.emulationInterval);
-      this.emulationInterval = setInterval(() => {
-        this.cpu.emulateFrame();
-      }, newFrameRate);
-    }
+    const parsed = parseFloat(emulationSpeed.value);
+    // The animation callback reads #speed every tick.
+    if (parsed > 0) this.#speed = parsed;
   }
 
   #handleAudioSettings() {
